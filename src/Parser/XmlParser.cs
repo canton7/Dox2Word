@@ -60,19 +60,27 @@ namespace Dox2Word.Parser
                     .ToDictionary(x => x.file.Id, x => x.group);
                 foreach (var fileDef in allFileCompoundDefs.Values)
                 {
-                    foreach (var include in fileDef.Includes.Where(x => x.IsLocal == DoxBool.Yes))
+                    foreach (var include in fileDef.Includes.Where(x => x.IsLocal == DoxBool.Yes && x.RefId != null))
                     {
                         var includingGroup = fileIdToOwningGroup[fileDef.Id];
-                        var includedGroup = fileIdToOwningGroup[include.RefId];
-                        if (!includingGroup.IncludedGroups.Contains(includedGroup))
+                        var includedGroup = fileIdToOwningGroup[include.RefId!];
+                        if (includingGroup != includedGroup)
                         {
-                            includingGroup.IncludedGroups.Add(includedGroup);
-                        }
-                        if (!includedGroup.IncludingGroups.Contains(includingGroup))
-                        {
-                            includedGroup.IncludingGroups.Add(includingGroup);
+                            if (!includingGroup.IncludedGroups.Contains(includedGroup))
+                            {
+                                includingGroup.IncludedGroups.Add(includedGroup);
+                            }
+                            if (!includedGroup.IncludingGroups.Contains(includingGroup))
+                            {
+                                includedGroup.IncludingGroups.Add(includingGroup);
+                            }
                         }
                     }
+                }
+                foreach (var group in project.AllGroups.Values)
+                {
+                    group.IncludedGroups.Sort((x, y) => x.Id.CompareTo(y.Id));
+                    group.IncludingGroups.Sort((x, y) => x.Id.CompareTo(y.Id));
                 }
             }
             catch (ParserException e)

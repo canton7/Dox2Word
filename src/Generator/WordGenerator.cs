@@ -128,7 +128,7 @@ namespace Dox2Word.Generator
                     this.WriteMiniHeading("Unit References");
                     if (group.IncludedGroups.Count > 0)
                     {
-                        this.AppendChild(StringToParagraph("The following units are referenced by this unit:"));
+                        this.AppendChild(StringToParagraph("This unit references the following units:"));
                         var groupsList = new ListParagraph(ListParagraphType.Bullet);
                         groupsList.Items.AddRange(group.IncludedGroups.Select(x => new TextParagraph() { new TextRun(x.Name) }));
                         this.Append(this.CreateParagraph(groupsList));
