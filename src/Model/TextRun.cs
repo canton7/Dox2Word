@@ -47,7 +47,7 @@ namespace Dox2Word.Model
         }
     }
 
-    public class ListTextRunItem : Paragraph
+    public class ListTextRunItem : TextParagraph
     {
     }
 }

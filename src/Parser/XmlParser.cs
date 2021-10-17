@@ -23,29 +23,38 @@ namespace Dox2Word.Parser
 
         public Project Parse()
         {
-            string indexFile = Path.Join(this.basePath, "index.xml");
+            string indexFile = Path.Combine(this.basePath, "index.xml");
             var index = Parse<DoxygenIndex>(indexFile);
 
             var project = new Project();
 
-            foreach (var group in index.Compounds.Where(x => x.Kind == CompoundKind.Group).OrderBy(x => x.Name))
+            // Discover the root groups
+            var groupCompoundDefs = index.Compounds.Where(x => x.Kind == CompoundKind.Group)
+                .ToDictionary(x => x.RefId, x => this.ParseDoxygenFile(x.RefId));
+            var rootGroups = groupCompoundDefs.Keys.ToHashSet();
+            foreach (var group in groupCompoundDefs.Values.ToList())
             {
-                project.Groups.Add(this.ParseGroup(group.RefId));
+                foreach (var innerGroup in group.InnerGroups)
+                {
+                    rootGroups.Remove(innerGroup.RefId);
+                }
             }
+
+            project.Groups.AddRange(rootGroups.Select(x => this.ParseGroup(groupCompoundDefs, x)).OrderBy(x => x.Name));
 
             return project;
         }
 
-        private Group ParseGroup(string refId)
+        private Group ParseGroup(Dictionary<string, CompoundDef> groups, string refId)
         {
-            var compoundDef = this.ParseDoxygenFile(refId);
+            var compoundDef = groups[refId];
 
             var group = new Group()
             {
                 Name = compoundDef.Title,
                 Descriptions = ParseDescriptions(compoundDef),
             };
-            group.SubGroups.AddRange(compoundDef.InnerGroups.Select(x => this.ParseGroup(x.RefId)));
+            group.SubGroups.AddRange(compoundDef.InnerGroups.Select(x => this.ParseGroup(groups, x.RefId)));
             group.Files.AddRange(compoundDef.InnerFiles.Select(x => x.Name));
             group.Classes.AddRange(compoundDef.InnerClasses.Select(x => this.ParseClass(x.RefId)));
 
@@ -60,6 +69,7 @@ namespace Dox2Word.Parser
                         Descriptions = ParseDescriptions(member),
                         ReturnType = LinkedTextToString(member.Type) ?? "",
                         ReturnDescription = ParseReturnDescription(member),
+                        Definition = member.Definition ?? "",
                         ArgsString = member.ArgsString ?? "",
                     };
                     function.Parameters.AddRange(ParseParameters(member));
@@ -156,7 +166,7 @@ namespace Dox2Word.Parser
             return variable;
         }
 
-        private static Paragraph ParseReturnDescription(MemberDef member)
+        private static TextParagraph ParseReturnDescription(MemberDef member)
         {
             return ParaToParagraph(member.DetailedDescription?.Para.SelectMany(x => x.Parts)
                 .OfType<DocSimpleSect>()
@@ -187,40 +197,40 @@ namespace Dox2Word.Parser
             return descriptions;
         }
 
-        private static Paragraph ParaToParagraph(DocPara? para)
+        private static TextParagraph ParaToParagraph(DocPara? para)
         {
-            return ParaToParagraphs(para).FirstOrDefault() ?? new Paragraph();
+            return ParaToParagraphs(para).FirstOrDefault() ?? new TextParagraph();
         }
 
-        private static Paragraph ParasToParagraph(IEnumerable<DocPara>? paras)
+        private static TextParagraph ParasToParagraph(IEnumerable<DocPara>? paras)
         {
-            return ParasToParagraphs(paras).FirstOrDefault() ?? new Paragraph();
+            return ParasToParagraphs(paras).FirstOrDefault() ?? new TextParagraph();
         }
 
-        private static IEnumerable<Paragraph> ParasToParagraphs(IEnumerable<DocPara>? paras)
+        private static IEnumerable<TextParagraph> ParasToParagraphs(IEnumerable<DocPara>? paras)
         {
             if (paras == null)
-                return Enumerable.Empty<Paragraph>();
+                return Enumerable.Empty<TextParagraph>();
 
             return paras.SelectMany(x => ParaToParagraphs(x)).Where(x => x.Count > 0);
         }
 
-        private static List<Paragraph> ParaToParagraphs(DocPara? para)
+        private static List<TextParagraph> ParaToParagraphs(DocPara? para)
         {
-            var paragraphs = new List<Paragraph>();
+            var paragraphs = new List<TextParagraph>();
 
             if (para == null)
                 return paragraphs;
 
-            paragraphs.Add(new Paragraph());
+            paragraphs.Add(new TextParagraph());
             Parse(paragraphs, para, TextRunFormat.None);
 
-            static void Parse(List<Paragraph> paragraphs, DocPara? para, TextRunFormat format)
+            static void Parse(List<TextParagraph> paragraphs, DocPara? para, TextRunFormat format)
             {
-                void NewParagraph(ParagraphType type = ParagraphType.Normal) => paragraphs.Add(new Paragraph(type));
+                void NewParagraph(ParagraphType type = ParagraphType.Normal) => paragraphs.Add(new TextParagraph(type));
 
                 void Add(ITextRun textRun) => paragraphs[paragraphs.Count - 1].Add(textRun);
-                void AddTextRun(string text, TextRunFormat format) => Add(new TextRun(text, format));
+                void AddTextRun(string text, TextRunFormat format) => Add(new TextRun(text.TrimStart('\n'), format));
 
                 if (para == null)
                     return;
@@ -267,7 +277,7 @@ namespace Dox2Word.Parser
                         var runItem = new ListTextRunItem();
                         // It could be that the para contains a warning or something which will add
                         // another paragraph. In this case, we'll just ignore it.
-                        var paragraphList = new List<Paragraph>() { runItem };
+                        var paragraphList = new List<TextParagraph>() { runItem };
                         foreach (var para in item.Paras)
                         {
                             Parse(paragraphList, para, format);

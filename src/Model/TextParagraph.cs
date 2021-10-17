@@ -13,11 +13,11 @@ namespace Dox2Word.Model
         Warning,
     }
 
-    public class Paragraph : Collection<ITextRun>
+    public class TextParagraph : Collection<ITextRun>
     {
         public ParagraphType Type { get; }
 
-        public Paragraph(ParagraphType type = ParagraphType.Normal)
+        public TextParagraph(ParagraphType type = ParagraphType.Normal)
         {
             this.Type = type;
         }
