@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -58,13 +59,23 @@ namespace Dox2Word.Parser
                         Name = member.Name,
                         Descriptions = ParseDescriptions(member),
                         ReturnType = LinkedTextToString(member.Type) ?? "",
-                        ReturnDescription = ParaToParagraph(member.DetailedDescription?.Para.SelectMany(x => x.Parts)
-                            .OfType<DocSimpleSect>()
-                            .FirstOrDefault(x => x.Kind == DoxSimpleSectKind.Return)?.Para),
+                        ReturnDescription = ParseReturnDescription(member),
                         ArgsString = member.ArgsString ?? "",
                     };
-                    function.FunctionParameters.AddRange(ParseFunctionParameters(member));
+                    function.Parameters.AddRange(ParseParameters(member));
                     group.Functions.Add(function);
+                }
+                else if (member.Kind == DoxMemberKind.Define)
+                {
+                    var macro = new Macro()
+                    { 
+                        Name = member.Name,
+                        Descriptions = ParseDescriptions(member),
+                        ReturnDescription = ParseReturnDescription(member),
+                        Initializer = LinkedTextToString(member.Initializer) ?? "",
+                    };
+                    macro.Parameters.AddRange(ParseParameters(member));
+                    group.Macros.Add(macro);
                 }
                 else if (member.Kind == DoxMemberKind.Typedef)
                 {
@@ -77,26 +88,32 @@ namespace Dox2Word.Parser
                     };
                     group.Typedefs.Add(typedef);
                 }
+                else if (member.Kind == DoxMemberKind.Variable)
+                {
+                    group.GlobalVariables.Add(ParseVariable(member));
+                }
             }
 
             return group;
         }
 
-        private static IEnumerable<FunctionParameter> ParseFunctionParameters(MemberDef member)
+        private static IEnumerable<Parameter> ParseParameters(MemberDef member)
         {
             foreach (var param in member.Params)
             {
+                string name = param.DeclName ?? param.DefName ?? "";
+
                 // Find its docs...
                 var descriptionPara = member.DetailedDescription?.Para.SelectMany(x => x.ParameterLists)
                     .Where(x => x.Kind == DoxParamListKind.Param)
                     .SelectMany(x => x.ParameterItems)
-                    .FirstOrDefault(x => x.ParameterNameList.Select(x => x.ParameterName).Contains(param.DeclName))
+                    .FirstOrDefault(x => x.ParameterNameList.Select(x => x.ParameterName).Contains(name))
                     ?.ParameterDescription.Para.FirstOrDefault();
 
-                var functionParameter = new FunctionParameter()
+                var functionParameter = new Parameter()
                 {
-                    Name = param.DeclName ?? "",
-                    Type = LinkedTextToString(param.Type) ?? "",
+                    Name = name,
+                    Type = LinkedTextToString(param.Type),
                     Description = ParaToParagraph(descriptionPara),
                 };
 
@@ -121,17 +138,29 @@ namespace Dox2Word.Parser
                 .Where(x => x.Kind == DoxMemberKind.Variable);
             foreach (var member in members)
             {
-                var variable = new ClassVariable()
-                { 
-                    Name = member.Name ?? "",
-                    Type = LinkedTextToString(member.Type) ?? "",
-                    Definition = member.Definition ?? "",
-                    Descriptions = ParseDescriptions(member),
-                };
-                cls.Variables.Add(variable);
+                cls.Variables.Add(ParseVariable(member));
             }
 
             return cls;
+        }
+
+        private static Variable ParseVariable(MemberDef member)
+        {
+            var variable = new Variable()
+            {
+                Name = member.Name ?? "",
+                Type = LinkedTextToString(member.Type) ?? "",
+                Definition = member.Definition ?? "",
+                Descriptions = ParseDescriptions(member),
+            };
+            return variable;
+        }
+
+        private static Paragraph ParseReturnDescription(MemberDef member)
+        {
+            return ParaToParagraph(member.DetailedDescription?.Para.SelectMany(x => x.Parts)
+                .OfType<DocSimpleSect>()
+                .FirstOrDefault(x => x.Kind == DoxSimpleSectKind.Return)?.Para);
         }
 
         private static string? LinkedTextToString(LinkedText? linkedText)
@@ -152,10 +181,20 @@ namespace Dox2Word.Parser
         {
             var descriptions = new Descriptions()
             {
-                BriefDescription = ParaToParagraph(member.BriefDescription?.Para.FirstOrDefault()),
+                BriefDescription = ParasToParagraph(member.BriefDescription?.Para),
             };
-            descriptions.DetailedDescrpition.AddRange(ParasToParagraphs(member.DetailedDescription?.Para));
+            descriptions.DetailedDescription.AddRange(ParasToParagraphs(member.DetailedDescription?.Para));
             return descriptions;
+        }
+
+        private static Paragraph ParaToParagraph(DocPara? para)
+        {
+            return ParaToParagraphs(para).FirstOrDefault() ?? new Paragraph();
+        }
+
+        private static Paragraph ParasToParagraph(IEnumerable<DocPara>? paras)
+        {
+            return ParasToParagraphs(paras).FirstOrDefault() ?? new Paragraph();
         }
 
         private static IEnumerable<Paragraph> ParasToParagraphs(IEnumerable<DocPara>? paras)
@@ -163,43 +202,82 @@ namespace Dox2Word.Parser
             if (paras == null)
                 return Enumerable.Empty<Paragraph>();
 
-            return paras.Select(x => ParaToParagraph(x)).Where(x => x.Count > 0);
+            return paras.SelectMany(x => ParaToParagraphs(x)).Where(x => x.Count > 0);
         }
 
-        private static Paragraph ParaToParagraph(DocPara? para)
+        private static List<Paragraph> ParaToParagraphs(DocPara? para)
         {
-            var paragraph = new Paragraph();
+            var paragraphs = new List<Paragraph>();
 
             if (para == null)
-                return paragraph;
+                return paragraphs;
 
-            foreach (var run in Parse(para))
-            {
-                paragraph.Add(run);
-            }
+            paragraphs.Add(new Paragraph());
+            Parse(paragraphs, para, TextRunFormat.None);
 
-            IEnumerable<ITextRun> Parse(DocPara para)
+            static void Parse(List<Paragraph> paragraphs, DocPara? para, TextRunFormat format)
             {
+                void NewParagraph(ParagraphType type = ParagraphType.Normal) => paragraphs.Add(new Paragraph(type));
+
+                void Add(ITextRun textRun) => paragraphs[paragraphs.Count - 1].Add(textRun);
+                void AddTextRun(string text, TextRunFormat format) => Add(new TextRun(text, format));
+
+                if (para == null)
+                    return;
+
                 foreach (object? part in para.Parts)
                 {
-                    ITextRun? textRun = part switch
+                    switch (part)
                     {
-                        string s => new LiteralTextRun(s),
-                        BoldMarkup b => new TextRun(TextRunFormat.Bold, Parse(b)),
-                        ItalicMarkup i => new TextRun(TextRunFormat.Italic, Parse(i)),
-                        MonospaceMarkup m => new TextRun(TextRunFormat.Monospace, Parse(m)),
-                        XmlElement e => new LiteralTextRun(e.InnerText),
-                        // Ignore other types
-                        _ => null,
+                        case string s:
+                            AddTextRun(s, format);
+                            break;
+                        case DocSimpleSect s when s.Kind == DoxSimpleSectKind.Warning:
+                            NewParagraph(ParagraphType.Warning);
+                            Parse(paragraphs, s.Para, format);
+                            NewParagraph();
+                            break;
+                        case OrderedList o:
+                            ParseList(o, ListTextRunType.Number, format);
+                            break;
+                        case UnorderedList u:
+                            ParseList(u, ListTextRunType.Bullet, format);
+                            break;
+                        case BoldMarkup b:
+                            Parse(paragraphs, b, format | TextRunFormat.Bold);
+                            break;
+                        case ItalicMarkup i:
+                            Parse(paragraphs, i, format | TextRunFormat.Italic);
+                            break;
+                        case MonospaceMarkup m:
+                            Parse(paragraphs, m, format | TextRunFormat.Monospace);
+                            break;
+                        case XmlElement e:
+                            AddTextRun(e.InnerText, format);
+                            break;
                     };
-                    if (textRun != null)
+                }
+
+                void ParseList(DocList docList, ListTextRunType type, TextRunFormat format)
+                {
+                    var list = new ListTextRun(type);
+                    Add(list);
+                    foreach (var item in docList.Items)
                     {
-                        yield return textRun;
+                        var runItem = new ListTextRunItem();
+                        // It could be that the para contains a warning or something which will add
+                        // another paragraph. In this case, we'll just ignore it.
+                        var paragraphList = new List<Paragraph>() { runItem };
+                        foreach (var para in item.Paras)
+                        {
+                            Parse(paragraphList, para, format);
+                        }
+                        list.Items.Add(runItem);
                     }
                 }
             }
 
-            return paragraph;
+            return paragraphs;
         }
 
         private CompoundDef ParseDoxygenFile(string refId)

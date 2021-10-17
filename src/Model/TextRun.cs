@@ -1,37 +1,53 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 
 namespace Dox2Word.Model
 {
     public interface ITextRun { }
 
-    public class LiteralTextRun : ITextRun
-    {
-        public string Text { get; }
-
-        public LiteralTextRun(string text)
-        {
-            this.Text = text;
-        }
-    }
-
+    [Flags]
     public enum TextRunFormat
     {
-        Bold,
-        Italic,
-        Monospace,
+        None,
+        Bold = 1,
+        Italic = 2,
+        Monospace = 4,
     }
 
     public class TextRun : ITextRun
     {
         public TextRunFormat Format { get; }
 
-        public List<ITextRun> Children { get; }
+        public string Text { get; }
 
-        public TextRun(TextRunFormat format, IEnumerable<ITextRun> children)
+        public TextRun(string text, TextRunFormat format)
         {
+            this.Text = text;
             this.Format = format;
-            this.Children = children.ToList();
         }
+    }
+
+    public enum ListTextRunType
+    {
+        Number,
+        Bullet,
+    }
+
+    public class ListTextRun : ITextRun
+    {
+        public ListTextRunType Type { get; }
+
+        public List<ListTextRunItem> Items { get; } = new();
+
+        public ListTextRun(ListTextRunType type)
+        {
+            this.Type = type;
+        }
+    }
+
+    public class ListTextRunItem : Paragraph
+    {
     }
 }

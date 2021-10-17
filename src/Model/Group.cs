@@ -14,6 +14,8 @@ namespace Dox2Word.Model
         public List<string> Files { get; } = new();
         public List<Class> Classes { get; } = new();
         public List<Typedef> Typedefs { get; } = new();
+        public List<Variable> GlobalVariables { get; } = new();
+        public List<Macro> Macros { get; } = new();
         public List<Function> Functions { get; } = new();
     }
 }

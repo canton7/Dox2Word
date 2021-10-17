@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Dox2Word.Model
 {
-    public class ClassVariable
+    public class Variable
     {
         public string Name { get; set; } = null!;
         public string Type { get; set; } = null!;

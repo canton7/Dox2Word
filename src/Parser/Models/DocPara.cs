@@ -15,6 +15,8 @@ namespace Dox2Word.Parser.Models
 
         [XmlText(typeof(string))]
         [XmlElement("simplesect", typeof(DocSimpleSect))]
+        [XmlElement("orderedlist", typeof(OrderedList))]
+        [XmlElement("itemizedlist", typeof(UnorderedList))]
         [XmlElement("bold", typeof(BoldMarkup))]
         [XmlElement("emphasis", typeof(ItalicMarkup))]
         [XmlElement("computeroutput", typeof(MonospaceMarkup))]

@@ -10,6 +10,6 @@ namespace Dox2Word.Model
     {
         public string Name { get; set; } = null!;
         public Descriptions Descriptions { get; set; } = null!;
-        public List<ClassVariable> Variables { get; } = new();
+        public List<Variable> Variables { get; } = new();
     }
 }

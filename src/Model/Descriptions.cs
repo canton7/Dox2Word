@@ -9,6 +9,6 @@ namespace Dox2Word.Model
     public class Descriptions
     {
         public Paragraph BriefDescription { get; set; } = null!;
-        public List<Paragraph> DetailedDescrpition { get; } = new();
+        public List<Paragraph> DetailedDescription { get; } = new();
     }
 }

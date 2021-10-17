@@ -1,14 +1,17 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Dox2Word.Model
 {
-    public class Function
+    public class Macro
     {
         public string Name { get; set; } = null!;
         public Descriptions Descriptions { get; set; } = null!;
-        public string ReturnType { get; set; } = null!;
         public Paragraph ReturnDescription { get; set; } = null!;
-        public string ArgsString { get; set; } = null!;
+        public string Initializer { get; set; } = null!;
         public List<Parameter> Parameters { get; } = new();
     }
 }

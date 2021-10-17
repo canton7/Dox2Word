@@ -10,6 +10,7 @@
  *
  * A list of things:
  *  - Thing 1
+ *    - Thing 1.1
  *  - Thing 2
  * 
  * @{
@@ -18,6 +19,20 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+
+/// This is a macro
+///
+/// @param x Thing
+/// @returns @c x doubled
+#define COMMON_UNIT_MACRO(x) (uint32_t)(x * 2)
+
+/// This is a constant
+#define COMMON_UNIT_CONST (uint32_t)3
+
+/**
+ * This is a global variable
+ */
+extern bool CommonUnit_Global;
 
 /**
  * A test structure

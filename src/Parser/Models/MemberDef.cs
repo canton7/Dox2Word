@@ -32,5 +32,8 @@ namespace Dox2Word.Parser.Models
 
         [XmlElement("detaileddescription")]
         public Description? DetailedDescription { get; set; }
+
+        [XmlElement("initializer")]
+        public LinkedText? Initializer { get; set; }
     }
 }

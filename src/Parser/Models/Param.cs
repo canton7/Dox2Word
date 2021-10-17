@@ -14,5 +14,8 @@ namespace Dox2Word.Parser.Models
 
         [XmlElement("declname")]
         public string? DeclName { get; set; }
+
+        [XmlElement("defname")]
+        public string? DefName { get; set; }
     }
 }
