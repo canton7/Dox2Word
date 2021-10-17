@@ -10,13 +10,19 @@ namespace Dox2Word.Parser.Models
 {
     public class DocPara
     {
+        [XmlElement("parameterlist")]
+        public List<DocParamList> ParameterLists { get; } = new();
+
         [XmlText(typeof(string))]
-        [XmlElement("parameterlist", typeof(DocParamList))]
         [XmlElement("simplesect", typeof(DocSimpleSect))]
+        [XmlElement("bold", typeof(BoldMarkup))]
+        [XmlElement("emphasis", typeof(ItalicMarkup))]
+        [XmlElement("computeroutput", typeof(MonospaceMarkup))]
         [XmlAnyElement]
         public List<object> Parts { get; } = new();
-
-        //[XmlAnyElement]
-        //public List<XmlElement> Test { get; } = new();
     }
+
+    public class BoldMarkup : DocPara { }
+    public class ItalicMarkup : DocPara { }
+    public class MonospaceMarkup : DocPara { }
 }

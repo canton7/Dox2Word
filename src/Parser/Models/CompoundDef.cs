@@ -7,13 +7,16 @@ using System.Xml.Serialization;
 
 namespace Dox2Word.Parser.Models
 {
-    public class CompoundDef
+    public class CompoundDef : IDoxDescribable
     {
         [XmlAttribute("id")]
         public string Id { get; set; } = null!;
 
         [XmlAttribute("kind")]
         public CompoundKind Kind { get; set; }
+
+        [XmlElement("compoundname")]
+        public string? CompoundName { get; set; }
 
         [XmlElement("title")]
         public string Title { get; set; } = null!;

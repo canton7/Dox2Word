@@ -37,37 +37,45 @@ namespace Dox2Word.Parser
 
         private Group ParseGroup(string refId)
         {
-            string filePath = Path.Combine(this.basePath, refId + ".xml");
-            var file = Parse<DoxygenFile>(filePath);
-
-            if (file.CompoundDefs.Count != 1)
-                throw new ParserException($"File {filePath}: expected 1 compountDef, got {file.CompoundDefs.Count}");
-            var compoundDef = file.CompoundDefs[0];
+            var compoundDef = this.ParseDoxygenFile(refId);
 
             var group = new Group()
             {
                 Name = compoundDef.Title,
+                Descriptions = ParseDescriptions(compoundDef),
             };
+            group.SubGroups.AddRange(compoundDef.InnerGroups.Select(x => this.ParseGroup(x.RefId)));
+            group.Files.AddRange(compoundDef.InnerFiles.Select(x => x.Name));
+            group.Classes.AddRange(compoundDef.InnerClasses.Select(x => this.ParseClass(x.RefId)));
 
-            foreach (var innerGroup in compoundDef.InnerGroups)
+            var members = compoundDef.Sections.SelectMany(x => x.Members);
+            foreach (var member in members)
             {
-                group.SubGroups.Add(this.ParseGroup(innerGroup.RefId));
-            }
-
-            foreach (var section in compoundDef.Sections)
-            {
-                foreach (var member in section.Members)
+                if (member.Kind == DoxMemberKind.Function)
                 {
                     var function = new Function()
                     {
                         Name = member.Name,
-                        BriefDescription = ParaToParagraph(member.BriefDescription?.Para.FirstOrDefault()),
+                        Descriptions = ParseDescriptions(member),
                         ReturnType = LinkedTextToString(member.Type) ?? "",
+                        ReturnDescription = ParaToParagraph(member.DetailedDescription?.Para.SelectMany(x => x.Parts)
+                            .OfType<DocSimpleSect>()
+                            .FirstOrDefault(x => x.Kind == DoxSimpleSectKind.Return)?.Para),
                         ArgsString = member.ArgsString ?? "",
                     };
-                    function.DetailedDescription.AddRange(ParasToParagraphs(member.DetailedDescription?.Para));
                     function.FunctionParameters.AddRange(ParseFunctionParameters(member));
                     group.Functions.Add(function);
+                }
+                else if (member.Kind == DoxMemberKind.Typedef)
+                {
+                    var typedef = new Typedef()
+                    {
+                        Name = member.Name,
+                        Type = LinkedTextToString(member.Type) ?? "",
+                        Definition = member.Definition ?? "",
+                        Descriptions = ParseDescriptions(member),
+                    };
+                    group.Typedefs.Add(typedef);
                 }
             }
 
@@ -79,8 +87,7 @@ namespace Dox2Word.Parser
             foreach (var param in member.Params)
             {
                 // Find its docs...
-                var descriptionPara = member.DetailedDescription?.Para.SelectMany(x => x.Parts)
-                    .OfType<DocParamList>()
+                var descriptionPara = member.DetailedDescription?.Para.SelectMany(x => x.ParameterLists)
                     .Where(x => x.Kind == DoxParamListKind.Param)
                     .SelectMany(x => x.ParameterItems)
                     .FirstOrDefault(x => x.ParameterNameList.Select(x => x.ParameterName).Contains(param.DeclName))
@@ -97,6 +104,36 @@ namespace Dox2Word.Parser
             }
         }
 
+        private Class ParseClass(string refId)
+        {
+            var compoundDef = this.ParseDoxygenFile(refId);
+
+            if (compoundDef.Kind != CompoundKind.Struct)
+                throw new ParserException($"Don't konw how to parse class kind {compoundDef.Kind} in {refId}");
+
+            var cls = new Class()
+            {
+                Name = compoundDef.CompoundName ?? "",
+                Descriptions = ParseDescriptions(compoundDef),
+            };
+
+            var members = compoundDef.Sections.SelectMany(x => x.Members)
+                .Where(x => x.Kind == DoxMemberKind.Variable);
+            foreach (var member in members)
+            {
+                var variable = new ClassVariable()
+                { 
+                    Name = member.Name ?? "",
+                    Type = LinkedTextToString(member.Type) ?? "",
+                    Definition = member.Definition ?? "",
+                    Descriptions = ParseDescriptions(member),
+                };
+                cls.Variables.Add(variable);
+            }
+
+            return cls;
+        }
+
         private static string? LinkedTextToString(LinkedText? linkedText)
         {
             if (linkedText == null)
@@ -109,6 +146,16 @@ namespace Dox2Word.Parser
                     RefText r => r.Name,
                     _ => throw new ParserException($"Unknown element in LinkedText: {x}"),
                 }));
+        }
+
+        private static Descriptions ParseDescriptions(IDoxDescribable member)
+        {
+            var descriptions = new Descriptions()
+            {
+                BriefDescription = ParaToParagraph(member.BriefDescription?.Para.FirstOrDefault()),
+            };
+            descriptions.DetailedDescrpition.AddRange(ParasToParagraphs(member.DetailedDescription?.Para));
+            return descriptions;
         }
 
         private static IEnumerable<Paragraph> ParasToParagraphs(IEnumerable<DocPara>? paras)
@@ -126,22 +173,42 @@ namespace Dox2Word.Parser
             if (para == null)
                 return paragraph;
 
-            foreach (object? part in para.Parts)
+            foreach (var run in Parse(para))
             {
-                var textRun = part switch
+                paragraph.Add(run);
+            }
+
+            IEnumerable<ITextRun> Parse(DocPara para)
+            {
+                foreach (object? part in para.Parts)
                 {
-                    string s => new TextRun(s),
-                    XmlElement e => new TextRun(e.InnerText, e.Name),
-                    // Ignore other types
-                    _ => null,
-                };
-                if (textRun != null)
-                {
-                    paragraph.Add(textRun);
+                    ITextRun? textRun = part switch
+                    {
+                        string s => new LiteralTextRun(s),
+                        BoldMarkup b => new TextRun(TextRunFormat.Bold, Parse(b)),
+                        ItalicMarkup i => new TextRun(TextRunFormat.Italic, Parse(i)),
+                        MonospaceMarkup m => new TextRun(TextRunFormat.Monospace, Parse(m)),
+                        XmlElement e => new LiteralTextRun(e.InnerText),
+                        // Ignore other types
+                        _ => null,
+                    };
+                    if (textRun != null)
+                    {
+                        yield return textRun;
+                    }
                 }
             }
 
             return paragraph;
+        }
+
+        private CompoundDef ParseDoxygenFile(string refId)
+        {
+            string filePath = Path.Combine(this.basePath, refId + ".xml");
+            var file = Parse<DoxygenFile>(filePath);
+            if (file.CompoundDefs.Count != 1)
+                throw new ParserException($"File {filePath}: expected 1 compoundDef, got {file.CompoundDefs.Count}");
+            return file.CompoundDefs[0];
         }
 
         private static class SerializerCache<T>

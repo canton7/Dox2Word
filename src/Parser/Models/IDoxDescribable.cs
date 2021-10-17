@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 
 namespace Dox2Word.Parser.Models
 {
-    public class DocMarkup
+    public interface IDoxDescribable
     {
-
+        Description? BriefDescription { get; }
+        Description? DetailedDescription { get; }
     }
 }

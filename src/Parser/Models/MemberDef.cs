@@ -7,7 +7,7 @@ using System.Xml.Serialization;
 
 namespace Dox2Word.Parser.Models
 {
-    public class MemberDef
+    public class MemberDef : IDoxDescribable
     {
         [XmlAttribute("kind")]
         public DoxMemberKind Kind { get; set; }
