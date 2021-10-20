@@ -9,11 +9,12 @@ namespace Dox2Word.Generator
 {
     public static class Extensions
     {
-        public static void FormatCode(this Run run)
+        public static Run FormatCode(this Run run)
         {
             run.RunProperties ??= new RunProperties();
-            run.RunProperties.FontSize = new FontSize() { Val = "10" };
+            run.RunProperties.FontSize = new FontSize() { Val = "20" };
             run.PrependChild(new RunFonts() { Ascii = "Consolas" });
+            return run;
         }
     }
 }

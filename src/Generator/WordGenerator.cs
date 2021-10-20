@@ -17,7 +17,8 @@ namespace Dox2Word.Generator
 
         private readonly Stream stream;
 
-        private readonly List<Paragraph> paragraphs = new();
+        private readonly List<OpenXmlElement> bodyElements = new();
+        private NumberingDefinitionsPart? numberingPart;
 
         public WordGenerator(Stream stream)
         {
@@ -26,17 +27,24 @@ namespace Dox2Word.Generator
 
         public void Generate(Project project)
         {
-            this.paragraphs.Clear();
+            this.bodyElements.Clear();
 
             using var doc = WordprocessingDocument.Open(this.stream, isEditable: true);
             var body = doc.MainDocumentPart!.Document.Body!;
+            this.numberingPart = doc.MainDocumentPart.NumberingDefinitionsPart;
+            if (this.numberingPart == null)
+            {
+                this.numberingPart = doc.MainDocumentPart.AddNewPart<NumberingDefinitionsPart>("NumberingDefinitionsPart001");
+                var element = new Numbering();
+                element.Save(this.numberingPart);
+            }
 
             foreach (var group in project.Groups)
             {
                 this.WriteGroup(group, 2);
             }
 
-            foreach (var paragraph in this.paragraphs)
+            foreach (var paragraph in this.bodyElements)
             {
                 body.AppendChild(paragraph);
             }
@@ -45,15 +53,45 @@ namespace Dox2Word.Generator
         private void WriteGroup(Group group, int headingLevel)
         {
             this.WriteHeading(group.Name, headingLevel);
-            
-            this.WriteDescriptions(group.Descriptions);
 
+            this.Append(CreateDescriptions(group.Descriptions));
+
+            this.WriteClasses(group.Classes, headingLevel + 1);
             this.WriteGlobalVariables(group.GlobalVariables, headingLevel + 1);
             this.WriteFunctions(group.Functions, headingLevel + 1);
 
             foreach (var subGroup in group.SubGroups)
             {
                 this.WriteGroup(subGroup, headingLevel + 1);
+            }
+        }
+
+        private void WriteClasses(List<Class> classes, int headingLevel)
+        {
+            if (classes.Count == 0)
+                return;
+
+            this.WriteHeading("Structs", headingLevel);
+
+            foreach (var cls in classes)
+            {
+                this.WriteHeading(cls.Name, headingLevel + 1);
+
+                this.Append(CreateDescriptions(cls.Descriptions));
+
+                if (cls.Variables.Count > 0)
+                {
+                    var table = CreateTable();
+                    this.bodyElements.Add(table);
+                    foreach (var variable in cls.Variables)
+                    {
+                        var row = table.AppendChild(new TableRow());
+                        var nameCell = row.AppendChild(CreateTableCell());
+                        nameCell.Append(new Paragraph(new Run(new Text($"{variable.Type} {variable.Name}")).FormatCode()));
+                        var descriptionCell = row.AppendChild(CreateTableCell()); ;
+                        descriptionCell.Append(CreateDescriptions(variable.Descriptions));
+                    }
+                }
             }
         }
 
@@ -68,11 +106,11 @@ namespace Dox2Word.Generator
             {
                 this.WriteHeading(variable.Name, headingLevel + 1);
 
-                var paragraph = this.CreateParagraph();
+                var paragraph = this.AppendChild(new Paragraph());
                 var run = paragraph.AppendChild(new Run(new Text(variable.Definition)));
                 run.FormatCode();
 
-                this.WriteDescriptions(variable.Descriptions);
+                this.Append(CreateDescriptions(variable.Descriptions));
             }
         }
 
@@ -87,33 +125,50 @@ namespace Dox2Word.Generator
             {
                 this.WriteHeading(function.Name, headingLevel + 1);
 
-                var paragraph = this.CreateParagraph();
+                var paragraph = this.AppendChild(new Paragraph());
                 var run = paragraph.AppendChild(new Run(new Text(function.Definition), new Text(function.ArgsString)));
                 run.FormatCode();
+
+                this.Append(CreateDescriptions(function.Descriptions));
+
+                if (function.Parameters.Count > 0)
+                {
+                    var table = CreateTable();
+                    this.bodyElements.Add(table);
+                    foreach (var parameter in function.Parameters)
+                    {
+                        var row = table.AppendChild(new TableRow());
+                        var nameCell = row.AppendChild(CreateTableCell());
+                        nameCell.AppendChild(new Paragraph(new Run(new Text(parameter.Name)).FormatCode()));
+                        var descriptionCell = row.AppendChild(CreateTableCell());
+                        descriptionCell.AppendChild(CreateTextParagraph(parameter.Description));
+                    }
+                }
             }
         }
 
         private void WriteHeading(string text, int headingLevel)
         {
-            var heading = this.CreateParagraph();
+            var heading = this.AppendChild(new Paragraph());
             heading.AppendChild(new Run(new Text(text)));
             heading.ParagraphProperties = new ParagraphProperties(new ParagraphStyleId() { Val = $"Heading{headingLevel}" });
         }
 
-        private void WriteDescriptions(Descriptions descriptions)
+        private static IEnumerable<OpenXmlElement> CreateDescriptions(Descriptions descriptions)
         {
-            this.WriteTextParagraph(descriptions.BriefDescription);
+            yield return CreateTextParagraph(descriptions.BriefDescription);
             foreach (var paragraph in descriptions.DetailedDescription)
             {
-                this.WriteTextParagraph(paragraph);
+                yield return CreateTextParagraph(paragraph);
             }
         }
 
-        private void WriteTextParagraph(TextParagraph textParagraph)
+        private static Paragraph CreateTextParagraph(TextParagraph textParagraph)
         {
+            var paragraph = new Paragraph();
+
             // TODO: Type (warning, etc)
 
-            var paragraph = this.CreateParagraph();
             foreach (var textRun in textParagraph)
             {
                 switch (textRun)
@@ -132,13 +187,97 @@ namespace Dox2Word.Generator
                         break;
                 }
             }
+
+            return paragraph;
         }
 
-        private Paragraph CreateParagraph()
+        private void CreateList(ListTextRun textRun)
         {
-            var p = new Paragraph();
-            this.paragraphs.Add(p);
-            return p;
+            // From https://stackoverflow.com/a/38881677/1086121
+
+            // Insert an AbstractNum into the numbering part numbering list.  The order seems to matter or it will not pass the 
+            // Open XML SDK Productity Tools validation test.  AbstractNum comes first and then NumberingInstance and we want to
+            // insert this AFTER the last AbstractNum and BEFORE the first NumberingInstance or we will get a validation error.
+            int abstractNumberId = this.numberingPart!.Numbering.Elements<AbstractNum>().Count() + 1;
+            var abstractLevel = new Level(new NumberingFormat() { Val = NumberFormatValues.Bullet }, new LevelText() { Val = "·" }) { LevelIndex = 0 };
+            var abstractNum = new AbstractNum(abstractLevel) { AbstractNumberId = abstractNumberId };
+
+            if (abstractNumberId == 1)
+            {
+                this.numberingPart.Numbering.Append(abstractNum);
+            }
+            else
+            {
+                var lastAbstractNum = this.numberingPart.Numbering.Elements<AbstractNum>().Last();
+                this.numberingPart.Numbering.InsertAfter(abstractNum, lastAbstractNum);
+            }
+
+            // Insert an NumberingInstance into the numbering part numbering list.  The order seems to matter or it will not pass the 
+            // Open XML SDK Productity Tools validation test.  AbstractNum comes first and then NumberingInstance and we want to
+            // insert this AFTER the last NumberingInstance and AFTER all the AbstractNum entries or we will get a validation error.
+            int numberId = this.numberingPart!.Numbering.Elements<NumberingInstance>().Count() + 1;
+            var numberingInstance = new NumberingInstance() { NumberID = numberId };
+            numberingInstance.AppendChild(new AbstractNumId() { Val = abstractNumberId });
+
+            if (numberId == 1)
+            {
+                this.numberingPart.Numbering.Append(numberingInstance);
+            }
+            else
+            {
+                var lastNumberingInstance = this.numberingPart.Numbering.Elements<NumberingInstance>().Last();
+                this.numberingPart.Numbering.InsertAfter(numberingInstance, lastNumberingInstance);
+            }
+
+
+        }
+
+        private T AppendChild<T>(T child) where T : OpenXmlElement
+        {
+            this.bodyElements.Add(child);
+            return child;
+        }
+
+        private void Append(IEnumerable<OpenXmlElement> children)
+        {
+            this.bodyElements.AddRange(children);
+        }
+
+        private static Table CreateTable()
+        {
+            var table = new Table();
+
+            var tableProperties = table.AppendChild(new TableProperties());
+            var tableBorders = tableProperties.AppendChild(new TableBorders());
+
+            var topBorder = tableBorders.AppendChild(new TopBorder());
+            topBorder.Val = new EnumValue<BorderValues>(BorderValues.Single);
+
+            var rightBorder = tableBorders.AppendChild(new RightBorder());
+            rightBorder.Val = new EnumValue<BorderValues>(BorderValues.Single);
+
+            var bottomBorder = tableBorders.AppendChild(new BottomBorder());
+            bottomBorder.Val = new EnumValue<BorderValues>(BorderValues.Single);
+
+            var leftBorder = tableBorders.AppendChild(new LeftBorder());
+            leftBorder.Val = new EnumValue<BorderValues>(BorderValues.Single);
+
+            var insideHorizontalBorder = tableBorders.AppendChild(new InsideHorizontalBorder());
+            insideHorizontalBorder.Val = new EnumValue<BorderValues>(BorderValues.Single);
+
+            var insideVerticalBorder = tableBorders.AppendChild(new InsideVerticalBorder());
+            insideVerticalBorder.Val = new EnumValue<BorderValues>(BorderValues.Single);
+
+            return table;
+        }
+
+        private static TableCell CreateTableCell()
+        {
+            var cell = new TableCell();
+            //cell.AppendChild(new TableCellProperties(
+            //    new TableCellVerticalAlignment() { Val = TableVerticalAlignmentValues.Center }
+            //));
+            return cell;
         }
     }
 }
