@@ -9,9 +9,9 @@
  * @warning This is a very important warning!
  *
  * A list of things:
- *  - Thing 1
- *    - Thing 1.1
- *  - Thing 2
+ *  1. Thing 1
+ *    1. Thing 1.1
+ *  2. Thing 2
  * 
  * @{
  * @file

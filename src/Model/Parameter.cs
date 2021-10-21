@@ -4,6 +4,6 @@
     {
         public string Name { get; set; } = null!;
         public string? Type { get; set; }
-        public TextParagraph Description { get; set; } = null!;
+        public IParagraph Description { get; set; } = null!;
     }
 }

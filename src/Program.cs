@@ -14,7 +14,7 @@ namespace Dox2Word
             File.Delete("../../../test/C/Docs/Output.docx");
             File.Copy("../../../test/C/Docs/Template.docx", "../../../test/C/Docs/Output.docx");
             using var output = File.Open("../../../test/C/Docs/Output.docx", FileMode.Open);
-            new WordGenerator(output).Generate(project);
+            WordGenerator.Generate(output, project);
         }
     }
 }

@@ -10,7 +10,7 @@ namespace Dox2Word.Model
     {
         public string Name { get; set; } = null!;
         public Descriptions Descriptions { get; set; } = null!;
-        public TextParagraph ReturnDescription { get; set; } = null!;
+        public IParagraph ReturnDescription { get; set; } = null!;
         public string Initializer { get; set; } = null!;
         public List<Parameter> Parameters { get; } = new();
     }

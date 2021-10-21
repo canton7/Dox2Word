@@ -8,7 +8,7 @@ namespace Dox2Word.Model
 {
     public class Descriptions
     {
-        public TextParagraph BriefDescription { get; set; } = null!;
-        public List<TextParagraph> DetailedDescription { get; } = new();
+        public IParagraph BriefDescription { get; set; } = null!;
+        public List<IParagraph> DetailedDescription { get; } = new();
     }
 }

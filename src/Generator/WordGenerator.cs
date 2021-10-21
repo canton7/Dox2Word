@@ -15,29 +15,34 @@ namespace Dox2Word.Generator
     {
         private const string Placeholder = "<INSERT HERE>";
 
-        private readonly Stream stream;
+        private readonly WordprocessingDocument doc;
 
         private readonly List<OpenXmlElement> bodyElements = new();
-        private NumberingDefinitionsPart? numberingPart;
 
-        public WordGenerator(Stream stream)
+        private readonly ListStyles listStyles;
+
+        public static void Generate(Stream stream, Project project)
         {
-            this.stream = stream;
+            using var doc = WordprocessingDocument.Open(stream, isEditable: true);
+            new WordGenerator(doc).Generate(project);
+        }
+
+        private WordGenerator(WordprocessingDocument doc)
+        {
+            this.doc = doc;
+            var numberingPart = doc.MainDocumentPart!.NumberingDefinitionsPart!;
+            if (numberingPart == null)
+            {
+                numberingPart = doc.MainDocumentPart.AddNewPart<NumberingDefinitionsPart>("NumberingDefinitionsPart001");
+                new Numbering().Save(numberingPart);
+            }
+
+            this.listStyles = new ListStyles(numberingPart);
         }
 
         public void Generate(Project project)
         {
-            this.bodyElements.Clear();
-
-            using var doc = WordprocessingDocument.Open(this.stream, isEditable: true);
-            var body = doc.MainDocumentPart!.Document.Body!;
-            this.numberingPart = doc.MainDocumentPart.NumberingDefinitionsPart;
-            if (this.numberingPart == null)
-            {
-                this.numberingPart = doc.MainDocumentPart.AddNewPart<NumberingDefinitionsPart>("NumberingDefinitionsPart001");
-                var element = new Numbering();
-                element.Save(this.numberingPart);
-            }
+            var body = this.doc.MainDocumentPart!.Document.Body!;
 
             foreach (var group in project.Groups)
             {
@@ -54,7 +59,7 @@ namespace Dox2Word.Generator
         {
             this.WriteHeading(group.Name, headingLevel);
 
-            this.Append(CreateDescriptions(group.Descriptions));
+            this.Append(this.CreateDescriptions(group.Descriptions));
 
             this.WriteClasses(group.Classes, headingLevel + 1);
             this.WriteGlobalVariables(group.GlobalVariables, headingLevel + 1);
@@ -77,7 +82,7 @@ namespace Dox2Word.Generator
             {
                 this.WriteHeading(cls.Name, headingLevel + 1);
 
-                this.Append(CreateDescriptions(cls.Descriptions));
+                this.Append(this.CreateDescriptions(cls.Descriptions));
 
                 if (cls.Variables.Count > 0)
                 {
@@ -89,7 +94,7 @@ namespace Dox2Word.Generator
                         var nameCell = row.AppendChild(CreateTableCell());
                         nameCell.Append(new Paragraph(new Run(new Text($"{variable.Type} {variable.Name}")).FormatCode()));
                         var descriptionCell = row.AppendChild(CreateTableCell()); ;
-                        descriptionCell.Append(CreateDescriptions(variable.Descriptions));
+                        descriptionCell.Append(this.CreateDescriptions(variable.Descriptions));
                     }
                 }
             }
@@ -110,7 +115,7 @@ namespace Dox2Word.Generator
                 var run = paragraph.AppendChild(new Run(new Text(variable.Definition)));
                 run.FormatCode();
 
-                this.Append(CreateDescriptions(variable.Descriptions));
+                this.Append(this.CreateDescriptions(variable.Descriptions));
             }
         }
 
@@ -129,7 +134,7 @@ namespace Dox2Word.Generator
                 var run = paragraph.AppendChild(new Run(new Text(function.Definition), new Text(function.ArgsString)));
                 run.FormatCode();
 
-                this.Append(CreateDescriptions(function.Descriptions));
+                this.Append(this.CreateDescriptions(function.Descriptions));
 
                 if (function.Parameters.Count > 0)
                 {
@@ -141,7 +146,7 @@ namespace Dox2Word.Generator
                         var nameCell = row.AppendChild(CreateTableCell());
                         nameCell.AppendChild(new Paragraph(new Run(new Text(parameter.Name)).FormatCode()));
                         var descriptionCell = row.AppendChild(CreateTableCell());
-                        descriptionCell.AppendChild(CreateTextParagraph(parameter.Description));
+                        descriptionCell.Append(this.CreateParagraph(parameter.Description));
                     }
                 }
             }
@@ -154,82 +159,86 @@ namespace Dox2Word.Generator
             heading.ParagraphProperties = new ParagraphProperties(new ParagraphStyleId() { Val = $"Heading{headingLevel}" });
         }
 
-        private static IEnumerable<OpenXmlElement> CreateDescriptions(Descriptions descriptions)
+        private IEnumerable<OpenXmlElement> CreateDescriptions(Descriptions descriptions)
         {
-            yield return CreateTextParagraph(descriptions.BriefDescription);
+            foreach (var p in this.CreateParagraph(descriptions.BriefDescription))
+            {
+                yield return p;
+            }
             foreach (var paragraph in descriptions.DetailedDescription)
             {
-                yield return CreateTextParagraph(paragraph);
+                foreach (var p in this.CreateParagraph(paragraph))
+                {
+                    yield return p;
+                }
             }
         }
 
-        private static Paragraph CreateTextParagraph(TextParagraph textParagraph)
+        private IEnumerable<Paragraph> CreateParagraph(IParagraph inputParagraph)
         {
-            var paragraph = new Paragraph();
-
             // TODO: Type (warning, etc)
 
+            switch (inputParagraph)
+            {
+                case TextParagraph textParagraph:
+                    yield return this.CreateTextParagraph(textParagraph);
+                    break;
+
+                case ListParagraph listParagraph:
+                    foreach (var p in this.CreateListParagraph(listParagraph))
+                    {
+                        yield return p;
+                    }
+                    break;
+            }
+        }
+
+        private Paragraph CreateTextParagraph(TextParagraph textParagraph)
+        {
+            var paragraph = new Paragraph();
             foreach (var textRun in textParagraph)
             {
-                switch (textRun)
+                var run = paragraph.AppendChild(new Run(new Text(textRun.Text) { Space = SpaceProcessingModeValues.Preserve }));
+                run.RunProperties = new RunProperties()
                 {
-                    case TextRun t:
-                        var run = paragraph.AppendChild(new Run(new Text(t.Text) { Space = SpaceProcessingModeValues.Preserve }));
-                        run.RunProperties = new RunProperties()
+                    Bold = textRun.Format.HasFlag(TextRunFormat.Bold) ? new Bold() : null,
+                    Italic = textRun.Format.HasFlag(TextRunFormat.Italic) ? new Italic() : null,
+                };
+                if (textRun.Format.HasFlag(TextRunFormat.Monospace))
+                {
+                    run.PrependChild(new RunFonts() { Ascii = "Consolas" });
+                }
+            }
+            return paragraph;
+        }
+
+        private IEnumerable<Paragraph> CreateListParagraph(ListParagraph listParagraph, int level = 0)
+        {
+            int numberId = this.listStyles.CreateList(listParagraph.Type);
+
+            foreach (var listItem in listParagraph.Items)
+            {
+                var paragraphProperties = new ParagraphProperties();
+                paragraphProperties.AppendChild(new NumberingProperties(
+                    new NumberingLevelReference() { Val = level },
+                    new NumberingId() { Val = numberId }));
+
+                switch (listItem)
+                {
+                    case TextParagraph textParagraph:
+                        var paragraph = this.CreateTextParagraph(textParagraph);
+                        paragraph.ParagraphProperties = paragraphProperties;
+                        yield return paragraph;
+                        break;
+
+                    case ListParagraph childListParagraph:
+                        foreach (var p in this.CreateListParagraph(childListParagraph, level + 1))
                         {
-                            Bold = t.Format.HasFlag(TextRunFormat.Bold) ? new Bold() : null,
-                            Italic = t.Format.HasFlag(TextRunFormat.Italic) ? new Italic() : null,
-                        };
-                        if (t.Format.HasFlag(TextRunFormat.Monospace))
-                        {
-                            run.PrependChild(new RunFonts() { Ascii = "Consolas" });
+                            yield return p;
                         }
                         break;
                 }
             }
-
-            return paragraph;
-        }
-
-        private void CreateList(ListTextRun textRun)
-        {
-            // From https://stackoverflow.com/a/38881677/1086121
-
-            // Insert an AbstractNum into the numbering part numbering list.  The order seems to matter or it will not pass the 
-            // Open XML SDK Productity Tools validation test.  AbstractNum comes first and then NumberingInstance and we want to
-            // insert this AFTER the last AbstractNum and BEFORE the first NumberingInstance or we will get a validation error.
-            int abstractNumberId = this.numberingPart!.Numbering.Elements<AbstractNum>().Count() + 1;
-            var abstractLevel = new Level(new NumberingFormat() { Val = NumberFormatValues.Bullet }, new LevelText() { Val = "·" }) { LevelIndex = 0 };
-            var abstractNum = new AbstractNum(abstractLevel) { AbstractNumberId = abstractNumberId };
-
-            if (abstractNumberId == 1)
-            {
-                this.numberingPart.Numbering.Append(abstractNum);
-            }
-            else
-            {
-                var lastAbstractNum = this.numberingPart.Numbering.Elements<AbstractNum>().Last();
-                this.numberingPart.Numbering.InsertAfter(abstractNum, lastAbstractNum);
-            }
-
-            // Insert an NumberingInstance into the numbering part numbering list.  The order seems to matter or it will not pass the 
-            // Open XML SDK Productity Tools validation test.  AbstractNum comes first and then NumberingInstance and we want to
-            // insert this AFTER the last NumberingInstance and AFTER all the AbstractNum entries or we will get a validation error.
-            int numberId = this.numberingPart!.Numbering.Elements<NumberingInstance>().Count() + 1;
-            var numberingInstance = new NumberingInstance() { NumberID = numberId };
-            numberingInstance.AppendChild(new AbstractNumId() { Val = abstractNumberId });
-
-            if (numberId == 1)
-            {
-                this.numberingPart.Numbering.Append(numberingInstance);
-            }
-            else
-            {
-                var lastNumberingInstance = this.numberingPart.Numbering.Elements<NumberingInstance>().Last();
-                this.numberingPart.Numbering.InsertAfter(numberingInstance, lastNumberingInstance);
-            }
-
-
         }
 
         private T AppendChild<T>(T child) where T : OpenXmlElement

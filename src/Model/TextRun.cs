@@ -5,8 +5,6 @@ using System.Linq;
 
 namespace Dox2Word.Model
 {
-    public interface ITextRun { }
-
     [Flags]
     public enum TextRunFormat
     {
@@ -16,7 +14,7 @@ namespace Dox2Word.Model
         Monospace = 4,
     }
 
-    public class TextRun : ITextRun
+    public class TextRun
     {
         public TextRunFormat Format { get; }
 
@@ -27,27 +25,5 @@ namespace Dox2Word.Model
             this.Text = text;
             this.Format = format;
         }
-    }
-
-    public enum ListTextRunType
-    {
-        Number,
-        Bullet,
-    }
-
-    public class ListTextRun : ITextRun
-    {
-        public ListTextRunType Type { get; }
-
-        public List<ListTextRunItem> Items { get; } = new();
-
-        public ListTextRun(ListTextRunType type)
-        {
-            this.Type = type;
-        }
-    }
-
-    public class ListTextRunItem : TextParagraph
-    {
     }
 }

@@ -9,6 +9,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Generator\BulletStyle.xml" />
+    <None Remove="Generator\NumberedStyle.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Generator\BulletStyle.xml">
+      <Generator></Generator>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Generator\NumberedStyle.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="DocumentFormat.OpenXml" Version="2.13.1" />
   </ItemGroup>
 

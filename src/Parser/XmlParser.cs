@@ -166,7 +166,7 @@ namespace Dox2Word.Parser
             return variable;
         }
 
-        private static TextParagraph ParseReturnDescription(MemberDef member)
+        private static IParagraph ParseReturnDescription(MemberDef member)
         {
             return ParaToParagraph(member.DetailedDescription?.Para.SelectMany(x => x.Parts)
                 .OfType<DocSimpleSect>()
@@ -197,17 +197,17 @@ namespace Dox2Word.Parser
             return descriptions;
         }
 
-        private static TextParagraph ParaToParagraph(DocPara? para)
+        private static IParagraph ParaToParagraph(DocPara? para)
         {
             return ParaToParagraphs(para).FirstOrDefault() ?? new TextParagraph();
         }
 
-        private static TextParagraph ParasToParagraph(IEnumerable<DocPara>? paras)
+        private static IParagraph ParasToParagraph(IEnumerable<DocPara>? paras)
         {
             return ParasToParagraphs(paras).FirstOrDefault() ?? new TextParagraph();
         }
 
-        private static IEnumerable<TextParagraph> ParasToParagraphs(IEnumerable<DocPara>? paras)
+        private static IEnumerable<IParagraph> ParasToParagraphs(IEnumerable<DocPara>? paras)
         {
             if (paras == null)
                 return Enumerable.Empty<TextParagraph>();
@@ -215,21 +215,28 @@ namespace Dox2Word.Parser
             return paras.SelectMany(x => ParaToParagraphs(x)).Where(x => x.Count > 0);
         }
 
-        private static List<TextParagraph> ParaToParagraphs(DocPara? para)
+        private static List<IParagraph> ParaToParagraphs(DocPara? para)
         {
-            var paragraphs = new List<TextParagraph>();
+            var paragraphs = new List<IParagraph>();
 
             if (para == null)
                 return paragraphs;
 
-            paragraphs.Add(new TextParagraph());
             Parse(paragraphs, para, TextRunFormat.None);
 
-            static void Parse(List<TextParagraph> paragraphs, DocPara? para, TextRunFormat format)
+            static void Parse(List<IParagraph> paragraphs, DocPara? para, TextRunFormat format)
             {
                 void NewParagraph(ParagraphType type = ParagraphType.Normal) => paragraphs.Add(new TextParagraph(type));
 
-                void Add(ITextRun textRun) => paragraphs[paragraphs.Count - 1].Add(textRun);
+                void Add(TextRun textRun)
+                {
+                    if (paragraphs.LastOrDefault() is not TextParagraph paragraph)
+                    {
+                        paragraph = new TextParagraph();
+                        paragraphs.Add(paragraph);
+                    }
+                    paragraph.Add(textRun);
+                }
                 void AddTextRun(string text, TextRunFormat format) => Add(new TextRun(text.TrimStart('\n'), format));
 
                 if (para == null)
@@ -248,10 +255,10 @@ namespace Dox2Word.Parser
                             NewParagraph();
                             break;
                         case OrderedList o:
-                            ParseList(o, ListTextRunType.Number, format);
+                            ParseList(o, ListParagraphType.Number, format);
                             break;
                         case UnorderedList u:
-                            ParseList(u, ListTextRunType.Bullet, format);
+                            ParseList(u, ListParagraphType.Bullet, format);
                             break;
                         case BoldMarkup b:
                             Parse(paragraphs, b, format | TextRunFormat.Bold);
@@ -268,21 +275,20 @@ namespace Dox2Word.Parser
                     };
                 }
 
-                void ParseList(DocList docList, ListTextRunType type, TextRunFormat format)
+                void ParseList(DocList docList, ListParagraphType type, TextRunFormat format)
                 {
-                    var list = new ListTextRun(type);
-                    Add(list);
+                    var list = new ListParagraph(type);
+                    paragraphs.Add(list);
                     foreach (var item in docList.Items)
                     {
-                        var runItem = new ListTextRunItem();
                         // It could be that the para contains a warning or something which will add
                         // another paragraph. In this case, we'll just ignore it.
-                        var paragraphList = new List<TextParagraph>() { runItem };
+                        var paragraphList = new List<IParagraph>();
                         foreach (var para in item.Paras)
                         {
                             Parse(paragraphList, para, format);
                         }
-                        list.Items.Add(runItem);
+                        list.Items.AddRange(paragraphList);
                     }
                 }
             }
