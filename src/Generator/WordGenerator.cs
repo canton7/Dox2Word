@@ -131,8 +131,32 @@ namespace Dox2Word.Generator
                 this.WriteHeading(function.Name, headingLevel + 1);
 
                 var paragraph = this.AppendChild(new Paragraph());
-                var run = paragraph.AppendChild(new Run(new Text(function.Definition), new Text(function.ArgsString)));
-                run.FormatCode();
+                var run = paragraph.AppendChild(new Run().FormatCode());
+                run.AppendChild(new Text(function.Definition + "("));
+
+                if (function.Parameters.Count > 0)
+                {
+                    // It's safest to split the argsstring on ',' than to reconstruct each parameters.
+                    // This is because the parameters don't contain info such as whether a '*' was next to the
+                    // type or variable name, and it's hard to work this out after the fact.
+
+                    string[] parameters = function.ArgsString.TrimStart('(').TrimEnd(')').Split(',');
+                    for (int i = 0; i < parameters.Length; i++)
+                    {
+                        string parameter = parameters[i];
+                        string comma = i == parameters.Length - 1 ? "" : ",";
+                        run.AppendChild(new Break());
+                        run.AppendChild(new Text($"    {parameter.Trim()}{comma}")
+                        {
+                            Space = SpaceProcessingModeValues.Preserve
+                        });
+                    }
+                    run.AppendChild(new Text(")"));
+                }
+                else
+                {
+                    run.AppendChild(new Text("void)"));
+                }
 
                 this.Append(this.CreateDescriptions(function.Descriptions));
 
@@ -190,6 +214,13 @@ namespace Dox2Word.Generator
                         yield return p;
                     }
                     break;
+
+                case CodeParagraph codeParagraph:
+                    yield return this.CreateCodeParagraph(codeParagraph);
+                    break;
+
+                default:
+                    throw new GeneratorException($"Unexpected paragraph type {inputParagraph} ({inputParagraph.GetType()})");
             }
         }
 
@@ -222,6 +253,7 @@ namespace Dox2Word.Generator
                 paragraphProperties.AppendChild(new NumberingProperties(
                     new NumberingLevelReference() { Val = level },
                     new NumberingId() { Val = numberId }));
+                paragraphProperties.AppendChild(new SpacingBetweenLines() { After = "0" });  // Get rid of space between bullets
 
                 switch (listItem)
                 {
@@ -241,6 +273,28 @@ namespace Dox2Word.Generator
             }
         }
 
+        private Paragraph CreateCodeParagraph(CodeParagraph codeParagraph)
+        {
+            var paragraph = new Paragraph();
+            var paragraphProperties = paragraph.AppendChild(new ParagraphProperties());
+            paragraphProperties.AppendChild(new ParagraphBorders(
+                new TopBorder() { Val = BorderValues.Single },
+                new RightBorder() { Val = BorderValues.Single },
+                new BottomBorder() { Val = BorderValues.Single },
+                new LeftBorder() { Val = BorderValues.Single }));
+
+            for (int i = 0; i < codeParagraph.Lines.Count; i++)
+            {
+                var run = paragraph.AppendChild(
+                    new Run(new Text(codeParagraph.Lines[i]) { Space = SpaceProcessingModeValues.Preserve }).FormatCode());
+                if (i < codeParagraph.Lines.Count - 1)
+                {
+                    run.Append(new Break());
+                }
+            }
+            return paragraph;
+        }
+
         private T AppendChild<T>(T child) where T : OpenXmlElement
         {
             this.bodyElements.Add(child);
@@ -257,25 +311,13 @@ namespace Dox2Word.Generator
             var table = new Table();
 
             var tableProperties = table.AppendChild(new TableProperties());
-            var tableBorders = tableProperties.AppendChild(new TableBorders());
-
-            var topBorder = tableBorders.AppendChild(new TopBorder());
-            topBorder.Val = new EnumValue<BorderValues>(BorderValues.Single);
-
-            var rightBorder = tableBorders.AppendChild(new RightBorder());
-            rightBorder.Val = new EnumValue<BorderValues>(BorderValues.Single);
-
-            var bottomBorder = tableBorders.AppendChild(new BottomBorder());
-            bottomBorder.Val = new EnumValue<BorderValues>(BorderValues.Single);
-
-            var leftBorder = tableBorders.AppendChild(new LeftBorder());
-            leftBorder.Val = new EnumValue<BorderValues>(BorderValues.Single);
-
-            var insideHorizontalBorder = tableBorders.AppendChild(new InsideHorizontalBorder());
-            insideHorizontalBorder.Val = new EnumValue<BorderValues>(BorderValues.Single);
-
-            var insideVerticalBorder = tableBorders.AppendChild(new InsideVerticalBorder());
-            insideVerticalBorder.Val = new EnumValue<BorderValues>(BorderValues.Single);
+            var tableBorders = tableProperties.AppendChild(new TableBorders(
+                new TopBorder() { Val = BorderValues.Single },
+                new RightBorder() { Val = BorderValues.Single },
+                new BottomBorder() { Val = BorderValues.Single },
+                new LeftBorder() { Val = BorderValues.Single },
+                new InsideHorizontalBorder() { Val = BorderValues.Single },
+                new InsideVerticalBorder() { Val = BorderValues.Single }));
 
             return table;
         }

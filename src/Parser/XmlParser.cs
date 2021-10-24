@@ -111,6 +111,9 @@ namespace Dox2Word.Parser
         {
             foreach (var param in member.Params)
             {
+                if (param.Type?.Type is { Count: 1 } l && l[0] as string == "void")
+                    continue;
+
                 string name = param.DeclName ?? param.DefName ?? "";
 
                 // Find its docs...
@@ -260,6 +263,9 @@ namespace Dox2Word.Parser
                         case UnorderedList u:
                             ParseList(u, ListParagraphType.Bullet, format);
                             break;
+                        case Listing l:
+                            ParseListing(l);
+                            break;
                         case BoldMarkup b:
                             Parse(paragraphs, b, format | TextRunFormat.Bold);
                             break;
@@ -272,6 +278,10 @@ namespace Dox2Word.Parser
                         case XmlElement e:
                             AddTextRun(e.InnerText, format);
                             break;
+                        case DocSimpleSect:
+                            break; // Ignore
+                        default:
+                            throw new ParserException($"Unexpected text {part} ({part.GetType()})");
                     };
                 }
 
@@ -289,6 +299,37 @@ namespace Dox2Word.Parser
                             Parse(paragraphList, para, format);
                         }
                         list.Items.AddRange(paragraphList);
+                    }
+                }
+
+                void ParseListing(Listing listing)
+                {
+                    var codeParagraph = new CodeParagraph();
+                    paragraphs.Add(codeParagraph);
+                    foreach (var codeline in listing.Codelines)
+                    {
+                        var sb = new StringBuilder();
+                        foreach (var highlight in codeline.Highlights)
+                        {
+                            foreach (object part in highlight.Parts)
+                            {
+                                switch (part)
+                                {
+                                    case string s:
+                                        sb.Append(s);
+                                        break;
+                                    case Sp:
+                                        sb.Append(" ");
+                                        break;
+                                    case XmlElement e:
+                                        sb.Append(e.InnerText);
+                                        break;
+                                    default:
+                                        throw new ParserException($"Unexpected code part {part} ({part.GetType()})");
+                                }
+                            }
+                        }
+                        codeParagraph.Lines.Add(sb.ToString());
                     }
                 }
             }

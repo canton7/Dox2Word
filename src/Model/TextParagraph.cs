@@ -47,4 +47,11 @@ namespace Dox2Word.Model
             this.Type = type;
         }
     }
+
+    public class CodeParagraph : IParagraph
+    {
+        public List<string> Lines { get; } = new();
+
+        int IParagraph.Count => this.Lines.Count;
+    }
 }

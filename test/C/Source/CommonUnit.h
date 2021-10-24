@@ -72,9 +72,21 @@ void CommonUnit_Test(const uint8_t p);
 
 /**
  * Another function in CommonUnit
+ * 
+ * Usage:
+ * @code{.c}
+ * int result = CommonUnit_Another();
+ * Foo x = rand();
+ * @endcode
  *
  * @param in In documentation @c yay
+ * @param foo Foo documentation
  */
-CommonUnit_TypedefType_t CommonUnit_Another(CommonUnit_Struct_t* in);
+CommonUnit_TypedefType_t CommonUnit_Another(const CommonUnit_Struct_t* in, uint8_t* const foo);
+
+/**
+ * Thingy docs
+ */
+void Thingy(void);
 
 /// @}
