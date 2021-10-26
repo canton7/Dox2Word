@@ -62,6 +62,7 @@ namespace Dox2Word.Generator
             this.Append(this.CreateDescriptions(group.Descriptions));
 
             this.WriteClasses(group.Classes, headingLevel + 1);
+            this.WriteEnums(group.Enums, headingLevel + 1);
             this.WriteGlobalVariables(group.GlobalVariables, headingLevel + 1);
             this.WriteFunctions(group.Functions, headingLevel + 1);
 
@@ -71,7 +72,7 @@ namespace Dox2Word.Generator
             }
         }
 
-        private void WriteClasses(List<Class> classes, int headingLevel)
+        private void WriteClasses(List<ClassDoc> classes, int headingLevel)
         {
             if (classes.Count == 0)
                 return;
@@ -86,8 +87,7 @@ namespace Dox2Word.Generator
 
                 if (cls.Variables.Count > 0)
                 {
-                    var table = CreateTable();
-                    this.bodyElements.Add(table);
+                    var table = this.AppendChild(new Table().AddBorders());
                     foreach (var variable in cls.Variables)
                     {
                         var row = table.AppendChild(new TableRow());
@@ -100,7 +100,35 @@ namespace Dox2Word.Generator
             }
         }
 
-        private void WriteGlobalVariables(List<Variable> variables, int headingLevel)
+        private void WriteEnums(List<EnumDoc> enums, int headingLevel)
+        {
+            if (enums.Count == 0)
+                return;
+
+            this.WriteHeading("Enums", headingLevel);
+
+            foreach (var @enum in enums)
+            {
+                this.WriteHeading(@enum.Name, headingLevel + 1);
+
+                this.Append(this.CreateDescriptions(@enum.Descriptions));
+
+                if (@enum.Values.Count > 0)
+                {
+                    var table = this.AppendChild(new Table().AddBorders());
+                    foreach (var value in @enum.Values)
+                    {
+                        var row = table.AppendChild(new TableRow());
+                        var nameCell = row.AppendChild(CreateTableCell());
+                        nameCell.Append(new Paragraph(new Run(new Text(value.Name)).FormatCode()));
+                        var descriptionCell = row.AppendChild(CreateTableCell());
+                        descriptionCell.Append(this.CreateDescriptions(value.Descriptions));
+                    }
+                }
+            }
+        }
+
+        private void WriteGlobalVariables(List<VariableDoc> variables, int headingLevel)
         {
             if (variables.Count == 0)
                 return;
@@ -119,7 +147,7 @@ namespace Dox2Word.Generator
             }
         }
 
-        private void WriteFunctions(List<Function> functions, int headingLevel)
+        private void WriteFunctions(List<FunctionDoc> functions, int headingLevel)
         {
             if (functions.Count == 0)
                 return;
@@ -130,6 +158,7 @@ namespace Dox2Word.Generator
             {
                 this.WriteHeading(function.Name, headingLevel + 1);
 
+                this.WriteMiniHeading("Signature");
                 var paragraph = this.AppendChild(new Paragraph());
                 var run = paragraph.AppendChild(new Run().FormatCode());
                 run.AppendChild(new Text(function.Definition + "("));
@@ -158,12 +187,13 @@ namespace Dox2Word.Generator
                     run.AppendChild(new Text("void)"));
                 }
 
+                this.WriteMiniHeading("Description");
                 this.Append(this.CreateDescriptions(function.Descriptions));
 
                 if (function.Parameters.Count > 0)
                 {
-                    var table = CreateTable();
-                    this.bodyElements.Add(table);
+                    this.WriteMiniHeading("Parameters");
+                    var table = this.AppendChild(new Table().AddBorders());
                     foreach (var parameter in function.Parameters)
                     {
                         var row = table.AppendChild(new TableRow());
@@ -171,6 +201,26 @@ namespace Dox2Word.Generator
                         nameCell.AppendChild(new Paragraph(new Run(new Text(parameter.Name)).FormatCode()));
                         var descriptionCell = row.AppendChild(CreateTableCell());
                         descriptionCell.Append(this.CreateParagraph(parameter.Description));
+                    }
+                }
+
+                if (function.ReturnDescription.Count > 0)
+                {
+                    this.WriteMiniHeading("Returns");
+                    this.Append(this.CreateParagraph(function.ReturnDescription));
+                }
+
+                if (function.ReturnValues.Count > 0)
+                {
+                    this.WriteMiniHeading("Return values");
+                    var table = this.AppendChild(new Table().AddBorders());
+                    foreach (var returnValue in function.ReturnValues)
+                    {
+                        var row = table.AppendChild(new TableRow());
+                        var valueCell = row.AppendChild(CreateTableCell());
+                        valueCell.AppendChild(new Paragraph(new Run(new Text(returnValue.Name)).FormatCode()));
+                        var descriptionCell = row.AppendChild(CreateTableCell());
+                        descriptionCell.Append(this.CreateParagraph(returnValue.Description));
                     }
                 }
             }
@@ -181,6 +231,12 @@ namespace Dox2Word.Generator
             var heading = this.AppendChild(new Paragraph());
             heading.AppendChild(new Run(new Text(text)));
             heading.ParagraphProperties = new ParagraphProperties(new ParagraphStyleId() { Val = $"Heading{headingLevel}" });
+        }
+
+        private void WriteMiniHeading(string text)
+        {
+            var heading = this.AppendChild(new Paragraph());
+            heading.AppendChild(new Run(new Text(text)).FormatMiniHeading());
         }
 
         private IEnumerable<OpenXmlElement> CreateDescriptions(Descriptions descriptions)
@@ -255,6 +311,8 @@ namespace Dox2Word.Generator
                     new NumberingId() { Val = numberId }));
                 paragraphProperties.AppendChild(new SpacingBetweenLines() { After = "0" });  // Get rid of space between bullets
 
+                // Single paragraphs are a list item. Child lists are rendered as a child list.
+                // Everything else doesn't have the list style applied to it, and the list will continue after it
                 switch (listItem)
                 {
                     case TextParagraph textParagraph:
@@ -265,6 +323,13 @@ namespace Dox2Word.Generator
 
                     case ListParagraph childListParagraph:
                         foreach (var p in this.CreateListParagraph(childListParagraph, level + 1))
+                        {
+                            yield return p;
+                        }
+                        break;
+
+                    default:
+                        foreach (var p in this.CreateParagraph(listItem))
                         {
                             yield return p;
                         }
@@ -283,14 +348,14 @@ namespace Dox2Word.Generator
                 new BottomBorder() { Val = BorderValues.Single },
                 new LeftBorder() { Val = BorderValues.Single }));
 
+            var run = paragraph.AppendChild(new Run().FormatCode());
             for (int i = 0; i < codeParagraph.Lines.Count; i++)
             {
-                var run = paragraph.AppendChild(
-                    new Run(new Text(codeParagraph.Lines[i]) { Space = SpaceProcessingModeValues.Preserve }).FormatCode());
-                if (i < codeParagraph.Lines.Count - 1)
+                if (i > 0)
                 {
-                    run.Append(new Break());
+                    run.AppendChild(new Break());
                 }
+                run.AppendChild(new Text(codeParagraph.Lines[i]) { Space = SpaceProcessingModeValues.Preserve });
             }
             return paragraph;
         }
@@ -304,22 +369,6 @@ namespace Dox2Word.Generator
         private void Append(IEnumerable<OpenXmlElement> children)
         {
             this.bodyElements.AddRange(children);
-        }
-
-        private static Table CreateTable()
-        {
-            var table = new Table();
-
-            var tableProperties = table.AppendChild(new TableProperties());
-            var tableBorders = tableProperties.AppendChild(new TableBorders(
-                new TopBorder() { Val = BorderValues.Single },
-                new RightBorder() { Val = BorderValues.Single },
-                new BottomBorder() { Val = BorderValues.Single },
-                new LeftBorder() { Val = BorderValues.Single },
-                new InsideHorizontalBorder() { Val = BorderValues.Single },
-                new InsideVerticalBorder() { Val = BorderValues.Single }));
-
-            return table;
         }
 
         private static TableCell CreateTableCell()

@@ -13,6 +13,15 @@
  *    1. Thing 1.1
  *  2. Thing 2
  * 
+ * @dot
+ * digraph example {
+ *     node [shape=record, fontname=Helvetica, fontsize=10];
+ *     b [ label="class B" URL="\ref B"];
+ *     c [ label="class C" URL="\ref C"];
+ *     b -> c [ arrowhead="open", style="dashed" ];
+ * }
+ * @enddot
+ * 
  * @{
  * @file
  */
@@ -52,6 +61,23 @@ typedef struct CommonUnit_Struct_tag
 } CommonUnit_Struct_t;
 
 /**
+ * A test enum
+ */
+typedef enum CommonUnit_Enum_tag
+{
+    /// This one doesn't have a value
+    CommonUnit_Enum_One,
+    CommonUnit_Enum_Two = 2,    ///< This one has a value, and inline does
+
+    /// This one has a brief description.
+    /// And then a more detailed description.
+    CommonUnit_Enum_Three,
+
+    /// This one's dull
+    CommonUnit_Enum_Four = CommonUnit_Enum_Three
+} CommonUnit_Enum_t;
+
+/**
  * This is a custom typedef
  */
 typedef uint8_t CommonUnit_TypedefType_t;
@@ -81,6 +107,9 @@ void CommonUnit_Test(const uint8_t p);
  *
  * @param in In documentation @c yay
  * @param foo Foo documentation
+ * @returns A value
+ * @retval 1 Some return value
+ * @retval 2 Another return value
  */
 CommonUnit_TypedefType_t CommonUnit_Another(const CommonUnit_Struct_t* in, uint8_t* const foo);
 

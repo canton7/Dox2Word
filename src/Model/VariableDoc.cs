@@ -6,10 +6,11 @@ using System.Threading.Tasks;
 
 namespace Dox2Word.Model
 {
-    public class Class
+    public class VariableDoc
     {
         public string Name { get; set; } = null!;
+        public string Type { get; set; } = null!;
+        public string Definition { get; set; } = null!;
         public Descriptions Descriptions { get; set; } = null!;
-        public List<Variable> Variables { get; } = new();
     }
 }

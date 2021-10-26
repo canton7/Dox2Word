@@ -17,6 +17,28 @@ namespace Dox2Word.Generator
             return run;
         }
 
+        public static Run FormatMiniHeading(this Run run)
+        {
+            run.RunProperties ??= new RunProperties();
+            run.RunProperties.Bold = new Bold();
+            return run;
+        }
+
+        public static Table AddBorders(this Table table)
+        {
+            var tableProperties = table.Elements<TableProperties>().FirstOrDefault() ??
+                table.AppendChild(new TableProperties());
+            tableProperties.AppendChild(new TableBorders(
+                new TopBorder() { Val = BorderValues.Single },
+                new RightBorder() { Val = BorderValues.Single },
+                new BottomBorder() { Val = BorderValues.Single },
+                new LeftBorder() { Val = BorderValues.Single },
+                new InsideHorizontalBorder() { Val = BorderValues.Single },
+                new InsideVerticalBorder() { Val = BorderValues.Single }));
+
+            return table;
+        }
+
         public static TResult MaxOrDefault<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult> selector, TResult defaultValue)
         {
             if (source is null)

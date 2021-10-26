@@ -27,6 +27,9 @@ namespace Dox2Word.Parser.Models
         [XmlElement("param")]
         public List<Param> Params { get; } = new();
 
+        [XmlElement("enumvalue")]
+        public List<EnumValue> EnumValues { get; } = new();
+
         [XmlElement("briefdescription")]
         public Description? BriefDescription { get; set; }
 

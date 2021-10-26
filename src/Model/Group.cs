@@ -12,10 +12,11 @@ namespace Dox2Word.Model
         public Descriptions Descriptions { get; set; } = null!;
         public List<Group> SubGroups { get; } = new();
         public List<string> Files { get; } = new();
-        public List<Class> Classes { get; } = new();
-        public List<Typedef> Typedefs { get; } = new();
-        public List<Variable> GlobalVariables { get; } = new();
-        public List<Macro> Macros { get; } = new();
-        public List<Function> Functions { get; } = new();
+        public List<ClassDoc> Classes { get; } = new();
+        public List<EnumDoc> Enums { get; } = new();
+        public List<TypedefDoc> Typedefs { get; } = new();
+        public List<VariableDoc> GlobalVariables { get; } = new();
+        public List<MacroDoc> Macros { get; } = new();
+        public List<FunctionDoc> Functions { get; } = new();
     }
 }

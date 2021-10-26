@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
+using DocumentFormat.OpenXml.Wordprocessing;
 using Dox2Word.Model;
 using Dox2Word.Parser.Models;
 
@@ -63,7 +64,7 @@ namespace Dox2Word.Parser
             {
                 if (member.Kind == DoxMemberKind.Function)
                 {
-                    var function = new Function()
+                    var function = new FunctionDoc()
                     {
                         Name = member.Name,
                         Descriptions = ParseDescriptions(member),
@@ -73,11 +74,12 @@ namespace Dox2Word.Parser
                         ArgsString = member.ArgsString ?? "",
                     };
                     function.Parameters.AddRange(ParseParameters(member));
+                    function.ReturnValues.AddRange(ParseReturnValues(member));
                     group.Functions.Add(function);
                 }
                 else if (member.Kind == DoxMemberKind.Define)
                 {
-                    var macro = new Macro()
+                    var macro = new MacroDoc()
                     { 
                         Name = member.Name,
                         Descriptions = ParseDescriptions(member),
@@ -89,7 +91,7 @@ namespace Dox2Word.Parser
                 }
                 else if (member.Kind == DoxMemberKind.Typedef)
                 {
-                    var typedef = new Typedef()
+                    var typedef = new TypedefDoc()
                     {
                         Name = member.Name,
                         Type = LinkedTextToString(member.Type) ?? "",
@@ -97,6 +99,21 @@ namespace Dox2Word.Parser
                         Descriptions = ParseDescriptions(member),
                     };
                     group.Typedefs.Add(typedef);
+                }
+                else if (member.Kind == DoxMemberKind.Enum)
+                {
+                    var enumDoc = new EnumDoc()
+                    {
+                        Name = member.Name,
+                        Descriptions = ParseDescriptions(member),
+                    };
+                    enumDoc.Values.AddRange(member.EnumValues.Select(x => new EnumValueDoc()
+                    {
+                        Name = x.Name,
+                        Initializer = LinkedTextToString(x.Initializer),
+                        Descriptions = ParseDescriptions(x),
+                    }));
+                    group.Enums.Add(enumDoc);
                 }
                 else if (member.Kind == DoxMemberKind.Variable)
                 {
@@ -107,7 +124,7 @@ namespace Dox2Word.Parser
             return group;
         }
 
-        private static IEnumerable<Parameter> ParseParameters(MemberDef member)
+        private static IEnumerable<ParameterDoc> ParseParameters(MemberDef member)
         {
             foreach (var param in member.Params)
             {
@@ -123,7 +140,7 @@ namespace Dox2Word.Parser
                     .FirstOrDefault(x => x.ParameterNameList.Select(x => x.ParameterName).Contains(name))
                     ?.ParameterDescription.Para.FirstOrDefault();
 
-                var functionParameter = new Parameter()
+                var functionParameter = new ParameterDoc()
                 {
                     Name = name,
                     Type = LinkedTextToString(param.Type),
@@ -134,14 +151,14 @@ namespace Dox2Word.Parser
             }
         }
 
-        private Class ParseClass(string refId)
+        private ClassDoc ParseClass(string refId)
         {
             var compoundDef = this.ParseDoxygenFile(refId);
 
             if (compoundDef.Kind != CompoundKind.Struct)
                 throw new ParserException($"Don't konw how to parse class kind {compoundDef.Kind} in {refId}");
 
-            var cls = new Class()
+            var cls = new ClassDoc()
             {
                 Name = compoundDef.CompoundName ?? "",
                 Descriptions = ParseDescriptions(compoundDef),
@@ -157,9 +174,9 @@ namespace Dox2Word.Parser
             return cls;
         }
 
-        private static Variable ParseVariable(MemberDef member)
+        private static VariableDoc ParseVariable(MemberDef member)
         {
-            var variable = new Variable()
+            var variable = new VariableDoc()
             {
                 Name = member.Name ?? "",
                 Type = LinkedTextToString(member.Type) ?? "",
@@ -174,6 +191,24 @@ namespace Dox2Word.Parser
             return ParaToParagraph(member.DetailedDescription?.Para.SelectMany(x => x.Parts)
                 .OfType<DocSimpleSect>()
                 .FirstOrDefault(x => x.Kind == DoxSimpleSectKind.Return)?.Para);
+        }
+
+        private static IEnumerable<ReturnValueDoc> ParseReturnValues(MemberDef member)
+        {
+            var items = member.DetailedDescription?.Para.SelectMany(x => x.ParameterLists)
+                .FirstOrDefault(x => x.Kind == DoxParamListKind.RetVal)?.ParameterItems;
+
+            if (items == null)
+                yield break;
+
+            foreach (var item in items)
+            {
+                yield return new ReturnValueDoc()
+                {
+                    Name = item.ParameterNameList[0].ParameterName,
+                    Description = ParasToParagraph(item.ParameterDescription.Para),
+                };
+            }
         }
 
         private static string? LinkedTextToString(LinkedText? linkedText)
@@ -265,6 +300,8 @@ namespace Dox2Word.Parser
                             break;
                         case Listing l:
                             ParseListing(l);
+                            break;
+                        case Dot d:
                             break;
                         case BoldMarkup b:
                             Parse(paragraphs, b, format | TextRunFormat.Bold);
