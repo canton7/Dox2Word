@@ -81,12 +81,11 @@ namespace Dox2Word.Parser
                             Name = member.Name,
                             Descriptions = ParseDescriptions(member),
                             ReturnType = LinkedTextToString(member.Type) ?? "",
-                            ReturnDescription = ParseReturnDescription(member),
+                            ReturnDescriptions = ParseReturnDescriptions(member),
                             Definition = member.Definition ?? "",
                             ArgsString = member.ArgsString ?? "",
                         };
                         function.Parameters.AddRange(ParseParameters(member));
-                        function.ReturnValues.AddRange(ParseReturnValues(member));
                         group.Functions.Add(function);
                     }
                     break;
@@ -96,7 +95,7 @@ namespace Dox2Word.Parser
                         {
                             Name = member.Name,
                             Descriptions = ParseDescriptions(member),
-                            ReturnDescription = ParseReturnDescription(member),
+                            ReturnDescriptions = ParseReturnDescriptions(member),
                             Initializer = LinkedTextToString(member.Initializer) ?? "",
                         };
                         macro.Parameters.AddRange(ParseParameters(member));
@@ -254,6 +253,16 @@ namespace Dox2Word.Parser
                     Description = ParasToParagraph(item.ParameterDescription.Para),
                 };
             }
+        }
+
+        private static ReturnDescriptions ParseReturnDescriptions(MemberDef member)
+        {
+            var descriptions = new ReturnDescriptions()
+            {
+                Description = ParseReturnDescription(member),
+            };
+            descriptions.Values.AddRange(ParseReturnValues(member));
+            return descriptions;
         }
 
         private static string? LinkedTextToString(LinkedText? linkedText) =>

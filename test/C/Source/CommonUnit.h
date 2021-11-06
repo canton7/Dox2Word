@@ -33,6 +33,8 @@
 ///
 /// @param x Thing
 /// @returns @c x doubled
+/// @retval 1 Some test
+/// @retval 2 Some other test
 #define COMMON_UNIT_MACRO(x) (uint32_t)(x * 2)
 
 /// This is a constant

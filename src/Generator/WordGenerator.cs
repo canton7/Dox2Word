@@ -88,10 +88,13 @@ namespace Dox2Word.Generator
             logger.Info($"Writing group {group.Name}");
             this.WriteHeading(group.Name, headingLevel);
 
+            this.WriteMiniHeading("Description");
             this.Append(this.CreateDescriptions(group.Descriptions));
 
-            this.WriteTypes(group, headingLevel + 1);
             this.WriteGlobalVariables(group.GlobalVariables, headingLevel + 1);
+            this.WriteMacros(group.Macros, headingLevel + 1);
+            this.WriteEnums(group.Enums, headingLevel + 1);
+            this.WriteClasses(group.Classes, headingLevel + 1);
             this.WriteFunctions(group.Functions, headingLevel + 1);
 
             foreach (var subGroup in group.SubGroups)
@@ -100,75 +103,63 @@ namespace Dox2Word.Generator
             }
         }
 
-        private void WriteTypes(Group group, int headingLevel)
+        private void WriteClasses(List<ClassDoc> classes, int headingLevel)
         {
-            if (group.Enums.Count == 0 && group.Classes.Count == 0)
-                return;
-
-            foreach (var @enum in group.Enums)
+            foreach (var cls in classes)
             {
-                this.WriteEnum(@enum, headingLevel);
-            }
-            foreach (var cls in group.Classes)
-            {
-                this.WriteClass(cls, headingLevel);
-            }
-        }
+                logger.Info($"Writing {cls.Type} {cls.Name}");
 
-        private void WriteClass(ClassDoc cls, int headingLevel)
-        {
-            logger.Info($"Writing {cls.Type} {cls.Name}");
-
-            string title = cls.Type switch
-            {
-                ClassType.Struct => "Struct",
-                ClassType.Union => "Union",
-            };
-
-            this.WriteHeading($"{title} {cls.Name}", headingLevel);
-
-            this.WriteMiniHeading("Description");
-            this.Append(this.CreateDescriptions(cls.Descriptions));
-
-            if (cls.Variables.Count > 0)
-            {
-                this.WriteMiniHeading("Members");
-                var table = this.AppendTable().AddBorders();
-                foreach (var variable in cls.Variables)
+                string title = cls.Type switch
                 {
-                    string? bitfield = variable.Bitfield == null
-                        ? null
-                        : $" :{variable.Bitfield}";
-                    table.AppendRow($"{variable.Type} {variable.Name}{bitfield}", this.CreateDescriptions(variable.Descriptions));
+                    ClassType.Struct => "Struct",
+                    ClassType.Union => "Union",
+                };
+
+                this.WriteHeading($"{title} {cls.Name}", headingLevel);
+
+                this.WriteMiniHeading("Description");
+                this.Append(this.CreateDescriptions(cls.Descriptions));
+
+                if (cls.Variables.Count > 0)
+                {
+                    this.WriteMiniHeading("Members");
+                    var table = this.AppendTable().AddBorders();
+                    foreach (var variable in cls.Variables)
+                    {
+                        string? bitfield = variable.Bitfield == null
+                            ? null
+                            : $" :{variable.Bitfield}";
+                        table.AppendRow($"{variable.Type} {variable.Name}{bitfield}", this.CreateDescriptions(variable.Descriptions));
+                    }
                 }
             }
         }
 
-        private void WriteEnum(EnumDoc @enum, int headingLevel)
+        private void WriteEnums(List<EnumDoc> enums, int headingLevel)
         {
-            logger.Info($"Writing Enum {@enum.Name}");
-
-            this.WriteHeading($"Enum {@enum.Name}", headingLevel);
-
-            this.WriteMiniHeading("Description");
-            this.Append(this.CreateDescriptions(@enum.Descriptions));
-
-            if (@enum.Values.Count > 0)
+            foreach (var @enum in enums)
             {
-                this.WriteMiniHeading("Values");
-                var table = this.AppendTable().AddBorders();
-                foreach (var value in @enum.Values)
+                logger.Info($"Writing Enum {@enum.Name}");
+
+                this.WriteHeading($"Enum {@enum.Name}", headingLevel);
+
+                this.WriteMiniHeading("Description");
+                this.Append(this.CreateDescriptions(@enum.Descriptions));
+
+                if (@enum.Values.Count > 0)
                 {
-                    table.AppendRow(value.Name, this.CreateDescriptions(value.Descriptions));
+                    this.WriteMiniHeading("Values");
+                    var table = this.AppendTable().AddBorders();
+                    foreach (var value in @enum.Values)
+                    {
+                        table.AppendRow(value.Name, this.CreateDescriptions(value.Descriptions));
+                    }
                 }
             }
         }
 
         private void WriteGlobalVariables(List<VariableDoc> variables, int headingLevel)
         {
-            if (variables.Count == 0)
-                return;
-
             foreach (var variable in variables)
             {
                 logger.Info($"Writing variable {variable.Name}");
@@ -186,11 +177,37 @@ namespace Dox2Word.Generator
             }
         }
 
+        private void WriteMacros(List<MacroDoc> macros, int headingLevel)
+        {
+            foreach (var macro in macros)
+            {
+                logger.Info($"Writing macro {macro.Name}");
+
+                this.WriteHeading($"Macro {macro.Name}", headingLevel);
+
+                this.WriteMiniHeading($"Definition");
+                this.AppendChild(new Paragraph(new Run(new Text($"#define {macro.Name} {macro.Initializer}")).FormatCode()));
+
+                this.WriteMiniHeading("Description");
+                this.Append(this.CreateDescriptions(macro.Descriptions));
+
+                if (macro.Parameters.Count > 0)
+                {
+                    this.WriteMiniHeading("Parameters");
+
+                    var table = this.AppendTable().AddBorders();
+                    foreach (var parameter in macro.Parameters)
+                    {
+                        table.AppendRow(parameter.Name, this.CreateParagraph(parameter.Description));
+                    }
+                }
+
+                this.WriteReturnDescription(macro.ReturnDescriptions);
+            }
+        }
+
         private void WriteFunctions(List<FunctionDoc> functions, int headingLevel)
         {
-            if (functions.Count == 0)
-                return;
-
             foreach (var function in functions)
             {
                 logger.Info($"Writing function {function.Name}");
@@ -232,7 +249,7 @@ namespace Dox2Word.Generator
                 if (function.Parameters.Count > 0)
                 {
                     this.WriteMiniHeading("Parameters");
-                    
+
                     bool hasInOut = function.Parameters.Any(x => x.Direction != ParameterDirection.None);
                     var table = this.AppendTable().AddBorders();
                     foreach (var parameter in function.Parameters)
@@ -250,20 +267,25 @@ namespace Dox2Word.Generator
                     }
                 }
 
-                if (function.ReturnDescription.Count > 0)
-                {
-                    this.WriteMiniHeading("Returns");
-                    this.Append(this.CreateParagraph(function.ReturnDescription));
-                }
+                this.WriteReturnDescription(function.ReturnDescriptions);
+            }
+        }
 
-                if (function.ReturnValues.Count > 0)
+        private void WriteReturnDescription(ReturnDescriptions returnDescriptions)
+        {
+            if (returnDescriptions.Description.Count > 0)
+            {
+                this.WriteMiniHeading("Returns");
+                this.Append(this.CreateParagraph(returnDescriptions.Description));
+            }
+
+            if (returnDescriptions.Values.Count > 0)
+            {
+                this.WriteMiniHeading("Return values");
+                var table = this.AppendTable().AddBorders();
+                foreach (var returnValue in returnDescriptions.Values)
                 {
-                    this.WriteMiniHeading("Return values");
-                    var table = this.AppendTable().AddBorders();
-                    foreach (var returnValue in function.ReturnValues)
-                    {
-                        table.AppendRow(returnValue.Name, this.CreateParagraph(returnValue.Description));
-                    }
+                    table.AppendRow(returnValue.Name, this.CreateParagraph(returnValue.Description));
                 }
             }
         }
@@ -278,7 +300,7 @@ namespace Dox2Word.Generator
             paragraph.ParagraphProperties.SpacingBetweenLines = new SpacingBetweenLines()
             {
                 Before = $"{8 * 20}",
-            }; 
+            };
         }
 
         private void WriteMiniHeading(string text)
