@@ -4,10 +4,9 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
-using DocumentFormat.OpenXml.Wordprocessing;
+using Dox2Word.Logging;
 using Dox2Word.Model;
 using Dox2Word.Parser.Models;
 
@@ -15,6 +14,7 @@ namespace Dox2Word.Parser
 {
     public class XmlParser
     {
+        private static readonly Logger logger = Logger.Instance;
         private readonly string basePath;
 
         public XmlParser(string basePath)
@@ -24,31 +24,39 @@ namespace Dox2Word.Parser
 
         public Project Parse()
         {
-            string indexFile = Path.Combine(this.basePath, "index.xml");
-            var index = Parse<DoxygenIndex>(indexFile);
-
             var project = new Project();
 
-            // Discover the root groups
-            var groupCompoundDefs = index.Compounds.Where(x => x.Kind == CompoundKind.Group)
-                .ToDictionary(x => x.RefId, x => this.ParseDoxygenFile(x.RefId));
-            var rootGroups = groupCompoundDefs.Keys.ToHashSet();
-            foreach (var group in groupCompoundDefs.Values.ToList())
+            try
             {
-                foreach (var innerGroup in group.InnerGroups)
+                string indexFile = Path.Combine(this.basePath, "index.xml");
+                var index = Parse<DoxygenIndex>(indexFile);
+
+
+                // Discover the root groups
+                var groupCompoundDefs = index.Compounds.Where(x => x.Kind == CompoundKind.Group)
+                    .ToDictionary(x => x.RefId, x => this.ParseDoxygenFile(x.RefId));
+                var rootGroups = groupCompoundDefs.Keys.ToHashSet();
+                foreach (var group in groupCompoundDefs.Values.ToList())
                 {
-                    rootGroups.Remove(innerGroup.RefId);
+                    foreach (var innerGroup in group.InnerGroups)
+                    {
+                        rootGroups.Remove(innerGroup.RefId);
+                    }
                 }
+
+                project.Groups.AddRange(rootGroups.Select(x => this.ParseGroup(groupCompoundDefs, x)).OrderBy(x => x.Name));
             }
-
-            project.Groups.AddRange(rootGroups.Select(x => this.ParseGroup(groupCompoundDefs, x)).OrderBy(x => x.Name));
-
+            catch (ParserException e)
+            {
+                logger.Error(e);
+            }
             return project;
         }
 
         private Group ParseGroup(Dictionary<string, CompoundDef> groups, string refId)
         {
             var compoundDef = groups[refId];
+            logger.Info($"Parsing compound {compoundDef.CompoundName}");
 
             var group = new Group()
             {
@@ -57,67 +65,79 @@ namespace Dox2Word.Parser
             };
             group.SubGroups.AddRange(compoundDef.InnerGroups.Select(x => this.ParseGroup(groups, x.RefId)));
             group.Files.AddRange(compoundDef.InnerFiles.Select(x => x.Name));
-            group.Classes.AddRange(compoundDef.InnerClasses.Select(x => this.ParseInnerClass(x.RefId)));
+            group.Classes.AddRange(compoundDef.InnerClasses.Select(x => this.ParseInnerClass(x.RefId)).Where(x => x != null)!);
 
             var members = compoundDef.Sections.SelectMany(x => x.Members);
             foreach (var member in members)
             {
-                if (member.Kind == DoxMemberKind.Function)
+                logger.Info($"Parsing member {member.Name}");
+                switch (member.Kind)
                 {
-                    var function = new FunctionDoc()
+                    case DoxMemberKind.Function:
                     {
-                        Name = member.Name,
-                        Descriptions = ParseDescriptions(member),
-                        ReturnType = LinkedTextToString(member.Type) ?? "",
-                        ReturnDescription = ParseReturnDescription(member),
-                        Definition = member.Definition ?? "",
-                        ArgsString = member.ArgsString ?? "",
-                    };
-                    function.Parameters.AddRange(ParseParameters(member));
-                    function.ReturnValues.AddRange(ParseReturnValues(member));
-                    group.Functions.Add(function);
-                }
-                else if (member.Kind == DoxMemberKind.Define)
-                {
-                    var macro = new MacroDoc()
-                    { 
-                        Name = member.Name,
-                        Descriptions = ParseDescriptions(member),
-                        ReturnDescription = ParseReturnDescription(member),
-                        Initializer = LinkedTextToString(member.Initializer) ?? "",
-                    };
-                    macro.Parameters.AddRange(ParseParameters(member));
-                    group.Macros.Add(macro);
-                }
-                else if (member.Kind == DoxMemberKind.Typedef)
-                {
-                    var typedef = new TypedefDoc()
+                        var function = new FunctionDoc()
+                        {
+                            Name = member.Name,
+                            Descriptions = ParseDescriptions(member),
+                            ReturnType = LinkedTextToString(member.Type) ?? "",
+                            ReturnDescription = ParseReturnDescription(member),
+                            Definition = member.Definition ?? "",
+                            ArgsString = member.ArgsString ?? "",
+                        };
+                        function.Parameters.AddRange(ParseParameters(member));
+                        function.ReturnValues.AddRange(ParseReturnValues(member));
+                        group.Functions.Add(function);
+                    }
+                    break;
+                    case DoxMemberKind.Define:
                     {
-                        Name = member.Name,
-                        Type = LinkedTextToString(member.Type) ?? "",
-                        Definition = member.Definition ?? "",
-                        Descriptions = ParseDescriptions(member),
-                    };
-                    group.Typedefs.Add(typedef);
-                }
-                else if (member.Kind == DoxMemberKind.Enum)
-                {
-                    var enumDoc = new EnumDoc()
+                        var macro = new MacroDoc()
+                        {
+                            Name = member.Name,
+                            Descriptions = ParseDescriptions(member),
+                            ReturnDescription = ParseReturnDescription(member),
+                            Initializer = LinkedTextToString(member.Initializer) ?? "",
+                        };
+                        macro.Parameters.AddRange(ParseParameters(member));
+                        group.Macros.Add(macro);
+                    }
+                    break;
+                    case DoxMemberKind.Typedef:
                     {
-                        Name = member.Name,
-                        Descriptions = ParseDescriptions(member),
-                    };
-                    enumDoc.Values.AddRange(member.EnumValues.Select(x => new EnumValueDoc()
+                        var typedef = new TypedefDoc()
+                        {
+                            Name = member.Name,
+                            Type = LinkedTextToString(member.Type) ?? "",
+                            Definition = member.Definition ?? "",
+                            Descriptions = ParseDescriptions(member),
+                        };
+                        group.Typedefs.Add(typedef);
+                    }
+                    break;
+                    case DoxMemberKind.Enum:
                     {
-                        Name = x.Name,
-                        Initializer = LinkedTextToString(x.Initializer),
-                        Descriptions = ParseDescriptions(x),
-                    }));
-                    group.Enums.Add(enumDoc);
-                }
-                else if (member.Kind == DoxMemberKind.Variable)
-                {
-                    group.GlobalVariables.Add(ParseVariable(member));
+                        var enumDoc = new EnumDoc()
+                        {
+                            Name = member.Name,
+                            Descriptions = ParseDescriptions(member),
+                        };
+                        enumDoc.Values.AddRange(member.EnumValues.Select(x => new EnumValueDoc()
+                        {
+                            Name = x.Name,
+                            Initializer = LinkedTextToString(x.Initializer),
+                            Descriptions = ParseDescriptions(x),
+                        }));
+                        group.Enums.Add(enumDoc);
+                    }
+                    break;
+                    case DoxMemberKind.Variable:
+                    {
+                        group.GlobalVariables.Add(ParseVariable(member));
+                    }
+                    break;
+                    default:
+                        logger.Warning($"Unknown DoxMemberKinnd '{member.Kind}' for member {member.Name}");
+                        break;
                 }
             }
 
@@ -151,15 +171,22 @@ namespace Dox2Word.Parser
             }
         }
 
-        private ClassDoc ParseInnerClass(string refId)
+        private ClassDoc? ParseInnerClass(string refId)
         {
             var compoundDef = this.ParseDoxygenFile(refId);
+            logger.Info($"Parsing class {compoundDef.CompoundName}");
+
+            if (compoundDef.Kind is not (CompoundKind.Struct or CompoundKind.Union))
+            {
+                logger.Warning($"Don't know how to parse class kind {compoundDef.Kind} in {compoundDef.CompoundName}. Ignoring");
+                return null;
+            }
 
             var type = compoundDef.Kind switch
             {
                 CompoundKind.Struct => ClassType.Struct,
                 CompoundKind.Union => ClassType.Union,
-                _ => throw new ParserException($"Don't known how to parse class kind {compoundDef.Kind} in {refId}"),
+                _ => throw new Exception("Impossible"),
             };
 
             var cls = new ClassDoc()
@@ -325,7 +352,8 @@ namespace Dox2Word.Parser
                         case DocSimpleSect:
                             break; // Ignore
                         default:
-                            throw new ParserException($"Unexpected text {part} ({part.GetType()})");
+                            logger.Warning($"Unexpected text {part} ({part.GetType()}). Ignoring");
+                            break;
                     };
                 }
 
@@ -369,7 +397,8 @@ namespace Dox2Word.Parser
                                         sb.Append(e.InnerText);
                                         break;
                                     default:
-                                        throw new ParserException($"Unexpected code part {part} ({part.GetType()})");
+                                        logger.Warning($"Unexpected code part {part} ({part.GetType()}). Ignoring");
+                                        break;
                                 }
                             }
                         }
@@ -385,8 +414,14 @@ namespace Dox2Word.Parser
         {
             string filePath = Path.Combine(this.basePath, refId + ".xml");
             var file = Parse<DoxygenFile>(filePath);
-            if (file.CompoundDefs.Count != 1)
-                throw new ParserException($"File {filePath}: expected 1 compoundDef, got {file.CompoundDefs.Count}");
+            if (file.CompoundDefs.Count > 1)
+            {
+                logger.Warning($"File {filePath}: expected 1 compoundDef, got {file.CompoundDefs.Count}. Ignoring all but the first");
+            }
+            else if (file.CompoundDefs.Count == 0)
+            {
+                throw new ParserException($"File {filePath} contained 0 compoundDefs");
+            }
             return file.CompoundDefs[0];
         }
 

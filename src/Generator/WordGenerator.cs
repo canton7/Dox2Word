@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
+using Dox2Word.Logging;
 using Dox2Word.Model;
 
 namespace Dox2Word.Generator
@@ -14,6 +15,7 @@ namespace Dox2Word.Generator
     public class WordGenerator
     {
         private const string Placeholder = "<INSERT HERE>";
+        private static readonly Logger logger = Logger.Instance;
 
         private readonly WordprocessingDocument doc;
 
@@ -43,39 +45,47 @@ namespace Dox2Word.Generator
 
         public void Generate(Project project)
         {
-            var body = this.doc.MainDocumentPart!.Document.Body!;
-
-            var markerParagraph = body.ChildElements.OfType<Paragraph>()
-                .FirstOrDefault(x => x.InnerText == Placeholder);
-
-            if (markerParagraph == null)
-                throw new GeneratorException($"Could not find placeholder text '{Placeholder}'");
-
-            var headingBefore = markerParagraph.ElementsBefore().OfType<Paragraph>().FirstOrDefault();
-            int headingLevel = 2;
-            if (headingBefore?.ParagraphProperties?.ParagraphStyleId?.Val?.Value is { } styleId && styleId.StartsWith("Heading"))
+            try
             {
-                if (int.TryParse(styleId.Substring("Heading".Length), out int level))
+                var body = this.doc.MainDocumentPart!.Document.Body!;
+
+                var markerParagraph = body.ChildElements.OfType<Paragraph>()
+                    .FirstOrDefault(x => x.InnerText == Placeholder);
+
+                if (markerParagraph == null)
+                    throw new GeneratorException($"Could not find placeholder text '{Placeholder}'");
+
+                var headingBefore = markerParagraph.ElementsBefore().OfType<Paragraph>().FirstOrDefault();
+                int headingLevel = 2;
+                if (headingBefore?.ParagraphProperties?.ParagraphStyleId?.Val?.Value is { } styleId && styleId.StartsWith("Heading"))
                 {
-                    headingLevel = level + 1;
+                    if (int.TryParse(styleId.Substring("Heading".Length), out int level))
+                    {
+                        headingLevel = level + 1;
+                    }
                 }
-            }
 
-            foreach (var group in project.Groups)
+                foreach (var group in project.Groups)
+                {
+                    this.WriteGroup(group, headingLevel);
+                }
+
+                foreach (var paragraph in this.bodyElements)
+                {
+                    body.InsertBefore(paragraph, markerParagraph);
+                }
+
+                body.RemoveChild(markerParagraph);
+            }
+            catch (GeneratorException e)
             {
-                this.WriteGroup(group, headingLevel);
+                logger.Error(e);
             }
-
-            foreach (var paragraph in this.bodyElements)
-            {
-                body.InsertBefore(paragraph, markerParagraph);
-            }
-
-            body.RemoveChild(markerParagraph);
         }
 
         private void WriteGroup(Group group, int headingLevel)
         {
+            logger.Info($"Writing {group.Name}");
             this.WriteHeading(group.Name, headingLevel);
 
             this.Append(this.CreateDescriptions(group.Descriptions));
@@ -107,6 +117,8 @@ namespace Dox2Word.Generator
 
         private void WriteClass(ClassDoc cls, int headingLevel)
         {
+            logger.Info($"Writing {cls.Type} {cls.Name}");
+
             string title = cls.Type switch
             {
                 ClassType.Struct => "Struct",
@@ -134,6 +146,8 @@ namespace Dox2Word.Generator
 
         private void WriteEnum(EnumDoc @enum, int headingLevel)
         {
+            logger.Info($"Writing Enum {@enum.Name}");
+
             this.WriteHeading($"Enum {@enum.Name}", headingLevel);
 
             this.WriteMiniHeading("Description");
@@ -157,6 +171,8 @@ namespace Dox2Word.Generator
 
             foreach (var variable in variables)
             {
+                logger.Info($"Writing variable {variable.Name}");
+
                 this.WriteHeading($"Global variable {variable.Name}", headingLevel);
 
                 this.WriteMiniHeading("Definition");
@@ -177,6 +193,8 @@ namespace Dox2Word.Generator
 
             foreach (var function in functions)
             {
+                logger.Info($"Writing function {function.Name}");
+
                 this.WriteHeading($"Function {function.Name}", headingLevel);
 
                 this.WriteMiniHeading("Signature");
