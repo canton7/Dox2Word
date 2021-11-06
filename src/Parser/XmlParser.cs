@@ -187,6 +187,7 @@ namespace Dox2Word.Parser
                 Type = LinkedTextToString(member.Type) ?? "",
                 Definition = member.Definition ?? "",
                 Descriptions = ParseDescriptions(member),
+                Initializer = LinkedTextToString(member.Initializer),
                 Bitfield = member.Bitfield,
             };
             return variable;

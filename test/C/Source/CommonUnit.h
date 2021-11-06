@@ -44,6 +44,11 @@
 extern bool CommonUnit_Global;
 
 /**
+ * This is a global variable with a value
+ */
+static uint32_t CommonUnit_GlobalWithValue = 3;
+
+/**
  * A test structure
  * 
  * More description of the test structure

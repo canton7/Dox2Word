@@ -28,15 +28,41 @@ namespace Dox2Word.Generator
         {
             var tableProperties = table.Elements<TableProperties>().FirstOrDefault() ??
                 table.AppendChild(new TableProperties());
-            tableProperties.AppendChild(new TableBorders(
+            tableProperties.TableBorders = new TableBorders(
                 new TopBorder() { Val = BorderValues.Single },
                 new RightBorder() { Val = BorderValues.Single },
                 new BottomBorder() { Val = BorderValues.Single },
                 new LeftBorder() { Val = BorderValues.Single },
                 new InsideHorizontalBorder() { Val = BorderValues.Single },
-                new InsideVerticalBorder() { Val = BorderValues.Single }));
+                new InsideVerticalBorder() { Val = BorderValues.Single });
 
             return table;
+        }
+
+        public static void AppendRow(this Table table, string name, IEnumerable<Paragraph> value)
+        {
+            var row = table.AppendChild(new TableRow());
+
+            var nameCell = row.AppendChild(new TableCell());
+            var nameParagraph = nameCell.AppendChild(new Paragraph(new Run(new Text(name)).FormatCode()));
+            nameParagraph.ParagraphProperties ??= new ParagraphProperties();
+            nameParagraph.ParagraphProperties.SpacingBetweenLines = new SpacingBetweenLines()
+            {
+                After = "0",
+            };
+
+            var valueCell = row.AppendChild(new TableCell());
+            var valueList = value.ToList();
+            valueCell.Append(valueList);
+
+            if (valueList.LastOrDefault() is { } lastParagraph)
+            {
+                lastParagraph.ParagraphProperties ??= new ParagraphProperties();
+                lastParagraph.ParagraphProperties.SpacingBetweenLines = new SpacingBetweenLines()
+                { 
+                    After = "0",
+                };
+            }
         }
 
         public static TResult MaxOrDefault<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult> selector, TResult defaultValue)
