@@ -57,7 +57,7 @@ namespace Dox2Word.Parser
             };
             group.SubGroups.AddRange(compoundDef.InnerGroups.Select(x => this.ParseGroup(groups, x.RefId)));
             group.Files.AddRange(compoundDef.InnerFiles.Select(x => x.Name));
-            group.Classes.AddRange(compoundDef.InnerClasses.Select(x => this.ParseClass(x.RefId)));
+            group.Classes.AddRange(compoundDef.InnerClasses.Select(x => this.ParseInnerClass(x.RefId)));
 
             var members = compoundDef.Sections.SelectMany(x => x.Members);
             foreach (var member in members)
@@ -151,15 +151,20 @@ namespace Dox2Word.Parser
             }
         }
 
-        private ClassDoc ParseClass(string refId)
+        private ClassDoc ParseInnerClass(string refId)
         {
             var compoundDef = this.ParseDoxygenFile(refId);
 
-            if (compoundDef.Kind != CompoundKind.Struct)
-                throw new ParserException($"Don't konw how to parse class kind {compoundDef.Kind} in {refId}");
+            var type = compoundDef.Kind switch
+            {
+                CompoundKind.Struct => ClassType.Struct,
+                CompoundKind.Union => ClassType.Union,
+                _ => throw new ParserException($"Don't known how to parse class kind {compoundDef.Kind} in {refId}"),
+            };
 
             var cls = new ClassDoc()
             {
+                Type = type,
                 Name = compoundDef.CompoundName ?? "",
                 Descriptions = ParseDescriptions(compoundDef),
             };
@@ -182,6 +187,7 @@ namespace Dox2Word.Parser
                 Type = LinkedTextToString(member.Type) ?? "",
                 Definition = member.Definition ?? "",
                 Descriptions = ParseDescriptions(member),
+                Bitfield = member.Bitfield,
             };
             return variable;
         }

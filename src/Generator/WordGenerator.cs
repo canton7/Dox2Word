@@ -61,8 +61,7 @@ namespace Dox2Word.Generator
 
             this.Append(this.CreateDescriptions(group.Descriptions));
 
-            this.WriteClasses(group.Classes, headingLevel + 1);
-            this.WriteEnums(group.Enums, headingLevel + 1);
+            this.WriteTypes(group, headingLevel + 1);
             this.WriteGlobalVariables(group.GlobalVariables, headingLevel + 1);
             this.WriteFunctions(group.Functions, headingLevel + 1);
 
@@ -72,58 +71,68 @@ namespace Dox2Word.Generator
             }
         }
 
-        private void WriteClasses(List<ClassDoc> classes, int headingLevel)
+        private void WriteTypes(Group group, int headingLevel)
         {
-            if (classes.Count == 0)
+            if (group.Enums.Count == 0 && group.Classes.Count == 0)
                 return;
 
-            this.WriteHeading("Structs", headingLevel);
+            this.WriteHeading("Types", headingLevel);
 
-            foreach (var cls in classes)
+            foreach (var @enum in group.Enums)
             {
-                this.WriteHeading(cls.Name, headingLevel + 1);
+                this.WriteEnum(@enum, headingLevel + 1);
+            }
+            foreach (var cls in group.Classes)
+            {
+                this.WriteClass(cls, headingLevel + 1);
+            }
+        }
 
-                this.Append(this.CreateDescriptions(cls.Descriptions));
+        private void WriteClass(ClassDoc cls, int headingLevel)
+        {
+            string title = cls.Type switch
+            {
+                ClassType.Struct => "Struct",
+                ClassType.Union => "Union",
+            };
 
-                if (cls.Variables.Count > 0)
+            this.WriteHeading($"{title} {cls.Name}", headingLevel);
+
+            this.Append(this.CreateDescriptions(cls.Descriptions));
+
+            if (cls.Variables.Count > 0)
+            {
+                var table = this.AppendChild(new Table().AddBorders());
+                foreach (var variable in cls.Variables)
                 {
-                    var table = this.AppendChild(new Table().AddBorders());
-                    foreach (var variable in cls.Variables)
-                    {
-                        var row = table.AppendChild(new TableRow());
-                        var nameCell = row.AppendChild(CreateTableCell());
-                        nameCell.Append(new Paragraph(new Run(new Text($"{variable.Type} {variable.Name}")).FormatCode()));
-                        var descriptionCell = row.AppendChild(CreateTableCell()); ;
-                        descriptionCell.Append(this.CreateDescriptions(variable.Descriptions));
-                    }
+                    var row = table.AppendChild(new TableRow());
+                    var nameCell = row.AppendChild(CreateTableCell());
+                    string? bitfield = variable.Bitfield == null
+                        ? null
+                        : $" :{variable.Bitfield}";
+                    nameCell.Append(new Paragraph(new Run(new Text($"{variable.Type} {variable.Name}{bitfield}")).FormatCode()));
+                    var descriptionCell = row.AppendChild(CreateTableCell()); ;
+                    descriptionCell.Append(this.CreateDescriptions(variable.Descriptions));
                 }
             }
         }
 
-        private void WriteEnums(List<EnumDoc> enums, int headingLevel)
+        private void WriteEnum(EnumDoc @enum, int headingLevel)
         {
-            if (enums.Count == 0)
-                return;
+            this.WriteHeading($"Enum {@enum.Name}", headingLevel);
 
-            this.WriteHeading("Enums", headingLevel);
+            this.Append(this.CreateDescriptions(@enum.Descriptions));
 
-            foreach (var @enum in enums)
+            if (@enum.Values.Count > 0)
             {
-                this.WriteHeading(@enum.Name, headingLevel + 1);
-
-                this.Append(this.CreateDescriptions(@enum.Descriptions));
-
-                if (@enum.Values.Count > 0)
+                var table = this.AppendChild(new Table().AddBorders());
+                foreach (var value in @enum.Values)
                 {
-                    var table = this.AppendChild(new Table().AddBorders());
-                    foreach (var value in @enum.Values)
-                    {
-                        var row = table.AppendChild(new TableRow());
-                        var nameCell = row.AppendChild(CreateTableCell());
-                        nameCell.Append(new Paragraph(new Run(new Text(value.Name)).FormatCode()));
-                        var descriptionCell = row.AppendChild(CreateTableCell());
-                        descriptionCell.Append(this.CreateDescriptions(value.Descriptions));
-                    }
+                    var row = table.AppendChild(new TableRow());
+                    var nameCell = row.AppendChild(CreateTableCell());
+                    nameCell.Append(new Paragraph(new Run(new Text(value.Name)).FormatCode()));
+                    var descriptionCell = row.AppendChild(CreateTableCell());
+                    descriptionCell.Append(this.CreateDescriptions(value.Descriptions));
                 }
             }
         }

@@ -78,6 +78,32 @@ typedef enum CommonUnit_Enum_tag
 } CommonUnit_Enum_t;
 
 /**
+ * A test union
+ */
+typedef union CommonUnit_Union_tag
+{
+    /// Union member 1
+    uint8_t one;
+
+    /// Union member 2
+    CommonUnit_Enum_t two;
+} CommonUnit_Union_t;
+
+/**
+ * A struct containing an anonymous union
+ */
+typedef struct CommonUnit_StructWithUnion_tag
+{
+    /// The type discriminator
+    uint8_t type;
+    union
+    {
+        uint16_t one : 4; ///< A bitfield
+        uint32_t two;   ///< A normal field
+    };
+} CommonUnit_StructWithUnion_t;
+
+/**
  * This is a custom typedef
  */
 typedef uint8_t CommonUnit_TypedefType_t;

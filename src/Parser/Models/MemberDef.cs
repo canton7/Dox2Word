@@ -15,6 +15,9 @@ namespace Dox2Word.Parser.Models
         [XmlElement("name")]
         public string Name { get; set; } = null!;
 
+        [XmlElement("bitfield")]
+        public string? Bitfield { get; set; }
+
         [XmlElement("type")]
         public LinkedText? Type { get; set; }
 

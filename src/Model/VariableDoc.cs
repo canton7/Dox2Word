@@ -12,5 +12,6 @@ namespace Dox2Word.Model
         public string Type { get; set; } = null!;
         public string Definition { get; set; } = null!;
         public Descriptions Descriptions { get; set; } = null!;
+        public string? Bitfield { get; set; }
     }
 }
