@@ -45,15 +45,33 @@ namespace Dox2Word.Generator
         {
             var body = this.doc.MainDocumentPart!.Document.Body!;
 
+            var markerParagraph = body.ChildElements.OfType<Paragraph>()
+                .FirstOrDefault(x => x.InnerText == Placeholder);
+
+            if (markerParagraph == null)
+                throw new GeneratorException($"Could not find placeholder text '{Placeholder}'");
+
+            var headingBefore = markerParagraph.ElementsBefore().OfType<Paragraph>().FirstOrDefault();
+            int headingLevel = 2;
+            if (headingBefore?.ParagraphProperties?.ParagraphStyleId?.Val?.Value is { } styleId && styleId.StartsWith("Heading"))
+            {
+                if (int.TryParse(styleId.Substring("Heading".Length), out int level))
+                {
+                    headingLevel = level + 1;
+                }
+            }
+
             foreach (var group in project.Groups)
             {
-                this.WriteGroup(group, 2);
+                this.WriteGroup(group, headingLevel);
             }
 
             foreach (var paragraph in this.bodyElements)
             {
-                body.AppendChild(paragraph);
+                body.InsertBefore(paragraph, markerParagraph);
             }
+
+            body.RemoveChild(markerParagraph);
         }
 
         private void WriteGroup(Group group, int headingLevel)
