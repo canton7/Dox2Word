@@ -17,13 +17,6 @@ namespace Dox2Word.Generator
             return run;
         }
 
-        public static Run FormatMiniHeading(this Run run)
-        {
-            run.RunProperties ??= new RunProperties();
-            run.RunProperties.Bold = new Bold();
-            return run;
-        }
-
         public static Paragraph FormatWarning(this Paragraph paragraph)
         {
             paragraph.ParagraphProperties ??= new ParagraphProperties();
@@ -63,29 +56,33 @@ namespace Dox2Word.Generator
                 var inOutParagraph = inOutCell.AppendChild(new Paragraph());
                 var inOutRun = inOutParagraph.AppendChild(new Run(new Text(inOut)).FormatCode());
                 inOutRun.RunProperties!.Italic = new Italic();
-                SetAfter(inOutParagraph);
+                Format(inOutParagraph, after: true);
             }
 
             var nameCell = row.AppendChild(new TableCell());
             var nameParagraph = nameCell.AppendChild(new Paragraph(new Run(new Text(name)).FormatCode()));
-            SetAfter(nameParagraph);
+            Format(nameParagraph, after: true);
 
             var valueCell = row.AppendChild(new TableCell());
             var valueList = value.ToList();
             valueCell.Append(valueList);
 
-            if (valueList.LastOrDefault() is { } lastParagraph)
+            for (int i = 0; i < valueList.Count; i++)
             {
-                SetAfter(lastParagraph);
+                Format(valueList[i], after: i == valueList.Count - 1);
             }
 
-            static void SetAfter(Paragraph paragraph)
+            static void Format(Paragraph paragraph, bool after)
             {
                 paragraph.ParagraphProperties ??= new ParagraphProperties();
-                paragraph.ParagraphProperties.SpacingBetweenLines = new SpacingBetweenLines()
+                paragraph.ParagraphProperties.KeepNext = new KeepNext();
+                if (after)
                 {
-                    After = "0",
-                };
+                    paragraph.ParagraphProperties.SpacingBetweenLines = new SpacingBetweenLines()
+                    {
+                        After = "0",
+                    };
+                }
             }
         }
 

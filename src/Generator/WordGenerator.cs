@@ -91,6 +91,14 @@ namespace Dox2Word.Generator
             this.WriteMiniHeading("Description");
             this.Append(this.CreateDescriptions(group.Descriptions));
 
+            if (group.Files.Count > 0)
+            {
+                this.WriteMiniHeading("Files");
+                var listParagraph = new ListParagraph(ListParagraphType.Bullet);
+                listParagraph.Items.AddRange(group.Files.Select(x => new TextParagraph() { new TextRun(x) }));
+                this.Append(this.CreateParagraph(listParagraph));
+            }
+
             this.WriteGlobalVariables(group.GlobalVariables, headingLevel + 1);
             this.WriteMacros(group.Macros, headingLevel + 1);
             this.WriteEnums(group.Enums, headingLevel + 1);
@@ -306,7 +314,11 @@ namespace Dox2Word.Generator
         private void WriteMiniHeading(string text)
         {
             var heading = this.AppendChild(new Paragraph());
-            heading.AppendChild(new Run(new Text(text)).FormatMiniHeading());
+            var run = heading.AppendChild(new Run(new Text(text)));
+            run.RunProperties ??= new RunProperties();
+            run.RunProperties.Bold = new Bold();
+            run.RunProperties.FontSize = new FontSize() { Val = "24" };
+
             heading.ParagraphProperties ??= new ParagraphProperties();
             heading.ParagraphProperties.SpacingBetweenLines = new SpacingBetweenLines()
             {
@@ -314,6 +326,7 @@ namespace Dox2Word.Generator
                 Before = "160",
                 Line = "240",
             };
+            heading.ParagraphProperties.KeepNext = new KeepNext();
         }
 
         private IEnumerable<Paragraph> CreateDescriptions(Descriptions descriptions)

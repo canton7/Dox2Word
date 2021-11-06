@@ -20,7 +20,7 @@ namespace Dox2Word.Model
 
         public string Text { get; }
 
-        public TextRun(string text, TextRunFormat format)
+        public TextRun(string text, TextRunFormat format = TextRunFormat.None)
         {
             this.Text = text;
             this.Format = format;
