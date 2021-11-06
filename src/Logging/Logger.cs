@@ -13,6 +13,9 @@ namespace Dox2Word.Logging
 
         private Logger() { }
 
+        public bool HasErrors { get; private set; }
+        public bool HasWarnings { get; private set; }
+
         public void Info(string text)
         {
             WriteLevel(null, "INFO");
@@ -21,12 +24,16 @@ namespace Dox2Word.Logging
 
         public void Warning(string text)
         {
+            this.HasWarnings = true;
+
             WriteLevel(ConsoleColor.Yellow, "WARNING");
             Console.WriteLine(text);
         }
 
         public void Error(Exception e)
         {
+            this.HasErrors = true;
+
             WriteLevel(ConsoleColor.Red, "ERROR");
             Console.WriteLine(e.Message);
 

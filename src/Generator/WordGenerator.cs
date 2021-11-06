@@ -14,7 +14,7 @@ namespace Dox2Word.Generator
 {
     public class WordGenerator
     {
-        private const string Placeholder = "<INSERT HERE>";
+        public const string Placeholder = "<INSERT HERE>";
         private static readonly Logger logger = Logger.Instance;
 
         private readonly WordprocessingDocument doc;
@@ -85,7 +85,7 @@ namespace Dox2Word.Generator
 
         private void WriteGroup(Group group, int headingLevel)
         {
-            logger.Info($"Writing {group.Name}");
+            logger.Info($"Writing group {group.Name}");
             this.WriteHeading(group.Name, headingLevel);
 
             this.Append(this.CreateDescriptions(group.Descriptions));
