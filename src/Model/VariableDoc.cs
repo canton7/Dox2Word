@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Dox2Word.Parser.Models;
-
-namespace Dox2Word.Model
+﻿namespace Dox2Word.Model
 {
     public class VariableDoc
     {
