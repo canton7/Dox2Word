@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
+using DocumentFormat.OpenXml.Wordprocessing;
 using Dox2Word.Logging;
 using Dox2Word.Model;
 using Dox2Word.Parser.Models;
@@ -154,17 +155,27 @@ namespace Dox2Word.Parser
                 string name = param.DeclName ?? param.DefName ?? "";
 
                 // Find its docs...
-                var descriptionPara = member.DetailedDescription?.Para.SelectMany(x => x.ParameterLists)
+                var paramDesc = member.DetailedDescription?.Para.SelectMany(x => x.ParameterLists)
                     .Where(x => x.Kind == DoxParamListKind.Param)
                     .SelectMany(x => x.ParameterItems)
-                    .FirstOrDefault(x => x.ParameterNameList.Select(x => x.ParameterName).Contains(name))
-                    ?.ParameterDescription.Para.FirstOrDefault();
+                    .SelectMany(x => x.ParameterNameList
+                        .Select(name => (name, desc: x.ParameterDescription)))
+                    .FirstOrDefault(x => DocParamNameToString(x.name.ParameterName) == name);
+
+                var direction = paramDesc?.name.ParameterName.Direction switch
+                {
+                    DoxParamDir.In => ParameterDirection.In,
+                    DoxParamDir.Out => ParameterDirection.Out,
+                    DoxParamDir.InOut => ParameterDirection.InOut,
+                    null or DoxParamDir.None => ParameterDirection.None,
+                };
 
                 var functionParameter = new ParameterDoc()
                 {
                     Name = name,
                     Type = LinkedTextToString(param.Type),
-                    Description = ParaToParagraph(descriptionPara),
+                    Description = ParasToParagraph(paramDesc?.desc.Para),
+                    Direction = direction,
                 };
 
                 yield return functionParameter;
@@ -239,23 +250,29 @@ namespace Dox2Word.Parser
             {
                 yield return new ReturnValueDoc()
                 {
-                    Name = item.ParameterNameList[0].ParameterName,
+                    Name = DocParamNameToString(item.ParameterNameList[0].ParameterName) ?? "",
                     Description = ParasToParagraph(item.ParameterDescription.Para),
                 };
             }
         }
 
-        private static string? LinkedTextToString(LinkedText? linkedText)
+        private static string? LinkedTextToString(LinkedText? linkedText) =>
+            EmbeddedRefTextToString(linkedText?.Type);
+
+        private static string? DocParamNameToString(DocParamName? docParamName) =>
+            EmbeddedRefTextToString(docParamName?.Name);
+
+        private static string? EmbeddedRefTextToString(IEnumerable<object>? input)
         {
-            if (linkedText == null)
+            if (input == null)
                 return null;
 
-            return string.Join(" ", linkedText.Type.Select(x =>
+            return string.Join(" ", input.Select(x =>
                 x switch
                 {
                     string s => s,
                     RefText r => r.Name,
-                    _ => throw new ParserException($"Unknown element in LinkedText: {x}"),
+                    _ => throw new ParserException($"Unknown element in DocParamName: {x}"),
                 }));
         }
 
@@ -427,7 +444,7 @@ namespace Dox2Word.Parser
 
         private static class SerializerCache<T>
         {
-            public static readonly XmlSerializer Instance = new XmlSerializer(typeof(T));
+            public static readonly XmlSerializer Instance = new(typeof(T));
         }
         private static T Parse<T>(string filePath)
         {

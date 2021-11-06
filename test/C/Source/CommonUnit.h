@@ -136,7 +136,7 @@ void CommonUnit_Test(const uint8_t p);
  * Foo x = rand();
  * @endcode
  *
- * @param in In documentation @c yay
+ * @param[in] in In documentation @c yay
  * @param foo Foo documentation
  * @returns A value
  * @retval 1 Some return value

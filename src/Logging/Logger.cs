@@ -37,7 +37,7 @@ namespace Dox2Word.Logging
             WriteLevel(ConsoleColor.Red, "ERROR");
             Console.WriteLine(e.Message);
 
-            Console.WriteLine(e.StackTrace);
+            Console.WriteLine(e.ToString());
         }
 
         private static void WriteLevel(ConsoleColor? color, string text)

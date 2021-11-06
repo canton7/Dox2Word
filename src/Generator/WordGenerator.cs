@@ -232,10 +232,21 @@ namespace Dox2Word.Generator
                 if (function.Parameters.Count > 0)
                 {
                     this.WriteMiniHeading("Parameters");
+                    
+                    bool hasInOut = function.Parameters.Any(x => x.Direction != ParameterDirection.None);
                     var table = this.AppendTable().AddBorders();
                     foreach (var parameter in function.Parameters)
                     {
-                        table.AppendRow(parameter.Name, this.CreateParagraph(parameter.Description));
+                        string? inOut = hasInOut
+                            ? parameter.Direction switch
+                            {
+                                ParameterDirection.None => "",
+                                ParameterDirection.In => "in",
+                                ParameterDirection.Out => "out",
+                                ParameterDirection.InOut => "in,out",
+                            }
+                            : null;
+                        table.AppendRow(parameter.Name, this.CreateParagraph(parameter.Description), inOut);
                     }
                 }
 
@@ -300,12 +311,15 @@ namespace Dox2Word.Generator
 
         private IEnumerable<Paragraph> CreateParagraph(IParagraph inputParagraph)
         {
-            // TODO: Type (warning, etc)
-
             switch (inputParagraph)
             {
                 case TextParagraph textParagraph:
-                    yield return this.CreateTextParagraph(textParagraph);
+                    var paragraph = this.CreateTextParagraph(textParagraph);
+                    if (textParagraph.Type == ParagraphType.Warning)
+                    {
+                        paragraph.FormatWarning();
+                    }
+                    yield return paragraph;
                     break;
 
                 case ListParagraph listParagraph:

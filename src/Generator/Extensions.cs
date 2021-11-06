@@ -24,6 +24,20 @@ namespace Dox2Word.Generator
             return run;
         }
 
+        public static Paragraph FormatWarning(this Paragraph paragraph)
+        {
+            paragraph.ParagraphProperties ??= new ParagraphProperties();
+            paragraph.ParagraphProperties.ParagraphBorders ??= new ParagraphBorders(new LeftBorder()
+            {
+                Val = BorderValues.Single,
+                Space = 4,
+                Size = 18,
+                Color = "FFC000",
+            });
+
+            return paragraph;
+        }
+
         public static Table AddBorders(this Table table)
         {
             var tableProperties = table.Elements<TableProperties>().FirstOrDefault() ??
@@ -33,23 +47,28 @@ namespace Dox2Word.Generator
                 new RightBorder() { Val = BorderValues.Single },
                 new BottomBorder() { Val = BorderValues.Single },
                 new LeftBorder() { Val = BorderValues.Single },
-                new InsideHorizontalBorder() { Val = BorderValues.Single },
-                new InsideVerticalBorder() { Val = BorderValues.Single });
+                new InsideHorizontalBorder() { Val = BorderValues.Dotted },
+                new InsideVerticalBorder() { Val = BorderValues.Dotted });
 
             return table;
         }
 
-        public static void AppendRow(this Table table, string name, IEnumerable<Paragraph> value)
+        public static void AppendRow(this Table table, string name, IEnumerable<Paragraph> value, string? inOut = null)
         {
             var row = table.AppendChild(new TableRow());
 
+            if (inOut != null)
+            {
+                var inOutCell = row.AppendChild(new TableCell());
+                var inOutParagraph = inOutCell.AppendChild(new Paragraph());
+                var inOutRun = inOutParagraph.AppendChild(new Run(new Text(inOut)).FormatCode());
+                inOutRun.RunProperties!.Italic = new Italic();
+                SetAfter(inOutParagraph);
+            }
+
             var nameCell = row.AppendChild(new TableCell());
             var nameParagraph = nameCell.AppendChild(new Paragraph(new Run(new Text(name)).FormatCode()));
-            nameParagraph.ParagraphProperties ??= new ParagraphProperties();
-            nameParagraph.ParagraphProperties.SpacingBetweenLines = new SpacingBetweenLines()
-            {
-                After = "0",
-            };
+            SetAfter(nameParagraph);
 
             var valueCell = row.AppendChild(new TableCell());
             var valueList = value.ToList();
@@ -57,9 +76,14 @@ namespace Dox2Word.Generator
 
             if (valueList.LastOrDefault() is { } lastParagraph)
             {
-                lastParagraph.ParagraphProperties ??= new ParagraphProperties();
-                lastParagraph.ParagraphProperties.SpacingBetweenLines = new SpacingBetweenLines()
-                { 
+                SetAfter(lastParagraph);
+            }
+
+            static void SetAfter(Paragraph paragraph)
+            {
+                paragraph.ParagraphProperties ??= new ParagraphProperties();
+                paragraph.ParagraphProperties.SpacingBetweenLines = new SpacingBetweenLines()
+                {
                     After = "0",
                 };
             }
