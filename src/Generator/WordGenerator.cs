@@ -194,7 +194,11 @@ namespace Dox2Word.Generator
                 {
                     initializer = "\\\n" + initializer;
                 }
-                this.AppendChild(new Paragraph(StringToRun($"#define {macro.Name} {initializer}").FormatCode()).LeftAlign());
+                string? paramsStr = macro.HasParameters
+                    ? "(" + string.Join(", ", macro.Parameters.Select(x => x.Name)) + ")"
+                    : null;
+
+                this.AppendChild(new Paragraph(new Run(StringToElements($"#define {macro.Name}{paramsStr} {initializer}")).FormatCode()).LeftAlign());
 
                 this.Append(this.CreateDescriptions(macro.Descriptions));
 
@@ -461,25 +465,22 @@ namespace Dox2Word.Generator
             return paragraph;
         }
 
-        private static Run StringToRun(string input)
+        private static IEnumerable<OpenXmlElement> StringToElements(string input)
         {
-            var run = new Run();
-
             string[] lines = input.Split('\n');
             for (int i = 0; i < lines.Length; i++)
             {
                 if (i > 0)
                 {
-                    run.Append(new Break());
+                    yield return new Break();
                 }
-                var text = run.AppendChild(new Text(lines[i]));
+                var text = new Text(lines[i]);
                 if (lines[i].StartsWith(" "))
                 {
                     text.Space = SpaceProcessingModeValues.Preserve;
                 }
+                yield return text;
             }
-
-            return run;
         }
 
         private T AppendChild<T>(T child) where T : OpenXmlElement

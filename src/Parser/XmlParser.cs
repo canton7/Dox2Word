@@ -100,6 +100,7 @@ namespace Dox2Word.Parser
                             Descriptions = ParseDescriptions(member),
                             ReturnDescriptions = ParseReturnDescriptions(member),
                             Initializer = LinkedTextToString(member.Initializer) ?? "",
+                            HasParameters = member.Params.Count > 0,
                         };
                         macro.Parameters.AddRange(ParseParameters(member));
                         group.Macros.Add(macro);
@@ -151,6 +152,10 @@ namespace Dox2Word.Parser
         {
             foreach (var param in member.Params)
             {
+                // If there are no parameters whatsoever, we get a single <param> element
+                if (param.DeclName == null && param.DefName == null && param.Type == null)
+                    continue;
+                // Function declarations may contain a single 'void', which we want to ignore
                 if (param.Type?.Type is { Count: 1 } l && l[0] as string == "void")
                     continue;
 
