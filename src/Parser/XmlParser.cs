@@ -69,6 +69,11 @@ namespace Dox2Word.Parser
             var members = compoundDef.Sections.SelectMany(x => x.Members);
             foreach (var member in members)
             {
+                // If they didn't document it, don't include it. Doxygen itself will warn if something should have been documented
+                // but wasn't.
+                if (member.BriefDescription?.Para.Count is 0 or null)
+                    continue;
+
                 logger.Info($"Parsing member {member.Name}");
                 switch (member.Kind)
                 {
