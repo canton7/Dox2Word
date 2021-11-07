@@ -18,6 +18,7 @@ namespace Dox2Word.Parser.Models
         [XmlElement("bold", typeof(BoldMarkup))]
         [XmlElement("emphasis", typeof(ItalicMarkup))]
         [XmlElement("computeroutput", typeof(MonospaceMarkup))]
+        [XmlElement("ref", typeof(Ref))]
         [XmlAnyElement]
         public List<object> Parts { get; } = new();
     }

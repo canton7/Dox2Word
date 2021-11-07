@@ -380,6 +380,9 @@ namespace Dox2Word.Parser
                         case MonospaceMarkup m:
                             Parse(paragraphs, m, format | TextRunFormat.Monospace);
                             break;
+                        case Ref r:
+                            AddTextRun(r.Name, format | TextRunFormat.Monospace);
+                            break;
                         case XmlElement e:
                             AddTextRun(e.InnerText, format);
                             break;
