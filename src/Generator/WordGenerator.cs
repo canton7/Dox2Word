@@ -303,7 +303,7 @@ namespace Dox2Word.Generator
         private void WriteHeading(string text, int headingLevel)
         {
             var paragraph = this.AppendChild(new Paragraph());
-            paragraph.AppendChild(new Run(new Text(text)));
+            var run = paragraph.AppendChild(new Run(new Text(text)));
             paragraph.ParagraphProperties ??= new ParagraphProperties();
             paragraph.ParagraphProperties.ParagraphStyleId = new ParagraphStyleId() { Val = $"Heading{headingLevel}" };
             // The style might not have enough spacing, so force this
@@ -311,6 +311,11 @@ namespace Dox2Word.Generator
             {
                 Before = $"{8 * 20}",
             };
+
+            // If the style specifies all-caps or small-caps, undo this
+            run.RunProperties ??= new RunProperties();
+            run.RunProperties.SmallCaps = new SmallCaps() { Val = new OnOffValue(false) };
+            run.RunProperties.Caps = new Caps() { Val = new OnOffValue(false) };
         }
 
         private void WriteMiniHeading(string text)
