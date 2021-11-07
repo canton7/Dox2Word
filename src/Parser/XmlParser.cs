@@ -366,6 +366,15 @@ namespace Dox2Word.Parser
                         case UnorderedList u:
                             ParseList(u, ListParagraphType.Bullet, format);
                             break;
+                        case DocXRefSect r:
+                            if (r.Title.FirstOrDefault() != "Todo")
+                            {
+                                foreach (var docPara in r.Description.Para)
+                                {
+                                    Parse(paragraphs, docPara, format);
+                                }
+                            }
+                            break;
                         case Listing l:
                             ParseListing(l);
                             break;
