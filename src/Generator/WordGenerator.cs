@@ -169,10 +169,12 @@ namespace Dox2Word.Generator
                 this.WriteHeading($"Global variable {variable.Name}", headingLevel);
 
                 this.WriteMiniHeading("Definition");
-                string? initializer = variable.Initializer == null
-                    ? null
-                    : $" {variable.Initializer}";
-                this.AppendChild(new Paragraph(new Run(new Text($"{variable.Definition}{initializer}")).FormatCode()).LeftAlign());
+                var paragraph = this.AppendChild(new Paragraph().LeftAlign());
+                var run = paragraph.AppendChild(new Run(new Text(variable.Definition)).FormatCode());
+                if (variable.Initializer != null)
+                {
+                    run.Append(StringToElements(" " + variable.Initializer));
+                }
 
                 this.Append(this.CreateDescriptions(variable.Descriptions));
             }
@@ -470,8 +472,11 @@ namespace Dox2Word.Generator
             return paragraph;
         }
 
-        private static IEnumerable<OpenXmlElement> StringToElements(string input)
+        private static IEnumerable<OpenXmlElement> StringToElements(string? input)
         {
+            if (input == null)
+                yield break;
+
             string[] lines = input.Split('\n');
             for (int i = 0; i < lines.Length; i++)
             {
