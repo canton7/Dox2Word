@@ -156,7 +156,7 @@ namespace Dox2Word.Parser
                     .Where(x => x.Kind == DoxParamListKind.Param)
                     .SelectMany(x => x.ParameterItems)
                     .SelectMany(x => x.ParameterNameList
-                        .Select(name => (name, desc: x.ParameterDescription)))
+                        .Select(name => new { name, desc = x.ParameterDescription }))
                     .FirstOrDefault(x => DocParamNameToString(x.name.ParameterName) == name);
 
                 var direction = paramDesc?.name.ParameterName.Direction switch

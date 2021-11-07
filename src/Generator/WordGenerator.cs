@@ -85,8 +85,7 @@ namespace Dox2Word.Generator
             logger.Info($"Writing group {group.Name}");
             this.WriteHeading(group.Name, headingLevel);
 
-            this.WriteMiniHeading("Description");
-            this.Append(this.CreateDescriptions(group.Descriptions));
+            this.WriteDescriptions(group.Descriptions);
 
             if (group.Files.Count > 0)
             {
@@ -122,8 +121,7 @@ namespace Dox2Word.Generator
 
                 this.WriteHeading($"{title} {cls.Name}", headingLevel);
 
-                this.WriteMiniHeading("Description");
-                this.Append(this.CreateDescriptions(cls.Descriptions));
+                this.WriteDescriptions(cls.Descriptions);
 
                 if (cls.Variables.Count > 0)
                 {
@@ -148,8 +146,7 @@ namespace Dox2Word.Generator
 
                 this.WriteHeading($"Enum {@enum.Name}", headingLevel);
 
-                this.WriteMiniHeading("Description");
-                this.Append(this.CreateDescriptions(@enum.Descriptions));
+                this.WriteDescriptions(@enum.Descriptions);
 
                 if (@enum.Values.Count > 0)
                 {
@@ -175,9 +172,8 @@ namespace Dox2Word.Generator
                 string? initializer = variable.Initializer == null
                     ? null
                     : $" {variable.Initializer}";
-                this.AppendChild(new Paragraph(new Run(new Text($"{variable.Definition}{initializer}")).FormatCode()));
+                this.AppendChild(new Paragraph(new Run(new Text($"{variable.Definition}{initializer}")).FormatCode()).LeftAlign());
 
-                this.WriteMiniHeading("Description");
                 this.Append(this.CreateDescriptions(variable.Descriptions));
             }
         }
@@ -191,9 +187,15 @@ namespace Dox2Word.Generator
                 this.WriteHeading($"Macro {macro.Name}", headingLevel);
 
                 this.WriteMiniHeading($"Definition");
-                this.AppendChild(new Paragraph(new Run(new Text($"#define {macro.Name} {macro.Initializer}")).FormatCode()));
 
-                this.WriteMiniHeading("Description");
+                // If it's a multi-line macro declaration, push it only a new line and add \ to the first line
+                string initializer = macro.Initializer;
+                if (initializer.StartsWith(" ") && initializer.Contains("\n"))
+                {
+                    initializer = "\\\n" + initializer;
+                }
+                this.AppendChild(new Paragraph(StringToRun($"#define {macro.Name} {initializer}").FormatCode()).LeftAlign());
+
                 this.Append(this.CreateDescriptions(macro.Descriptions));
 
                 if (macro.Parameters.Count > 0)
@@ -220,7 +222,7 @@ namespace Dox2Word.Generator
                 this.WriteHeading($"Function {function.Name}", headingLevel);
 
                 this.WriteMiniHeading("Signature");
-                var paragraph = this.AppendChild(new Paragraph());
+                var paragraph = this.AppendChild(new Paragraph().LeftAlign());
                 var run = paragraph.AppendChild(new Run().FormatCode());
                 run.AppendChild(new Text(function.Definition + "("));
 
@@ -248,7 +250,6 @@ namespace Dox2Word.Generator
                     run.AppendChild(new Text("void)"));
                 }
 
-                this.WriteMiniHeading("Description");
                 this.Append(this.CreateDescriptions(function.Descriptions));
 
                 if (function.Parameters.Count > 0)
@@ -324,6 +325,16 @@ namespace Dox2Word.Generator
                 Line = "240",
             };
             heading.ParagraphProperties.KeepNext = new KeepNext();
+        }
+
+        private void WriteDescriptions(Descriptions descriptions)
+        {
+            var paragraphs = this.CreateDescriptions(descriptions).ToList();
+            if (paragraphs.Count > 0)
+            {
+                this.WriteMiniHeading("Description");
+                this.Append(paragraphs);
+            }
         }
 
         private IEnumerable<Paragraph> CreateDescriptions(Descriptions descriptions)
@@ -430,7 +441,7 @@ namespace Dox2Word.Generator
 
         private Paragraph CreateCodeParagraph(CodeParagraph codeParagraph)
         {
-            var paragraph = new Paragraph();
+            var paragraph = new Paragraph().LeftAlign();
             var paragraphProperties = paragraph.AppendChild(new ParagraphProperties());
             paragraphProperties.AppendChild(new ParagraphBorders(
                 new TopBorder() { Val = BorderValues.Single },
@@ -448,6 +459,27 @@ namespace Dox2Word.Generator
                 run.AppendChild(new Text(codeParagraph.Lines[i]) { Space = SpaceProcessingModeValues.Preserve });
             }
             return paragraph;
+        }
+
+        private static Run StringToRun(string input)
+        {
+            var run = new Run();
+
+            string[] lines = input.Split('\n');
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (i > 0)
+                {
+                    run.Append(new Break());
+                }
+                var text = run.AppendChild(new Text(lines[i]));
+                if (lines[i].StartsWith(" "))
+                {
+                    text.Space = SpaceProcessingModeValues.Preserve;
+                }
+            }
+
+            return run;
         }
 
         private T AppendChild<T>(T child) where T : OpenXmlElement

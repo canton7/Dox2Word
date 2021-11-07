@@ -29,7 +29,7 @@ namespace Dox2Word.Generator
                 ?.AbstractNumberId?.Value;
 
             return abstractNumberId != null
-                ? this.FindNumId(abstractNumberId.Value)
+                ? abstractNumberId.Value
                 : this.CreateAbstractNum("BulletStyle.xml");
         }
 
@@ -41,7 +41,7 @@ namespace Dox2Word.Generator
                 ?.AbstractNumberId?.Value;
 
             return abstractNumberId != null
-                ? this.FindNumId(abstractNumberId.Value)
+                ? abstractNumberId.Value
                 : this.CreateAbstractNum("NumberedStyle.xml");
         }
 
@@ -80,13 +80,6 @@ namespace Dox2Word.Generator
             this.numberingPart.Numbering.InsertAfter(numberingInstance, this.numberingPart.Numbering.Elements<NumberingInstance>().LastOrDefault());
 
             return numberId;
-        }
-
-        private int FindNumId(int abstractNumId)
-        {
-            return this.numberingPart.Numbering.Elements<NumberingInstance>()
-                .First(x => x.Elements<AbstractNumId>().Any(n => n.Val?.Value == abstractNumId))
-                .NumberID!.Value;
         }
     }
 }

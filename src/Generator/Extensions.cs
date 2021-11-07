@@ -15,6 +15,13 @@ namespace Dox2Word.Generator
             return run;
         }
 
+        public static Paragraph LeftAlign(this Paragraph paragraph)
+        {
+            paragraph.ParagraphProperties ??= new ParagraphProperties();
+            paragraph.ParagraphProperties.Justification = new Justification() { Val = JustificationValues.Left };
+            return paragraph;
+        }
+
         public static Paragraph FormatWarning(this Paragraph paragraph)
         {
             paragraph.ParagraphProperties ??= new ParagraphProperties();
