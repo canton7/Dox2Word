@@ -1,8 +1,7 @@
 /**
- * @defgroup Common Common
- * Common functionality
+ * @defgroup Outer Outer Module
+ * Module which is based on the root.
+ *
+ * Detailed description
  */
-/**
- * @defgroup Utils Utilities
- * Utilities used by things
- */
+ 

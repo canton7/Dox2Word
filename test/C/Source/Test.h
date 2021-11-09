@@ -1,0 +1,160 @@
+/**
+ * @defgroup Test Test Group
+ * @ingroup Outer
+ * 
+ * Brief description.
+ * 
+ * Detailed description.
+ * 
+ * <strong>Bold <em>italic @c typewriter text</em></strong>
+ * 
+ * @warning Warning with <strong>bold text</strong>
+ *
+ * A numbered list:
+ *  1. Item 1
+ *    1. Item 1.1
+ *  2. Item 2
+ * 
+ * A bulleted list:
+ * - Item 1
+ *   - Item 1.1
+ * - Item2
+ * 
+ * @code{.c}
+ * This is a code sample
+ * @endcode
+ * 
+ * @todo This is a TODO
+ * 
+ * @{
+ * @file
+ */
+
+#include <stdint.h>
+#include <stdbool.h>
+
+/// Single-line function-like macro
+///
+/// @param x Input parameter
+/// @returns Return value
+/// @retval 1 Retval 1
+/// @retval 2 Retval 2
+#define FUNCTION_LIKE_MACRO(x) (uint32_t)(x * 2)
+
+/// Multi-line function-like macro
+#define MULTI_FUNCTION_LIKE_MACRO(x, y) \
+    do { \
+        printf("%i\n", x + y); \
+    } while (0)
+
+/// Constant macro
+#define COMMON_UNIT_CONST (uint32_t)3
+
+/**
+ * Global extern variable
+ */
+extern int32_t GlobalVariable;
+
+/**
+ * Global variable with multi-line initializer
+ */
+static const int32_t MultilineGlobalVariable = 1 +
+    (2 * 3) + 4;
+
+/**
+ * A structure
+ * 
+ * Detailed description
+ */
+typedef struct Struct_tag
+{
+    /// Member 'i'
+    ///
+    /// Detailed description paragraph 1
+    ///
+    /// Detailed description paragraph 2
+	int32_t i;
+
+    bool j; ///< Single-line comment
+} Struct_t;
+
+/**
+ * An enum
+ */
+typedef enum Enum_tag
+{
+    Enum_One,       ///< Implicit value
+    Enum_Two = 2,   ///< Explicit value
+
+    /// Brief description.
+    /// Detailed description.
+    Enum_Three,
+
+    /// Explicit value which is another member
+    Enum_Four = Enum_Three
+} Enum_t;
+
+/**
+ * A test union
+ */
+typedef union Union_tag
+{
+    /// Union member 1
+    uint8_t one;
+
+    /// Union member 2
+    CommonUnit_Enum_t two;
+} Union_t;
+
+/**
+ * A struct containing an anonymous union
+ */
+typedef struct StructWithUnion_tag
+{
+    /// The type discriminator
+    uint8_t type;
+    union
+    {
+        uint16_t one : 4; ///< A bitfield
+        uint32_t two;   ///< A normal field
+    };
+} StructWithUnion_t;
+
+/**
+ * A typedef to another type
+ */
+typedef uint8_t TypedefType_t;
+
+/**
+ * A function which takes void and returns void
+ */
+void VoidFunction(void);
+
+/**
+ * A function which has an empty parameter list
+ */
+void VoidlessFunction();
+
+/**
+ * A function with parameters.
+ * 
+ * Detailed description.
+ * 
+ * @param[in] a Parameter a
+ * @param[out] b Parameter b
+ * @param[in,out] c Parameter C
+ * @param d Parameter d with @c typewriter text
+ * @returns Return value
+ * @retval 1 Retval 1
+ * @retval 2 Retval 2
+ * 
+ * Text after parameter docs
+ */
+uint8_t FunctionWithParameters(uint8_t* a, const TypedefType_t* b, Struct_t* const c, Enum_t d);
+
+/**
+ * Thingy docs
+ */
+void Thingy(void);
+
+/// @}
