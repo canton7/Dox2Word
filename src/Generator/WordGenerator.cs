@@ -170,7 +170,7 @@ namespace Dox2Word.Generator
 
                 this.WriteMiniHeading("Definition");
                 var paragraph = this.AppendChild(new Paragraph().LeftAlign());
-                var run = paragraph.AppendChild(new Run(new Text(variable.Definition)).FormatCode());
+                var run = paragraph.AppendChild(new Run(new Text(variable.Definition ?? "")).FormatCode());
                 if (variable.Initializer != null)
                 {
                     run.Append(StringToElements(" " + variable.Initializer));
@@ -204,7 +204,7 @@ namespace Dox2Word.Generator
 
                 this.Append(this.CreateDescriptions(macro.Descriptions));
 
-                if (macro.Parameters.Count > 0)
+                if (macro.Parameters.Count > 0 && macro.Parameters.Any(x => x.Description.Count > 0))
                 {
                     this.WriteMiniHeading("Parameters");
 
@@ -230,7 +230,7 @@ namespace Dox2Word.Generator
                 this.WriteMiniHeading("Signature");
                 var paragraph = this.AppendChild(new Paragraph().LeftAlign());
                 var run = paragraph.AppendChild(new Run().FormatCode());
-                run.AppendChild(new Text(function.Definition + "("));
+                run.AppendChild(new Text(function.Definition));
 
                 if (function.Parameters.Count > 0)
                 {
@@ -238,6 +238,7 @@ namespace Dox2Word.Generator
                     // This is because the parameters don't contain info such as whether a '*' was next to the
                     // type or variable name, and it's hard to work this out after the fact.
 
+                    run.AppendChild(new Text("("));
                     string[] parameters = function.ArgsString.TrimStart('(').TrimEnd(')').Split(',');
                     for (int i = 0; i < parameters.Length; i++)
                     {
@@ -253,12 +254,12 @@ namespace Dox2Word.Generator
                 }
                 else
                 {
-                    run.AppendChild(new Text("void)"));
+                    run.AppendChild(new Text(function.ArgsString));
                 }
 
-                this.Append(this.CreateDescriptions(function.Descriptions));
+                this.WriteDescriptions(function.Descriptions);
 
-                if (function.Parameters.Count > 0)
+                if (function.Parameters.Count > 0 && function.Parameters.Any(x => x.Description.Count > 0))
                 {
                     this.WriteMiniHeading("Parameters");
 
@@ -316,8 +317,8 @@ namespace Dox2Word.Generator
 
             // If the style specifies all-caps or small-caps, undo this
             run.RunProperties ??= new RunProperties();
-            run.RunProperties.SmallCaps = new SmallCaps() { Val = new OnOffValue(false) };
-            run.RunProperties.Caps = new Caps() { Val = new OnOffValue(false) };
+            run.RunProperties.SmallCaps = new SmallCaps() { Val = false };
+            run.RunProperties.Caps = new Caps() { Val = false };
         }
 
         private void WriteMiniHeading(string text)
@@ -340,11 +341,10 @@ namespace Dox2Word.Generator
 
         private void WriteDescriptions(Descriptions descriptions)
         {
-            var paragraphs = this.CreateDescriptions(descriptions).ToList();
-            if (paragraphs.Count > 0)
-            {
+            if (descriptions.HasDescriptions)
+            { 
                 this.WriteMiniHeading("Description");
-                this.Append(paragraphs);
+                this.Append(this.CreateDescriptions(descriptions));
             }
         }
 
@@ -417,11 +417,17 @@ namespace Dox2Word.Generator
 
             foreach (var listItem in listParagraph.Items)
             {
-                var paragraphProperties = new ParagraphProperties();
-                paragraphProperties.AppendChild(new NumberingProperties(
-                    new NumberingLevelReference() { Val = level },
-                    new NumberingId() { Val = numberId }));
-                paragraphProperties.AppendChild(new SpacingBetweenLines() { After = "0" });  // Get rid of space between bullets
+                var paragraphProperties = new ParagraphProperties()
+                {
+                    //ParagraphStyleId = new ParagraphStyleId() { Val = "ListParagraph" },
+                    NumberingProperties = new NumberingProperties()
+                    {
+                        NumberingLevelReference = new NumberingLevelReference() { Val = level },
+                        NumberingId = new NumberingId() { Val = numberId },
+                    },
+                    ContextualSpacing = new ContextualSpacing(),
+                };
+                //paragraphProperties.AppendChild(new SpacingBetweenLines() { After = "0" });  // Get rid of space between bullets
 
                 // Single paragraphs are a list item. Child lists are rendered as a child list.
                 // Everything else doesn't have the list style applied to it, and the list will continue after it

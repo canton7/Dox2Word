@@ -136,7 +136,7 @@ namespace Dox2Word.Parser
                     break;
                     case DoxMemberKind.Variable:
                     {
-                        group.GlobalVariables.Add(ParseVariable(member));
+                        Merge(group.GlobalVariables, ParseVariable(member));
                     }
                     break;
                     default:
@@ -228,9 +228,10 @@ namespace Dox2Word.Parser
         {
             var variable = new VariableDoc()
             {
-                Name = member.Name ?? "",
-                Type = LinkedTextToString(member.Type) ?? "",
-                Definition = member.Definition ?? "",
+                Id = member.Id,
+                Name = member.Name,
+                Type = LinkedTextToString(member.Type),
+                Definition = member.Definition,
                 Descriptions = ParseDescriptions(member),
                 Initializer = LinkedTextToString(member.Initializer),
                 Bitfield = member.Bitfield,
@@ -454,6 +455,19 @@ namespace Dox2Word.Parser
             }
 
             return paragraphs;
+        }
+
+        private static void Merge<T>(List<T> collection, T newItem) where T : IMergable<T>
+        {
+            var existing = collection.FirstOrDefault(x => x.Id == newItem.Id);
+            if (existing != null)
+            {
+                existing.MergeWith(newItem);
+            }
+            else
+            {
+                collection.Add(newItem);
+            }
         }
 
         private CompoundDef ParseDoxygenFile(string refId)

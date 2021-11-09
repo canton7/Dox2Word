@@ -103,7 +103,7 @@ typedef union Union_tag
     uint8_t one;
 
     /// Union member 2
-    CommonUnit_Enum_t two;
+    Enum_t two;
 } Union_t;
 
 /**
@@ -153,8 +153,14 @@ void VoidlessFunction();
 uint8_t FunctionWithParameters(uint8_t* a, const TypedefType_t* b, Struct_t* const c, Enum_t d);
 
 /**
- * Thingy docs
+ * A static inline function
+ * 
+ * @param x input
+ * @returns @c x doubled
  */
-void Thingy(void);
+static inline int32_t StaticFunction(int32_t x)
+{
+    return x * 2;
+}
 
 /// @}

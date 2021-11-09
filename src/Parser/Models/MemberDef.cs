@@ -8,6 +8,9 @@ namespace Dox2Word.Parser.Models
         [XmlAttribute("kind")]
         public DoxMemberKind Kind { get; set; }
 
+        [XmlAttribute("id")]
+        public string Id { get; set; } = null!;
+
         [XmlAttribute("prot")]
         public DoxProtectionKind Protection { get; set; }
 
