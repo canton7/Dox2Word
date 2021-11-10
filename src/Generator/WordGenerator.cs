@@ -12,6 +12,7 @@ namespace Dox2Word.Generator
     public class WordGenerator
     {
         public const string Placeholder = "<INSERT HERE>";
+        private const string ListParagraphStyleId = "ListParagraph";
         private static readonly Logger logger = Logger.Instance;
 
         private readonly WordprocessingDocument doc;
@@ -36,8 +37,34 @@ namespace Dox2Word.Generator
                 numberingPart = doc.MainDocumentPart.AddNewPart<NumberingDefinitionsPart>("NumberingDefinitionsPart001");
                 new Numbering().Save(numberingPart);
             }
+            var stylesPart = doc.MainDocumentPart.StyleDefinitionsPart;
+            if (stylesPart == null)
+            {
+                stylesPart = doc.MainDocumentPart.AddNewPart<StyleDefinitionsPart>();
+                new Styles().Save(stylesPart);
+            }
 
             this.listStyles = new ListStyles(numberingPart);
+
+            if (!stylesPart.Styles!.Elements<Style>().Any(x => x.StyleId == ListParagraphStyleId))
+            {
+                // In order to get list items next to each other, but still have space under the list, we
+                // apply the same style to each, and set "Don't add space between paragraphs of the same style"
+                // (ContextualSpacing). Since we apply the same style to each, this works. This is what Word does: if
+                // the document already has a list, Word will have inserted this style; if not, we need to do it
+                // ourselves.
+                var style = new Style()
+                {
+                    StyleId = ListParagraphStyleId,
+                    StyleName = new StyleName() {  Val = "List Paragraph" },
+                    Type = StyleValues.Paragraph
+                };
+                style.Append(new ParagraphProperties()
+                {
+                    ContextualSpacing = new ContextualSpacing(),
+                });
+                stylesPart.Styles.Append(style);
+            }
         }
 
         public void Generate(Project project)
@@ -419,15 +446,13 @@ namespace Dox2Word.Generator
             {
                 var paragraphProperties = new ParagraphProperties()
                 {
-                    //ParagraphStyleId = new ParagraphStyleId() { Val = "ListParagraph" },
+                    ParagraphStyleId = new ParagraphStyleId() { Val = ListParagraphStyleId },
                     NumberingProperties = new NumberingProperties()
                     {
                         NumberingLevelReference = new NumberingLevelReference() { Val = level },
                         NumberingId = new NumberingId() { Val = numberId },
                     },
-                    ContextualSpacing = new ContextualSpacing(),
                 };
-                //paragraphProperties.AppendChild(new SpacingBetweenLines() { After = "0" });  // Get rid of space between bullets
 
                 // Single paragraphs are a list item. Child lists are rendered as a child list.
                 // Everything else doesn't have the list style applied to it, and the list will continue after it
