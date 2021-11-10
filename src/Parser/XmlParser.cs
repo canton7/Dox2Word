@@ -235,6 +235,7 @@ namespace Dox2Word.Parser
                 Descriptions = ParseDescriptions(member),
                 Initializer = LinkedTextToString(member.Initializer),
                 Bitfield = member.Bitfield,
+                ArgsString = member.ArgsString,
             };
             return variable;
         }
@@ -285,7 +286,7 @@ namespace Dox2Word.Parser
             if (input == null)
                 return null;
 
-            return string.Join(" ", input.Select(x =>
+            return string.Concat(input.Select(x =>
                 x switch
                 {
                     string s => s,

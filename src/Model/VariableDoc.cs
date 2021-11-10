@@ -9,6 +9,7 @@
         public Descriptions Descriptions { get; set; } = null!;
         public string? Initializer { get; internal set; }
         public string? Bitfield { get; set; }
+        public string? ArgsString { get; set; }
 
         void IMergable<VariableDoc>.MergeWith(VariableDoc other)
         {
@@ -27,7 +28,7 @@
                 this.Initializer = null;
             }
             this.Bitfield ??= other.Bitfield;
-
+            this.ArgsString ??= other.ArgsString;
         }
     }
 }

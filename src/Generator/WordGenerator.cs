@@ -159,7 +159,7 @@ namespace Dox2Word.Generator
                         string? bitfield = variable.Bitfield == null
                             ? null
                             : $" :{variable.Bitfield}";
-                        table.AppendRow($"{variable.Type} {variable.Name}{bitfield}", this.CreateDescriptions(variable.Descriptions));
+                        table.AppendRow($"{variable.Type} {variable.Name}{variable.ArgsString}{bitfield}", this.CreateDescriptions(variable.Descriptions));
                     }
                 }
             }
@@ -203,7 +203,7 @@ namespace Dox2Word.Generator
                     run.Append(StringToElements(" " + variable.Initializer));
                 }
 
-                this.Append(this.CreateDescriptions(variable.Descriptions));
+                this.WriteDescriptions(variable.Descriptions);
             }
         }
 
@@ -229,7 +229,7 @@ namespace Dox2Word.Generator
 
                 this.AppendChild(new Paragraph(new Run(StringToElements($"#define {macro.Name}{paramsStr} {initializer}")).FormatCode()).LeftAlign());
 
-                this.Append(this.CreateDescriptions(macro.Descriptions));
+                this.WriteDescriptions(macro.Descriptions);
 
                 if (macro.Parameters.Count > 0 && macro.Parameters.Any(x => x.Description.Count > 0))
                 {
