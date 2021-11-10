@@ -20,6 +20,7 @@ namespace Dox2Word.Parser.Models
         [XmlElement("emphasis", typeof(ItalicMarkup))]
         [XmlElement("computeroutput", typeof(MonospaceMarkup))]
         [XmlElement("ref", typeof(Ref))]
+        [XmlElement("table", typeof(DocTable))]
         [XmlAnyElement]
         public List<object> Parts { get; } = new();
     }

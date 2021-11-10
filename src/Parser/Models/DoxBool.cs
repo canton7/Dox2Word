@@ -4,10 +4,10 @@ namespace Dox2Word.Parser.Models
 {
     public enum DoxBool
     {
-        [XmlEnum("yes")]
-        Yes,
-
         [XmlEnum("no")]
         No,
+
+        [XmlEnum("yes")]
+        Yes,
     }
 }

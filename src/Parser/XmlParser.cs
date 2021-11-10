@@ -394,6 +394,8 @@ namespace Dox2Word.Parser
                         case Ref r:
                             AddTextRun(r.Name, format | TextRunFormat.Monospace);
                             break;
+                        case DocTable t:
+                            break; // TODO
                         case XmlElement e:
                             AddTextRun(e.InnerText, format);
                             break;
