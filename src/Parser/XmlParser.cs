@@ -307,7 +307,7 @@ namespace Dox2Word.Parser
 
         private static IParagraph ParaToParagraph(DocPara? para)
         {
-            return ParaToParagraphs(para).FirstOrDefault() ?? new TextParagraph();
+            return ParaParser.Parse(para).FirstOrDefault() ?? new TextParagraph();
         }
 
         private static IParagraph ParasToParagraph(IEnumerable<DocPara>? paras)
@@ -320,144 +320,7 @@ namespace Dox2Word.Parser
             if (paras == null)
                 return Enumerable.Empty<TextParagraph>();
 
-            return paras.SelectMany(x => ParaToParagraphs(x)).Where(x => x.Count > 0);
-        }
-
-        private static List<IParagraph> ParaToParagraphs(DocPara? para)
-        {
-            var paragraphs = new List<IParagraph>();
-
-            if (para == null)
-                return paragraphs;
-
-            Parse(paragraphs, para, TextRunFormat.None);
-
-            static void Parse(List<IParagraph> paragraphs, DocPara? para, TextRunFormat format)
-            {
-                void NewParagraph(ParagraphType type = ParagraphType.Normal) => paragraphs.Add(new TextParagraph(type));
-
-                void Add(TextRun textRun)
-                {
-                    if (paragraphs.LastOrDefault() is not TextParagraph paragraph)
-                    {
-                        paragraph = new TextParagraph();
-                        paragraphs.Add(paragraph);
-                    }
-                    paragraph.Add(textRun);
-                }
-                void AddTextRun(string text, TextRunFormat format) => Add(new TextRun(text.TrimStart('\n'), format));
-
-                if (para == null)
-                    return;
-
-                foreach (object? part in para.Parts)
-                {
-                    switch (part)
-                    {
-                        case string s:
-                            AddTextRun(s, format);
-                            break;
-                        case DocSimpleSect s when s.Kind == DoxSimpleSectKind.Warning:
-                            NewParagraph(ParagraphType.Warning);
-                            Parse(paragraphs, s.Para, format);
-                            NewParagraph();
-                            break;
-                        case OrderedList o:
-                            ParseList(o, ListParagraphType.Number, format);
-                            break;
-                        case UnorderedList u:
-                            ParseList(u, ListParagraphType.Bullet, format);
-                            break;
-                        case DocXRefSect r:
-                            if (r.Title.FirstOrDefault() != "Todo")
-                            {
-                                foreach (var docPara in r.Description.Para)
-                                {
-                                    Parse(paragraphs, docPara, format);
-                                }
-                            }
-                            break;
-                        case Listing l:
-                            ParseListing(l);
-                            break;
-                        case Dot d:
-                            break;
-                        case BoldMarkup b:
-                            Parse(paragraphs, b, format | TextRunFormat.Bold);
-                            break;
-                        case ItalicMarkup i:
-                            Parse(paragraphs, i, format | TextRunFormat.Italic);
-                            break;
-                        case MonospaceMarkup m:
-                            Parse(paragraphs, m, format | TextRunFormat.Monospace);
-                            break;
-                        case Ref r:
-                            AddTextRun(r.Name, format | TextRunFormat.Monospace);
-                            break;
-                        case DocTable t:
-                            break; // TODO
-                        case XmlElement e:
-                            AddTextRun(e.InnerText, format);
-                            break;
-                        case DocSimpleSect:
-                            break; // Ignore
-                        default:
-                            logger.Warning($"Unexpected text {part} ({part.GetType()}). Ignoring");
-                            break;
-                    };
-                }
-
-                void ParseList(DocList docList, ListParagraphType type, TextRunFormat format)
-                {
-                    var list = new ListParagraph(type);
-                    paragraphs.Add(list);
-                    foreach (var item in docList.Items)
-                    {
-                        // It could be that the para contains a warning or something which will add
-                        // another paragraph. In this case, we'll just ignore it.
-                        var paragraphList = new List<IParagraph>();
-                        foreach (var para in item.Paras)
-                        {
-                            Parse(paragraphList, para, format);
-                        }
-                        list.Items.AddRange(paragraphList);
-                    }
-                }
-
-                void ParseListing(Listing listing)
-                {
-                    var codeParagraph = new CodeParagraph();
-                    paragraphs.Add(codeParagraph);
-                    foreach (var codeline in listing.Codelines)
-                    {
-                        var sb = new StringBuilder();
-                        foreach (var highlight in codeline.Highlights)
-                        {
-                            foreach (object part in highlight.Parts)
-                            {
-                                switch (part)
-                                {
-                                    case string s:
-                                        sb.Append(s);
-                                        break;
-                                    case Sp:
-                                        sb.Append(" ");
-                                        break;
-                                    case XmlElement e:
-                                        sb.Append(e.InnerText);
-                                        break;
-                                    default:
-                                        logger.Warning($"Unexpected code part {part} ({part.GetType()}). Ignoring");
-                                        break;
-                                }
-                            }
-                        }
-                        codeParagraph.Lines.Add(sb.ToString());
-                    }
-                }
-            }
-
-            return paragraphs;
+            return paras.SelectMany(x => ParaParser.Parse(x)).Where(x => x.Count > 0);
         }
 
         private static void Merge<T>(List<T> collection, T newItem) where T : IMergable<T>
