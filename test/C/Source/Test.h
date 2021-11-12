@@ -33,6 +33,7 @@
  * | ----: | :----: | :---- |
  * | 10    | 10     | 10    |
  * | This is some long text | This is some long text   | This is some long text  |
+ * | ^     | Merge  ||
  * 
  * @{
  * @file

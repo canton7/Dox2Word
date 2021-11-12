@@ -516,17 +516,48 @@ namespace Dox2Word.Generator
             };
             table.AddColumns(tableDoc.NumColumns);
 
+            // Column index -> how many rowspans are left
+            int[] colIndexToRowSpan = new int[tableDoc.NumColumns];
+
             foreach (var rowDoc in tableDoc.Rows)
             {
                 var row = table.AppendChild(new TableRow());
-                foreach (var cellDoc in rowDoc.Cells)
+                for (int i = 0, cellDocIndex = 0; i < tableDoc.NumColumns; i++, cellDocIndex++)
                 {
                     var cell = row.AppendChild(new TableCell());
-                    var valueList = cellDoc.Paragraphs.SelectMany(x => this.CreateParagraph(x)).ToList();
-                    cell.Append(valueList);
-                    for (int i = 0; i < valueList.Count; i++)
+
+                    // If we're currently spanning this column there won't be an entry in rowDoc.Cells, and we'll
+                    // have to synthesise it
+                    if (colIndexToRowSpan[i] > 0)
                     {
-                        valueList[i].FormatTableCellElement(after: i == valueList.Count - 1);
+                        cell.TableCellProperties ??= new TableCellProperties();
+                        cell.TableCellProperties.VerticalMerge = new VerticalMerge();
+                        colIndexToRowSpan[i]--;
+                        cellDocIndex--;
+                    }
+                    else
+                    {
+                        var cellDoc = rowDoc.Cells[cellDocIndex];
+
+                        if (cellDoc.ColSpan > 1)
+                        {
+                            cell.TableCellProperties ??= new TableCellProperties();
+                            cell.TableCellProperties.GridSpan = new GridSpan() { Val = cellDoc.ColSpan };
+                            i++;
+                        }
+                        if (cellDoc.RowSpan > 1)
+                        {
+                            cell.TableCellProperties ??= new TableCellProperties();
+                            cell.TableCellProperties.VerticalMerge = new VerticalMerge() { Val = MergedCellValues.Restart };
+                            colIndexToRowSpan[i] = cellDoc.RowSpan - 1;
+                        }
+
+                        var valueList = cellDoc.Paragraphs.SelectMany(x => this.CreateParagraph(x)).ToList();
+                        cell.Append(valueList);
+                        for (int j = 0; j < valueList.Count; j++)
+                        {
+                            valueList[j].FormatTableCellElement(after: j == valueList.Count - 1);
+                        }
                     }
                 }
             }
