@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace Dox2Word.Generator
@@ -51,7 +52,7 @@ namespace Dox2Word.Generator
             return table;
         }
 
-        public static void AppendRow(this Table table, string name, IEnumerable<Paragraph> value, string? inOut = null)
+        public static void AppendRow(this Table table, string name, IEnumerable<OpenXmlElement> value, string? inOut = null)
         {
             var row = table.AppendChild(new TableRow());
 
@@ -61,12 +62,12 @@ namespace Dox2Word.Generator
                 var inOutParagraph = inOutCell.AppendChild(new Paragraph());
                 var inOutRun = inOutParagraph.AppendChild(new Run(new Text(inOut)).FormatCode());
                 inOutRun.RunProperties!.Italic = new Italic();
-                Format(inOutParagraph, after: true);
+                inOutParagraph.FormatTableCellElement(after: true);
             }
 
             var nameCell = row.AppendChild(new TableCell());
             var nameParagraph = nameCell.AppendChild(new Paragraph(new Run(new Text(name)).FormatCode()));
-            Format(nameParagraph, after: true);
+            nameParagraph.FormatTableCellElement(after: true);
 
             var valueCell = row.AppendChild(new TableCell());
             var valueList = value.ToList();
@@ -74,10 +75,13 @@ namespace Dox2Word.Generator
 
             for (int i = 0; i < valueList.Count; i++)
             {
-                Format(valueList[i], after: i == valueList.Count - 1);
+                valueList[i].FormatTableCellElement(after: i == valueList.Count - 1);
             }
+        }
 
-            static void Format(Paragraph paragraph, bool after)
+        public static OpenXmlElement FormatTableCellElement(this OpenXmlElement element, bool after)
+        {
+            if (element is Paragraph paragraph)
             {
                 paragraph.ParagraphProperties ??= new ParagraphProperties();
                 paragraph.ParagraphProperties.KeepNext = new KeepNext();
@@ -89,6 +93,8 @@ namespace Dox2Word.Generator
                     };
                 }
             }
+
+            return element;
         }
 
         public static TResult MaxOrDefault<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult> selector, TResult defaultValue)

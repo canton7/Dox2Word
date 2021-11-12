@@ -375,7 +375,7 @@ namespace Dox2Word.Generator
             }
         }
 
-        private IEnumerable<Paragraph> CreateDescriptions(Descriptions descriptions)
+        private IEnumerable<OpenXmlElement> CreateDescriptions(Descriptions descriptions)
         {
             foreach (var p in this.CreateParagraph(descriptions.BriefDescription))
             {
@@ -390,7 +390,7 @@ namespace Dox2Word.Generator
             }
         }
 
-        private IEnumerable<Paragraph> CreateParagraph(IParagraph inputParagraph)
+        private IEnumerable<OpenXmlElement> CreateParagraph(IParagraph inputParagraph)
         {
             switch (inputParagraph)
             {
@@ -412,6 +412,10 @@ namespace Dox2Word.Generator
 
                 case CodeParagraph codeParagraph:
                     yield return this.CreateCodeParagraph(codeParagraph);
+                    break;
+
+                case TableDoc table:
+                    yield return this.CreateTable(table);
                     break;
 
                 default:
@@ -438,7 +442,7 @@ namespace Dox2Word.Generator
             return paragraph;
         }
 
-        private IEnumerable<Paragraph> CreateListParagraph(ListParagraph listParagraph, int level = 0)
+        private IEnumerable<OpenXmlElement> CreateListParagraph(ListParagraph listParagraph, int level = 0)
         {
             int numberId = this.listStyles.CreateList(listParagraph.Type);
 
@@ -501,6 +505,28 @@ namespace Dox2Word.Generator
                 run.AppendChild(new Text(codeParagraph.Lines[i]) { Space = SpaceProcessingModeValues.Preserve });
             }
             return paragraph;
+        }
+
+        private OpenXmlElement CreateTable(TableDoc tableDoc)
+        {
+            var table = new Table();
+
+            foreach (var rowDoc in tableDoc.Rows)
+            {
+                var row = table.AppendChild(new TableRow());
+                foreach (var cellDoc in rowDoc.Cells)
+                {
+                    var cell = row.AppendChild(new TableCell());
+                    var valueList = cellDoc.Paragraphs.SelectMany(x => this.CreateParagraph(x)).ToList();
+                    cell.Append(valueList);
+                    for (int i = 0; i < valueList.Count; i++)
+                    {
+                        valueList[i].FormatTableCellElement(after: i == valueList.Count - 1);
+                    }
+                }
+            }
+
+            return table;
         }
 
         private static IEnumerable<OpenXmlElement> StringToElements(string? input)
