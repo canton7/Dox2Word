@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <None Remove="Generator\BulletStyle.xml" />
+    <None Remove="Generator\DoxTableStyle.xml" />
     <None Remove="Generator\NumberedStyle.xml" />
   </ItemGroup>
 
@@ -17,6 +18,7 @@
     <EmbeddedResource Include="Generator\BulletStyle.xml">
       <Generator></Generator>
     </EmbeddedResource>
+    <EmbeddedResource Include="Generator\DoxTableStyle.xml" />
     <EmbeddedResource Include="Generator\NumberedStyle.xml" />
   </ItemGroup>
 

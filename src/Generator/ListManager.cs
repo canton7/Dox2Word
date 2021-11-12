@@ -6,14 +6,14 @@ using Dox2Word.Model;
 
 namespace Dox2Word.Generator
 {
-    public class ListStyles
+    public class ListManager
     {
         private readonly NumberingDefinitionsPart numberingPart;
 
         private readonly int bulletAbstractNumId;
         private readonly int numberedAbstractNumId;
 
-        public ListStyles(NumberingDefinitionsPart numberingPart)
+        public ListManager(NumberingDefinitionsPart numberingPart)
         {
             this.numberingPart = numberingPart;
 
@@ -45,12 +45,12 @@ namespace Dox2Word.Generator
                 : this.CreateAbstractNum("NumberedStyle.xml");
         }
 
-        private int CreateAbstractNum(string fileName)
+        private int CreateAbstractNum(string filename)
         {
             int abstractNumId = this.numberingPart.Numbering.Elements<AbstractNum>().MaxOrDefault(x => x.AbstractNumberId?.Value ?? 0, 0) + 1;
 
             var abstractNum = new AbstractNum() { AbstractNumberId = abstractNumId };
-            using var sr = new StreamReader(typeof(ListStyles).Assembly.GetManifestResourceStream($"Dox2Word.Generator.{fileName}"));
+            using var sr = new StreamReader(typeof(ListManager).Assembly.GetManifestResourceStream($"Dox2Word.Generator.{filename}"));
             abstractNum.InnerXml = sr.ReadToEnd();
 
             // Insert an AbstractNum into the numbering part numbering list.  The order seems to matter or it will not pass the 

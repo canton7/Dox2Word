@@ -162,20 +162,19 @@ default:
         {
             var tableDoc = new TableDoc()
             {
-                NumCols = table.NumCols,
+                NumColumns = table.NumCols,
             };
             foreach (var row in table.Rows)
             {
-                var rowDoc = new RowDoc();
+                var rowDoc = new TableRowDoc();
                 tableDoc.Rows.Add(rowDoc);
 
                 foreach (var entry in row.Entries)
                 {
-                    var cellDoc = new CellDoc()
+                    var cellDoc = new TableCellDoc()
                     {
                         ColSpan = entry.ColSpan,
                         RowSpan = entry.RowSpan,
-                        IsHeading = entry.IsTableHead == DoxBool.Yes,
                     };
                     rowDoc.Cells.Add(cellDoc);
 
@@ -185,6 +184,11 @@ default:
                     }
                 }
             }
+
+            // Doxygen follows HTML's model where any cell can be a th. Word has a model where only the first row and
+            // column can be headers. Simplify to Word's model. Check if all cells in the first row/column are headers
+            tableDoc.FirstRowHeader = table.Rows.FirstOrDefault()?.Entries.All(x => x.IsTableHead == DoxBool.Yes) ?? false;
+            tableDoc.FirstColumnHeader = table.Rows.All(x => x.Entries.FirstOrDefault()?.IsTableHead != DoxBool.No);
 
             paragraphs.Add(tableDoc);
         }

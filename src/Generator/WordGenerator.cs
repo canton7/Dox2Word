@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Validation;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Dox2Word.Logging;
 using Dox2Word.Model;
@@ -12,14 +13,13 @@ namespace Dox2Word.Generator
     public class WordGenerator
     {
         public const string Placeholder = "<INSERT HERE>";
-        private const string ListParagraphStyleId = "ListParagraph";
         private static readonly Logger logger = Logger.Instance;
 
         private readonly WordprocessingDocument doc;
 
         private readonly List<OpenXmlElement> bodyElements = new();
 
-        private readonly ListStyles listStyles;
+        private readonly ListManager listManager;
 
         public static void Generate(Stream stream, Project project)
         {
@@ -44,27 +44,8 @@ namespace Dox2Word.Generator
                 new Styles().Save(stylesPart);
             }
 
-            this.listStyles = new ListStyles(numberingPart);
-
-            if (!stylesPart.Styles!.Elements<Style>().Any(x => x.StyleId == ListParagraphStyleId))
-            {
-                // In order to get list items next to each other, but still have space under the list, we
-                // apply the same style to each, and set "Don't add space between paragraphs of the same style"
-                // (ContextualSpacing). Since we apply the same style to each, this works. This is what Word does: if
-                // the document already has a list, Word will have inserted this style; if not, we need to do it
-                // ourselves.
-                var style = new Style()
-                {
-                    StyleId = ListParagraphStyleId,
-                    StyleName = new StyleName() {  Val = "List Paragraph" },
-                    Type = StyleValues.Paragraph
-                };
-                style.Append(new ParagraphProperties()
-                {
-                    ContextualSpacing = new ContextualSpacing(),
-                });
-                stylesPart.Styles.Append(style);
-            }
+            this.listManager = new ListManager(numberingPart);
+            StyleManager.EnsureStyles(stylesPart);
         }
 
         public void Generate(Project project)
@@ -100,10 +81,21 @@ namespace Dox2Word.Generator
                 }
 
                 body.RemoveChild(markerParagraph);
+
+                this.Validate();
             }
             catch (GeneratorException e)
             {
                 logger.Error(e);
+            }
+        }
+
+        private void Validate()
+        {
+            var validator = new OpenXmlValidator(FileFormatVersions.Office2019);
+            foreach (var error in validator.Validate(this.doc))
+            {
+                logger.Warning($"Validation failure. Description: {error.Description}; ErrorType: {error.ErrorType}; Node: {error.Node}; Path: {error.Path?.XPath}; Part: {error.Part?.Uri}");
             }
         }
 
@@ -153,7 +145,7 @@ namespace Dox2Word.Generator
                 if (cls.Variables.Count > 0)
                 {
                     this.WriteMiniHeading("Members");
-                    var table = this.AppendTable().AddBorders();
+                    var table = this.AppendChild(this.CreateTable().AddBorders().AddColumns(2));
                     foreach (var variable in cls.Variables)
                     {
                         string? bitfield = variable.Bitfield == null
@@ -178,7 +170,7 @@ namespace Dox2Word.Generator
                 if (@enum.Values.Count > 0)
                 {
                     this.WriteMiniHeading("Values");
-                    var table = this.AppendTable().AddBorders();
+                    var table = this.AppendChild(this.CreateTable().AddBorders().AddColumns(2));
                     foreach (var value in @enum.Values)
                     {
                         table.AppendRow(value.Name, this.CreateDescriptions(value.Descriptions));
@@ -235,7 +227,7 @@ namespace Dox2Word.Generator
                 {
                     this.WriteMiniHeading("Parameters");
 
-                    var table = this.AppendTable().AddBorders();
+                    var table = this.AppendChild(this.CreateTable().AddBorders().AddColumns(2));
                     foreach (var parameter in macro.Parameters)
                     {
                         table.AppendRow(parameter.Name, this.CreateParagraph(parameter.Description));
@@ -291,7 +283,7 @@ namespace Dox2Word.Generator
                     this.WriteMiniHeading("Parameters");
 
                     bool hasInOut = function.Parameters.Any(x => x.Direction != ParameterDirection.None);
-                    var table = this.AppendTable().AddBorders();
+                    var table = this.AppendChild(this.CreateTable().AddBorders().AddColumns(hasInOut ? 3 : 2));
                     foreach (var parameter in function.Parameters)
                     {
                         string? inOut = hasInOut
@@ -322,7 +314,7 @@ namespace Dox2Word.Generator
             if (returnDescriptions.Values.Count > 0)
             {
                 this.WriteMiniHeading("Return values");
-                var table = this.AppendTable().AddBorders();
+                var table = this.AppendChild(this.CreateTable().AddBorders().AddColumns(2));
                 foreach (var returnValue in returnDescriptions.Values)
                 {
                     table.AppendRow(returnValue.Name, this.CreateParagraph(returnValue.Description));
@@ -428,7 +420,12 @@ namespace Dox2Word.Generator
             var paragraph = new Paragraph();
             foreach (var textRun in textParagraph)
             {
-                var run = paragraph.AppendChild(new Run(new Text(textRun.Text) { Space = SpaceProcessingModeValues.Preserve }));
+                var run = paragraph.AppendChild(new Run());
+                var text = run.AppendChild(new Text(textRun.Text));
+                if (textRun.Text.StartsWith(" ") || textRun.Text.EndsWith(" "))
+                {
+                    text.Space = SpaceProcessingModeValues.Preserve;
+                }
                 run.RunProperties = new RunProperties()
                 {
                     Bold = textRun.Format.HasFlag(TextRunFormat.Bold) ? new Bold() : null,
@@ -436,7 +433,7 @@ namespace Dox2Word.Generator
                 };
                 if (textRun.Format.HasFlag(TextRunFormat.Monospace))
                 {
-                    run.PrependChild(new RunFonts() { Ascii = "Consolas" });
+                    run.RunProperties.RunFonts = new RunFonts() { Ascii = "Consolas" };
                 }
             }
             return paragraph;
@@ -444,13 +441,13 @@ namespace Dox2Word.Generator
 
         private IEnumerable<OpenXmlElement> CreateListParagraph(ListParagraph listParagraph, int level = 0)
         {
-            int numberId = this.listStyles.CreateList(listParagraph.Type);
+            int numberId = this.listManager.CreateList(listParagraph.Type);
 
             foreach (var listItem in listParagraph.Items)
             {
                 var paragraphProperties = new ParagraphProperties()
                 {
-                    ParagraphStyleId = new ParagraphStyleId() { Val = ListParagraphStyleId },
+                    ParagraphStyleId = new ParagraphStyleId() { Val = StyleManager.ListParagraphStyleId },
                     NumberingProperties = new NumberingProperties()
                     {
                         NumberingLevelReference = new NumberingLevelReference() { Val = level },
@@ -488,12 +485,14 @@ namespace Dox2Word.Generator
         private Paragraph CreateCodeParagraph(CodeParagraph codeParagraph)
         {
             var paragraph = new Paragraph().LeftAlign();
-            var paragraphProperties = paragraph.AppendChild(new ParagraphProperties());
-            paragraphProperties.AppendChild(new ParagraphBorders(
-                new TopBorder() { Val = BorderValues.Single },
-                new RightBorder() { Val = BorderValues.Single },
-                new BottomBorder() { Val = BorderValues.Single },
-                new LeftBorder() { Val = BorderValues.Single }));
+            paragraph.ParagraphProperties ??= new ParagraphProperties();
+            paragraph.ParagraphProperties.ParagraphBorders = new ParagraphBorders()
+            {
+                TopBorder = new TopBorder() { Val = BorderValues.Single },
+                LeftBorder = new LeftBorder() { Val = BorderValues.Single },
+                BottomBorder = new BottomBorder() { Val = BorderValues.Single },
+                RightBorder = new RightBorder() { Val = BorderValues.Single },
+            };
 
             var run = paragraph.AppendChild(new Run().FormatCode());
             for (int i = 0; i < codeParagraph.Lines.Count; i++)
@@ -509,7 +508,18 @@ namespace Dox2Word.Generator
 
         private OpenXmlElement CreateTable(TableDoc tableDoc)
         {
-            var table = new Table();
+            var table = this.CreateTable();
+            var tableProperties = table.Elements<TableProperties>().FirstOrDefault() ??
+                table.AppendChild(new TableProperties());
+            tableProperties.TableStyle = new TableStyle() { Val = StyleManager.TableStyleId };
+            tableProperties.TableLook = new TableLook()
+            {
+                FirstRow = tableDoc.FirstRowHeader,
+                LastRow = false,
+                FirstColumn = tableDoc.FirstColumnHeader,
+                LastColumn = false,
+            };
+            table.AddColumns(tableDoc.NumColumns);
 
             foreach (var rowDoc in tableDoc.Rows)
             {
@@ -556,9 +566,9 @@ namespace Dox2Word.Generator
             return child;
         }
 
-        private Table AppendTable()
+        private Table CreateTable()
         {
-            var table = this.AppendChild(new Table());
+            var table = new Table();
 
             // Add spacing after
             //var paragraph = this.AppendChild(new Paragraph());

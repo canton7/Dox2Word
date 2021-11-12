@@ -31,7 +31,7 @@
  * | Right | Center | Left  |
  * | ----: | :----: | :---- |
  * | 10    | 10     | 10    |
- * | 1000  | 1000   | 1000  |
+ * | This is some long text | This is some long text   | This is some long text  |
  * 
  * @{
  * @file

@@ -12,7 +12,7 @@ namespace Dox2Word.Generator
         {
             run.RunProperties ??= new RunProperties();
             run.RunProperties.FontSize = new FontSize() { Val = "20" };
-            run.PrependChild(new RunFonts() { Ascii = "Consolas" });
+            run.RunProperties.RunFonts = new RunFonts() { Ascii = "Consolas" };
             return run;
         }
 
@@ -41,14 +41,26 @@ namespace Dox2Word.Generator
         {
             var tableProperties = table.Elements<TableProperties>().FirstOrDefault() ??
                 table.AppendChild(new TableProperties());
-            tableProperties.TableBorders = new TableBorders(
-                new TopBorder() { Val = BorderValues.Single },
-                new RightBorder() { Val = BorderValues.Single },
-                new BottomBorder() { Val = BorderValues.Single },
-                new LeftBorder() { Val = BorderValues.Single },
-                new InsideHorizontalBorder() { Val = BorderValues.Dotted },
-                new InsideVerticalBorder() { Val = BorderValues.Dotted });
+            tableProperties.TableBorders = new TableBorders()
+            {
+                TopBorder = new TopBorder() { Val = BorderValues.Single },
+                LeftBorder = new LeftBorder() { Val = BorderValues.Single },
+                BottomBorder = new BottomBorder() { Val = BorderValues.Single },
+                RightBorder = new RightBorder() { Val = BorderValues.Single },
+                InsideHorizontalBorder = new InsideHorizontalBorder() { Val = BorderValues.Dotted },
+                InsideVerticalBorder = new InsideVerticalBorder() { Val = BorderValues.Dotted },
+            };
 
+            return table;
+        }
+
+        public static Table AddColumns(this Table table, int numColumns)
+        {
+            var tableGrid = table.AppendChild(new TableGrid());
+            for (int i = 0; i < numColumns; i++)
+            {
+                tableGrid.AppendChild(new GridColumn());
+            }
             return table;
         }
 
