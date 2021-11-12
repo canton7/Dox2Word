@@ -1,11 +1,14 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace Dox2Word.Model
 {
     public interface IParagraph
     {
         int Count { get; }
+
+        void Trim();
     }
 
     public enum ParagraphType
@@ -33,6 +36,14 @@ namespace Dox2Word.Model
             this.Type = type;
             this.Alignment = alignment;
         }
+
+        public void Trim()
+        {
+            if (this.LastOrDefault() is { } run && run.Text.EndsWith(" "))
+            {
+                run.Text = run.Text.TrimEnd(' ');
+            }
+        }
     }
 
     public enum ListParagraphType
@@ -53,6 +64,8 @@ namespace Dox2Word.Model
         {
             this.Type = type;
         }
+
+        public void Trim() { }
     }
 
     public class CodeParagraph : IParagraph
@@ -60,5 +73,7 @@ namespace Dox2Word.Model
         public List<string> Lines { get; } = new();
 
         int IParagraph.Count => this.Lines.Count;
+
+        public void Trim() { }
     }
 }

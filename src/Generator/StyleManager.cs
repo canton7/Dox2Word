@@ -105,6 +105,7 @@ namespace Dox2Word.Generator
             AddIfNotExists(stylesPart, WarningStyleId, StyleValues.Paragraph, "Warning", style =>
             {
                 style.BasedOn = new BasedOn() { Val = "Normal" };
+                style.PrimaryStyle = new PrimaryStyle();
                 style.StyleParagraphProperties = new StyleParagraphProperties()
                 {
                     ParagraphBorders = new ParagraphBorders(new LeftBorder()

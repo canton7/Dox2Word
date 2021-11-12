@@ -12,5 +12,7 @@ namespace Dox2Word.Model
         public List<TableRowDoc> Rows { get; } = new();
 
         int IParagraph.Count => this.Rows.Count;
+
+        public void Trim() { }
     }
 }

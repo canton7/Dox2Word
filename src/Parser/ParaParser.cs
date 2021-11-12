@@ -26,6 +26,8 @@ namespace Dox2Word.Parser
 
             Parse(paragraphs, para, TextRunFormat.None);
 
+            paragraphs.LastOrDefault()?.Trim();
+
             return paragraphs;
         }
 
@@ -42,9 +44,9 @@ namespace Dox2Word.Parser
                         AddTextRun(paragraphs, alignment, s, format);
                         break;
                     case DocSimpleSect s when s.Kind == DoxSimpleSectKind.Warning:
-                        paragraphs.Add(new TextParagraph(ParagraphType.Warning));
+                        Add(paragraphs, new TextParagraph(ParagraphType.Warning));
                         Parse(paragraphs, s.Para, format);
-                        paragraphs.Add(new TextParagraph());
+                        Add(paragraphs, new TextParagraph());
                         break;
                     case OrderedList o:
                         ParseList(paragraphs, o, ListParagraphType.Number, format);
@@ -89,16 +91,24 @@ namespace Dox2Word.Parser
                     default:
                         logger.Warning($"Unexpected text {part} ({part.GetType()}). Ignoring");
                         break;
-                };
+                }
             }
         }
 
+        private static T Add<T>(List<IParagraph> paragraphs, T paragraph) where T : IParagraph
+        {
+            // Trim the previous paragraph
+            paragraphs.LastOrDefault()?.Trim();
+
+            paragraphs.Add(paragraph);
+            return paragraph;
+        }
+
         private static void Add(List<IParagraph> paragraphs, ParagraphAlignment alignment, TextRun textRun)
-{
+        {
             if (paragraphs.LastOrDefault() is not TextParagraph paragraph)
             {
-                paragraph = new TextParagraph(alignment: alignment);
-                paragraphs.Add(paragraph);
+                paragraph = Add(paragraphs, new TextParagraph(alignment: alignment));
             }
             paragraph.Add(textRun);
         }
@@ -108,8 +118,7 @@ namespace Dox2Word.Parser
 
         private static void ParseList(List<IParagraph> paragraphs, DocList docList, ListParagraphType type, TextRunFormat format)
         {
-            var list = new ListParagraph(type);
-            paragraphs.Add(list);
+            var list = Add(paragraphs, new ListParagraph(type));
             foreach (var item in docList.Items)
             {
                 // It could be that the para contains a warning or something which will add
@@ -119,14 +128,14 @@ namespace Dox2Word.Parser
                 {
                     Parse(paragraphList, para, format);
                 }
+                paragraphList.LastOrDefault()?.Trim();
                 list.Items.AddRange(paragraphList);
             }
         }
 
         private static void ParseListing(List<IParagraph> paragraphs, Listing listing)
         {
-            var codeParagraph = new CodeParagraph();
-            paragraphs.Add(codeParagraph);
+            var codeParagraph = Add(paragraphs, new CodeParagraph());
             foreach (var codeline in listing.Codelines)
             {
                 var sb = new StringBuilder();
@@ -145,13 +154,13 @@ namespace Dox2Word.Parser
                             case XmlElement e:
                                 sb.Append(e.InnerText);
                                 break;
-default:
+                            default:
                                 logger.Warning($"Unexpected code part {part} ({part.GetType()}). Ignoring");
                                 break;
                         }
                     }
                 }
-                codeParagraph.Lines.Add(sb.ToString());
+                codeParagraph.Lines.Add(sb.ToString().TrimEnd(' '));
             }
         }
 
@@ -184,8 +193,8 @@ default:
 
                     foreach (var para in entry.Paras)
                     {
-
                         Parse(cellDoc.Paragraphs, para, TextRunFormat.None, alignment);
+                        cellDoc.Paragraphs.LastOrDefault()?.Trim();
                     }
                 }
             }
@@ -195,7 +204,7 @@ default:
             tableDoc.FirstRowHeader = table.Rows.FirstOrDefault()?.Entries.All(x => x.IsTableHead == DoxBool.Yes) ?? false;
             tableDoc.FirstColumnHeader = table.Rows.All(x => x.Entries.FirstOrDefault()?.IsTableHead != DoxBool.No);
 
-            paragraphs.Add(tableDoc);
+            Add(paragraphs, tableDoc);
         }
     }
 }

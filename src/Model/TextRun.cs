@@ -15,7 +15,7 @@ namespace Dox2Word.Model
     {
         public TextRunFormat Format { get; }
 
-        public string Text { get; }
+        public string Text { get; set; }
 
         public TextRun(string text, TextRunFormat format = TextRunFormat.None)
         {
