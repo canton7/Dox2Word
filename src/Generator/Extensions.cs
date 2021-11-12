@@ -8,12 +8,29 @@ namespace Dox2Word.Generator
 {
     public static class Extensions
     {
-        public static Run FormatCode(this Run run)
+        public static Paragraph ApplyStyle(this Paragraph paragraph, string styleId)
+        {
+            paragraph.ParagraphProperties ??= new ParagraphProperties();
+            paragraph.ParagraphProperties.ParagraphStyleId = new ParagraphStyleId() { Val = styleId };
+
+            return paragraph;
+        }
+
+        public static Run ApplyStyle(this Run run, string styleId)
         {
             run.RunProperties ??= new RunProperties();
-            run.RunProperties.FontSize = new FontSize() { Val = "20" };
-            run.RunProperties.RunFonts = new RunFonts() { Ascii = "Consolas" };
+            run.RunProperties.RunStyle = new RunStyle() { Val = styleId };
+
             return run;
+        }
+
+        public static Table ApplyStyle(this Table table, string styleId)
+        {
+            var tableProperties = table.Elements<TableProperties>().FirstOrDefault() ??
+                table.AppendChild(new TableProperties());
+            tableProperties.TableStyle = new TableStyle() { Val = styleId };
+
+            return table;
         }
 
         public static Paragraph LeftAlign(this Paragraph paragraph)
@@ -21,37 +38,6 @@ namespace Dox2Word.Generator
             paragraph.ParagraphProperties ??= new ParagraphProperties();
             paragraph.ParagraphProperties.Justification = new Justification() { Val = JustificationValues.Left };
             return paragraph;
-        }
-
-        public static Paragraph FormatWarning(this Paragraph paragraph)
-        {
-            paragraph.ParagraphProperties ??= new ParagraphProperties();
-            paragraph.ParagraphProperties.ParagraphBorders ??= new ParagraphBorders(new LeftBorder()
-            {
-                Val = BorderValues.Single,
-                Space = 4,
-                Size = 18,
-                Color = "FFC000",
-            });
-
-            return paragraph;
-        }
-
-        public static Table AddBorders(this Table table)
-        {
-            var tableProperties = table.Elements<TableProperties>().FirstOrDefault() ??
-                table.AppendChild(new TableProperties());
-            tableProperties.TableBorders = new TableBorders()
-            {
-                TopBorder = new TopBorder() { Val = BorderValues.Single },
-                LeftBorder = new LeftBorder() { Val = BorderValues.Single },
-                BottomBorder = new BottomBorder() { Val = BorderValues.Single },
-                RightBorder = new RightBorder() { Val = BorderValues.Single },
-                InsideHorizontalBorder = new InsideHorizontalBorder() { Val = BorderValues.Dotted },
-                InsideVerticalBorder = new InsideVerticalBorder() { Val = BorderValues.Dotted },
-            };
-
-            return table;
         }
 
         public static Table AddColumns(this Table table, int numColumns)
@@ -72,13 +58,14 @@ namespace Dox2Word.Generator
             {
                 var inOutCell = row.AppendChild(new TableCell());
                 var inOutParagraph = inOutCell.AppendChild(new Paragraph());
-                var inOutRun = inOutParagraph.AppendChild(new Run(new Text(inOut)).FormatCode());
-                inOutRun.RunProperties!.Italic = new Italic();
+                var inOutRun = inOutParagraph.AppendChild(new Run(new Text(inOut)).ApplyStyle(StyleManager.CodeCharStyleId));
+                inOutRun.RunProperties ??= new RunProperties();
+                inOutRun.RunProperties.Italic = new Italic();
                 inOutParagraph.FormatTableCellElement(after: true);
             }
 
             var nameCell = row.AppendChild(new TableCell());
-            var nameParagraph = nameCell.AppendChild(new Paragraph(new Run(new Text(name)).FormatCode()));
+            var nameParagraph = nameCell.AppendChild(new Paragraph(new Run(new Text(name)).ApplyStyle(StyleManager.CodeCharStyleId)));
             nameParagraph.FormatTableCellElement(after: true);
 
             var valueCell = row.AppendChild(new TableCell());

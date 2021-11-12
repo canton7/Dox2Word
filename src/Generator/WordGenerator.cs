@@ -146,7 +146,7 @@ namespace Dox2Word.Generator
                 if (cls.Variables.Count > 0)
                 {
                     this.WriteMiniHeading("Members");
-                    var table = this.AppendChild(this.CreateTable().AddBorders().AddColumns(2));
+                    var table = this.AppendChild(this.CreateTable().ApplyStyle(StyleManager.ParameterTableStyleId).AddColumns(2));
                     foreach (var variable in cls.Variables)
                     {
                         string? bitfield = variable.Bitfield == null
@@ -171,7 +171,7 @@ namespace Dox2Word.Generator
                 if (@enum.Values.Count > 0)
                 {
                     this.WriteMiniHeading("Values");
-                    var table = this.AppendChild(this.CreateTable().AddBorders().AddColumns(2));
+                    var table = this.AppendChild(this.CreateTable().ApplyStyle(StyleManager.ParameterTableStyleId).AddColumns(2));
                     foreach (var value in @enum.Values)
                     {
                         table.AppendRow(value.Name, this.CreateDescriptions(value.Descriptions));
@@ -190,7 +190,7 @@ namespace Dox2Word.Generator
 
                 this.WriteMiniHeading("Definition");
                 var paragraph = this.AppendChild(new Paragraph().LeftAlign());
-                var run = paragraph.AppendChild(new Run(new Text(variable.Definition ?? "")).FormatCode());
+                var run = paragraph.AppendChild(new Run(new Text(variable.Definition ?? "")).ApplyStyle(StyleManager.CodeCharStyleId));
                 if (variable.Initializer != null)
                 {
                     run.Append(StringToElements(" " + variable.Initializer));
@@ -220,7 +220,7 @@ namespace Dox2Word.Generator
                     ? "(" + string.Join(", ", macro.Parameters.Select(x => x.Name)) + ")"
                     : null;
 
-                this.AppendChild(new Paragraph(new Run(StringToElements($"#define {macro.Name}{paramsStr} {initializer}")).FormatCode()).LeftAlign());
+                this.AppendChild(new Paragraph(new Run(StringToElements($"#define {macro.Name}{paramsStr} {initializer}")).ApplyStyle(StyleManager.CodeCharStyleId)).LeftAlign());
 
                 this.WriteDescriptions(macro.Descriptions);
 
@@ -228,7 +228,7 @@ namespace Dox2Word.Generator
                 {
                     this.WriteMiniHeading("Parameters");
 
-                    var table = this.AppendChild(this.CreateTable().AddBorders().AddColumns(2));
+                    var table = this.AppendChild(this.CreateTable().ApplyStyle(StyleManager.ParameterTableStyleId).AddColumns(2));
                     foreach (var parameter in macro.Parameters)
                     {
                         table.AppendRow(parameter.Name, this.CreateParagraph(parameter.Description));
@@ -249,7 +249,7 @@ namespace Dox2Word.Generator
 
                 this.WriteMiniHeading("Signature");
                 var paragraph = this.AppendChild(new Paragraph().LeftAlign());
-                var run = paragraph.AppendChild(new Run().FormatCode());
+                var run = paragraph.AppendChild(new Run().ApplyStyle(StyleManager.CodeCharStyleId));
                 run.AppendChild(new Text(function.Definition));
 
                 if (function.Parameters.Count > 0)
@@ -284,7 +284,7 @@ namespace Dox2Word.Generator
                     this.WriteMiniHeading("Parameters");
 
                     bool hasInOut = function.Parameters.Any(x => x.Direction != ParameterDirection.None);
-                    var table = this.AppendChild(this.CreateTable().AddBorders().AddColumns(hasInOut ? 3 : 2));
+                    var table = this.AppendChild(this.CreateTable().ApplyStyle(StyleManager.ParameterTableStyleId).AddColumns(hasInOut ? 3 : 2));
                     foreach (var parameter in function.Parameters)
                     {
                         string? inOut = hasInOut
@@ -315,7 +315,7 @@ namespace Dox2Word.Generator
             if (returnDescriptions.Values.Count > 0)
             {
                 this.WriteMiniHeading("Return values");
-                var table = this.AppendChild(this.CreateTable().AddBorders().AddColumns(2));
+                var table = this.AppendChild(this.CreateTable().ApplyStyle(StyleManager.ParameterTableStyleId).AddColumns(2));
                 foreach (var returnValue in returnDescriptions.Values)
                 {
                     table.AppendRow(returnValue.Name, this.CreateParagraph(returnValue.Description));
@@ -343,20 +343,7 @@ namespace Dox2Word.Generator
 
         private void WriteMiniHeading(string text)
         {
-            var heading = this.AppendChild(new Paragraph());
-            var run = heading.AppendChild(new Run(new Text(text)));
-            run.RunProperties ??= new RunProperties();
-            run.RunProperties.Bold = new Bold();
-            run.RunProperties.FontSize = new FontSize() { Val = "24" };
-
-            heading.ParagraphProperties ??= new ParagraphProperties();
-            heading.ParagraphProperties.SpacingBetweenLines = new SpacingBetweenLines()
-            {
-                LineRule = LineSpacingRuleValues.Auto,
-                Before = "160",
-                Line = "240",
-            };
-            heading.ParagraphProperties.KeepNext = new KeepNext();
+            this.AppendChild(new Paragraph(new Run(new Text(text)))).ApplyStyle(StyleManager.MiniHeadingStyleId);
         }
 
         private void WriteDescriptions(Descriptions descriptions)
@@ -391,7 +378,7 @@ namespace Dox2Word.Generator
                     var paragraph = this.CreateTextParagraph(textParagraph);
                     if (textParagraph.Type == ParagraphType.Warning)
                     {
-                        paragraph.FormatWarning();
+                        paragraph.ApplyStyle(StyleManager.WarningStyleId);
                     }
                     yield return paragraph;
                     break;
@@ -499,17 +486,9 @@ namespace Dox2Word.Generator
 
         private Paragraph CreateCodeParagraph(CodeParagraph codeParagraph)
         {
-            var paragraph = new Paragraph().LeftAlign();
-            paragraph.ParagraphProperties ??= new ParagraphProperties();
-            paragraph.ParagraphProperties.ParagraphBorders = new ParagraphBorders()
-            {
-                TopBorder = new TopBorder() { Val = BorderValues.Single },
-                LeftBorder = new LeftBorder() { Val = BorderValues.Single },
-                BottomBorder = new BottomBorder() { Val = BorderValues.Single },
-                RightBorder = new RightBorder() { Val = BorderValues.Single },
-            };
+            var paragraph = new Paragraph().ApplyStyle(StyleManager.CodeStyleId).LeftAlign();
 
-            var run = paragraph.AppendChild(new Run().FormatCode());
+            var run = paragraph.AppendChild(new Run());
             for (int i = 0; i < codeParagraph.Lines.Count; i++)
             {
                 if (i > 0)
@@ -518,6 +497,7 @@ namespace Dox2Word.Generator
                 }
                 run.AppendChild(new Text(codeParagraph.Lines[i]) { Space = SpaceProcessingModeValues.Preserve });
             }
+
             return paragraph;
         }
 

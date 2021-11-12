@@ -22,6 +22,7 @@
  * 
  * @code{.c}
  * This is a code sample
+ * With multiple lines
  * @endcode
  * 
  * @todo This is a TODO
