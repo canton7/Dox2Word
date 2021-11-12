@@ -29,7 +29,7 @@ namespace Dox2Word.Parser
             return paragraphs;
         }
 
-        private static void Parse(List<IParagraph> paragraphs, DocPara? para, TextRunFormat format)
+        private static void Parse(List<IParagraph> paragraphs, DocPara? para, TextRunFormat format, ParagraphAlignment alignment = ParagraphAlignment.Default)
         {
             if (para == null)
                 return;
@@ -39,12 +39,12 @@ namespace Dox2Word.Parser
                 switch (part)
                 {
                     case string s:
-                        AddTextRun(paragraphs, s, format);
+                        AddTextRun(paragraphs, alignment, s, format);
                         break;
                     case DocSimpleSect s when s.Kind == DoxSimpleSectKind.Warning:
-                        NewParagraph(paragraphs, ParagraphType.Warning);
+                        paragraphs.Add(new TextParagraph(ParagraphType.Warning));
                         Parse(paragraphs, s.Para, format);
-                        NewParagraph(paragraphs);
+                        paragraphs.Add(new TextParagraph());
                         break;
                     case OrderedList o:
                         ParseList(paragraphs, o, ListParagraphType.Number, format);
@@ -76,13 +76,13 @@ namespace Dox2Word.Parser
                         Parse(paragraphs, m, format | TextRunFormat.Monospace);
                         break;
                     case Ref r:
-                        AddTextRun(paragraphs, r.Name, format | TextRunFormat.Monospace);
+                        AddTextRun(paragraphs, alignment, r.Name, format | TextRunFormat.Monospace);
                         break;
                     case DocTable t:
                         ParseTable(paragraphs, t);
                         break;
                     case XmlElement e:
-                        AddTextRun(paragraphs, e.InnerText, format);
+                        AddTextRun(paragraphs, alignment, e.InnerText, format);
                         break;
                     case DocSimpleSect:
                         break; // Ignore
@@ -93,21 +93,18 @@ namespace Dox2Word.Parser
             }
         }
 
-        private static void NewParagraph(List<IParagraph> elements, ParagraphType type = ParagraphType.Normal) =>
-            elements.Add(new TextParagraph(type));
-
-        private static void Add(List<IParagraph> paragraphs, TextRun textRun)
+        private static void Add(List<IParagraph> paragraphs, ParagraphAlignment alignment, TextRun textRun)
 {
             if (paragraphs.LastOrDefault() is not TextParagraph paragraph)
             {
-                paragraph = new TextParagraph();
+                paragraph = new TextParagraph(alignment: alignment);
                 paragraphs.Add(paragraph);
             }
             paragraph.Add(textRun);
         }
 
-        private static void AddTextRun(List<IParagraph> paragraphs, string text, TextRunFormat format) =>
-            Add(paragraphs, new TextRun(text.TrimStart('\n'), format));
+        private static void AddTextRun(List<IParagraph> paragraphs, ParagraphAlignment alignment, string text, TextRunFormat format) =>
+            Add(paragraphs, alignment, new TextRun(text.TrimStart('\n'), format));
 
         private static void ParseList(List<IParagraph> paragraphs, DocList docList, ListParagraphType type, TextRunFormat format)
         {
@@ -178,9 +175,17 @@ default:
                     };
                     rowDoc.Cells.Add(cellDoc);
 
+                    var alignment = entry.Align switch
+                    {
+                        DoxAlign.Left => ParagraphAlignment.Left,
+                        DoxAlign.Center => ParagraphAlignment.Center,
+                        DoxAlign.Right => ParagraphAlignment.Right,
+                    };
+
                     foreach (var para in entry.Paras)
                     {
-                        Parse(cellDoc.Paragraphs, para, TextRunFormat.None);
+
+                        Parse(cellDoc.Paragraphs, para, TextRunFormat.None, alignment);
                     }
                 }
             }

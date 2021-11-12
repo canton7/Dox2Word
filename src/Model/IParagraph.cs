@@ -14,13 +14,24 @@ namespace Dox2Word.Model
         Warning,
     }
 
+    public enum ParagraphAlignment
+    {
+        Default,
+        Left,
+        Center,
+        Right,
+    }
+
     public class TextParagraph : Collection<TextRun>, IParagraph
     {
         public ParagraphType Type { get; }
 
-        public TextParagraph(ParagraphType type = ParagraphType.Normal)
+        public ParagraphAlignment Alignment { get; }
+
+        public TextParagraph(ParagraphType type = ParagraphType.Normal, ParagraphAlignment alignment = ParagraphAlignment.Default)
         {
             this.Type = type;
+            this.Alignment = alignment;
         }
     }
 

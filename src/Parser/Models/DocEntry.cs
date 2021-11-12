@@ -14,6 +14,9 @@ namespace Dox2Word.Parser.Models
         [XmlAttribute("rowspan")]
         public int RowSpan { get; set; }
 
+        [XmlAttribute("align")]
+        public DoxAlign Align { get; set; }
+
         [XmlElement("para")]
         public List<DocPara> Paras { get; } = new();
     }

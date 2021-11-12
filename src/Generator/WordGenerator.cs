@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using DocumentFormat.OpenXml;
@@ -418,6 +419,20 @@ namespace Dox2Word.Generator
         private Paragraph CreateTextParagraph(TextParagraph textParagraph)
         {
             var paragraph = new Paragraph();
+            if (textParagraph.Alignment != ParagraphAlignment.Default)
+            {
+                var justification = textParagraph.Alignment switch
+                {
+                    ParagraphAlignment.Left => JustificationValues.Left,
+                    ParagraphAlignment.Center => JustificationValues.Center,
+                    ParagraphAlignment.Right => JustificationValues.Right,
+                    ParagraphAlignment.Default => throw new Exception("Not possible"),
+                };
+
+                paragraph.ParagraphProperties ??= new ParagraphProperties();
+                paragraph.ParagraphProperties.Justification = new Justification() { Val = justification };
+            }
+
             foreach (var textRun in textParagraph)
             {
                 var run = paragraph.AppendChild(new Run());
