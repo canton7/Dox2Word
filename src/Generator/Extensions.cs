@@ -10,42 +10,95 @@ namespace Dox2Word.Generator
     {
         public static Paragraph ApplyStyle(this Paragraph paragraph, string styleId)
         {
-            paragraph.ParagraphProperties ??= new ParagraphProperties();
-            paragraph.ParagraphProperties.ParagraphStyleId = new ParagraphStyleId() { Val = styleId };
-
-            return paragraph;
+            return paragraph.WithProperties(x => x.ParagraphStyleId = new ParagraphStyleId() { Val = styleId });
         }
 
         public static Run ApplyStyle(this Run run, string styleId)
         {
-            run.RunProperties ??= new RunProperties();
-            run.RunProperties.RunStyle = new RunStyle() { Val = styleId };
-
-            return run;
+            return run.WithProperties(x => x.RunStyle = new RunStyle() { Val = styleId });
         }
 
         public static Table ApplyStyle(this Table table, string styleId)
         {
-            var tableProperties = table.Elements<TableProperties>().FirstOrDefault() ??
-                table.AppendChild(new TableProperties());
-            tableProperties.TableStyle = new TableStyle() { Val = styleId };
+            return table.WithProperties(x => x.TableStyle = new TableStyle() { Val = styleId });
+        }
 
-            return table;
+        public static Paragraph WithProperties(this Paragraph paragraph, Action<ParagraphProperties> updater)
+        {
+            if (paragraph.ParagraphProperties == null)
+            {
+                var p = new ParagraphProperties();
+                updater(p);
+                if (p.HasChildren)
+                {
+                    paragraph.ParagraphProperties = p;
+                }
+            }
+            else
+            {
+                updater(paragraph.ParagraphProperties);
+            }
+            return paragraph;
         }
 
         public static Run WithProperties(this Run run, Action<RunProperties> updater)
         {
-            run.RunProperties ??= new RunProperties();
-            updater(run.RunProperties);
-
+            if (run.RunProperties == null)
+            {
+                var p = new RunProperties();
+                updater(p);
+                if (p.HasChildren)
+                {
+                    run.RunProperties = p;
+                }
+            }
+            else
+            {
+                updater(run.RunProperties);
+            }
             return run;
+        }
+
+        public static Table WithProperties(this Table table, Action<TableProperties> updater)
+        {
+            var tableProperties = table.Elements<TableProperties>().FirstOrDefault();
+            if (tableProperties == null)
+            {
+                tableProperties = new TableProperties();
+                updater(tableProperties);
+                if (tableProperties.HasChildren)
+                {
+                    table.AppendChild(tableProperties);
+                }
+            }
+            else
+            {
+                updater(tableProperties);
+            }
+            return table;
+        }
+
+        public static TableCell WithProperties(this TableCell tableCell, Action<TableCellProperties> updater)
+        {
+            if (tableCell.TableCellProperties == null)
+            {
+                var p = new TableCellProperties();
+                updater(p);
+                if (p.HasChildren)
+                {
+                    tableCell.TableCellProperties = p;
+                }
+            }
+            else
+            {
+                updater(tableCell.TableCellProperties);
+            }
+            return tableCell;
         }
 
         public static Paragraph LeftAlign(this Paragraph paragraph)
         {
-            paragraph.ParagraphProperties ??= new ParagraphProperties();
-            paragraph.ParagraphProperties.Justification = new Justification() { Val = JustificationValues.Left };
-            return paragraph;
+            return paragraph.WithProperties(x => x.Justification = new Justification() { Val = JustificationValues.Left });
         }
 
         public static Table AddColumns(this Table table, int numColumns)
@@ -89,14 +142,10 @@ namespace Dox2Word.Generator
         {
             if (element is Paragraph paragraph)
             {
-                paragraph.ParagraphProperties ??= new ParagraphProperties();
-                paragraph.ParagraphProperties.KeepNext = new KeepNext();
+                paragraph.WithProperties(x => x.KeepNext = new KeepNext());
                 if (after)
                 {
-                    paragraph.ParagraphProperties.SpacingBetweenLines = new SpacingBetweenLines()
-                    {
-                        After = "0",
-                    };
+                    paragraph.WithProperties(x => x.SpacingBetweenLines = new SpacingBetweenLines() { After = "0" });
                 }
             }
 

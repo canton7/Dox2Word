@@ -327,13 +327,9 @@ namespace Dox2Word.Generator
         {
             var paragraph = this.AppendChild(new Paragraph());
             var run = paragraph.AppendChild(new Run(new Text(text)));
-            paragraph.ParagraphProperties ??= new ParagraphProperties();
-            paragraph.ParagraphProperties.ParagraphStyleId = new ParagraphStyleId() { Val = $"Heading{headingLevel}" };
             // The style might not have enough spacing, so force this
-            paragraph.ParagraphProperties.SpacingBetweenLines = new SpacingBetweenLines()
-            {
-                Before = $"{8 * 20}",
-            };
+            paragraph.ApplyStyle($"Heading{headingLevel}")
+                .WithProperties(x => x.SpacingBetweenLines = new SpacingBetweenLines() { Before = $"{8 * 20}" });
 
             // If the style specifies all-caps or small-caps, undo this
             run.WithProperties(x =>
@@ -418,8 +414,7 @@ namespace Dox2Word.Generator
                     ParagraphAlignment.Default => throw new Exception("Not possible"),
                 };
 
-                paragraph.ParagraphProperties ??= new ParagraphProperties();
-                paragraph.ParagraphProperties.Justification = new Justification() { Val = justification };
+                paragraph.WithProperties(x => x.Justification = new Justification() { Val = justification });
             }
 
             foreach (var textRun in textParagraph)
@@ -430,14 +425,11 @@ namespace Dox2Word.Generator
                 {
                     text.Space = SpaceProcessingModeValues.Preserve;
                 }
-                if (textRun.Format.HasFlag(TextRunFormat.Bold) || textRun.Format.HasFlag(TextRunFormat.Italic))
+                run.WithProperties(x =>
                 {
-                    run.WithProperties(x =>
-                    {
-                        x.Bold = textRun.Format.HasFlag(TextRunFormat.Bold) ? new Bold() : null;
-                        x.Italic = textRun.Format.HasFlag(TextRunFormat.Italic) ? new Italic() : null;
-                    });
-                }
+                    x.Bold = textRun.Format.HasFlag(TextRunFormat.Bold) ? new Bold() : null;
+                    x.Italic = textRun.Format.HasFlag(TextRunFormat.Italic) ? new Italic() : null;
+                });
                 if (textRun.Format.HasFlag(TextRunFormat.Monospace))
                 {
                     run.WithProperties(x => x.RunFonts = new RunFonts() { Ascii = "Consolas" });
@@ -509,16 +501,17 @@ namespace Dox2Word.Generator
         private OpenXmlElement CreateTable(TableDoc tableDoc)
         {
             var table = new Table();
-            var tableProperties = table.Elements<TableProperties>().FirstOrDefault() ??
-                table.AppendChild(new TableProperties());
-            tableProperties.TableStyle = new TableStyle() { Val = StyleManager.TableStyleId };
-            tableProperties.TableLook = new TableLook()
+            table.WithProperties(x =>
             {
-                FirstRow = tableDoc.FirstRowHeader,
-                LastRow = false,
-                FirstColumn = tableDoc.FirstColumnHeader,
-                LastColumn = false,
-            };
+                x.TableStyle = new TableStyle() { Val = StyleManager.TableStyleId };
+                x.TableLook = new TableLook()
+                {
+                    FirstRow = tableDoc.FirstRowHeader,
+                    LastRow = false,
+                    FirstColumn = tableDoc.FirstColumnHeader,
+                    LastColumn = false,
+                };
+            });
             table.AddColumns(tableDoc.NumColumns);
 
             // Column index -> how many rowspans are left
@@ -535,8 +528,7 @@ namespace Dox2Word.Generator
                     // have to synthesise it
                     if (colIndexToRowSpan[i] > 0)
                     {
-                        cell.TableCellProperties ??= new TableCellProperties();
-                        cell.TableCellProperties.VerticalMerge = new VerticalMerge();
+                        cell.WithProperties(x => x.VerticalMerge = new VerticalMerge());
                         cell.Append(new Paragraph());
                         colIndexToRowSpan[i]--;
                         cellDocIndex--;
@@ -547,14 +539,12 @@ namespace Dox2Word.Generator
 
                         if (cellDoc.ColSpan > 1)
                         {
-                            cell.TableCellProperties ??= new TableCellProperties();
-                            cell.TableCellProperties.GridSpan = new GridSpan() { Val = cellDoc.ColSpan };
+                            cell.WithProperties(x => x.GridSpan = new GridSpan() { Val = cellDoc.ColSpan });
                             i++;
                         }
                         if (cellDoc.RowSpan > 1)
                         {
-                            cell.TableCellProperties ??= new TableCellProperties();
-                            cell.TableCellProperties.VerticalMerge = new VerticalMerge() { Val = MergedCellValues.Restart };
+                            cell.WithProperties(x => x.VerticalMerge = new VerticalMerge() { Val = MergedCellValues.Restart });
                             colIndexToRowSpan[i] = cellDoc.RowSpan - 1;
                         }
 
@@ -600,12 +590,8 @@ namespace Dox2Word.Generator
 
         private Table CreateTable(string styleId)
         {
-            var table = new Table();
-            var tableProperties = table.Elements<TableProperties>().FirstOrDefault() ??
-                table.AppendChild(new TableProperties());
-            tableProperties.TableStyle = new TableStyle() { Val = styleId };
-            tableProperties.TableWidth = new TableWidth() { Type = TableWidthUnitValues.Auto, Width = "0" };
-            return table;
+            return new Table().ApplyStyle(styleId)
+                .WithProperties(x => x.TableWidth = new TableWidth() { Type = TableWidthUnitValues.Auto, Width = "0" });
         }
 
         private void Append(IEnumerable<OpenXmlElement> children)
