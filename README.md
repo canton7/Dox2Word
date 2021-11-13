@@ -34,7 +34,7 @@ See the `test` directory for test projects to use as a starting point.
 Supported Languages
 -------------------
 
-## C
+### C
 
 Dox2Word expects you to use groups to structure your code: it won't document members which aren't contained in a group. E.g.
 
