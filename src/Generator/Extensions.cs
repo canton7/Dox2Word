@@ -33,6 +33,14 @@ namespace Dox2Word.Generator
             return table;
         }
 
+        public static Run WithProperties(this Run run, Action<RunProperties> updater)
+        {
+            run.RunProperties ??= new RunProperties();
+            updater(run.RunProperties);
+
+            return run;
+        }
+
         public static Paragraph LeftAlign(this Paragraph paragraph)
         {
             paragraph.ParagraphProperties ??= new ParagraphProperties();
@@ -59,8 +67,7 @@ namespace Dox2Word.Generator
                 var inOutCell = row.AppendChild(new TableCell());
                 var inOutParagraph = inOutCell.AppendChild(new Paragraph());
                 var inOutRun = inOutParagraph.AppendChild(new Run(new Text(inOut)).ApplyStyle(StyleManager.CodeCharStyleId));
-                inOutRun.RunProperties ??= new RunProperties();
-                inOutRun.RunProperties.Italic = new Italic();
+                inOutRun.WithProperties(x => x.Italic = new Italic());
                 inOutParagraph.FormatTableCellElement(after: true);
             }
 

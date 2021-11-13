@@ -23,7 +23,7 @@ namespace Dox2Word.Generator
         {
             AddIfNotExists(stylesPart, TableStyleId, StyleValues.Table, "DoxTableStyle.xml");
 
-            AddIfNotExists(stylesPart, ParameterTableStyleId, StyleValues.Table, "Parameter Table", style =>
+            AddIfNotExists(stylesPart, ParameterTableStyleId, StyleValues.Table, "Dox Parameter Table", style =>
             {
                 style.BasedOn = new BasedOn() { Val = "TableNormal" };
                 style.StyleTableProperties = new StyleTableProperties()
@@ -40,7 +40,7 @@ namespace Dox2Word.Generator
                 };
             });
 
-            AddIfNotExists(stylesPart, MiniHeadingStyleId, StyleValues.Paragraph, "Mini Heading", style =>
+            AddIfNotExists(stylesPart, MiniHeadingStyleId, StyleValues.Paragraph, "Dox Mini Heading", style =>
             {
                 style.BasedOn = new BasedOn() { Val = "Normal" };
                 style.PrimaryStyle = new PrimaryStyle();
@@ -61,7 +61,7 @@ namespace Dox2Word.Generator
                 };
             });
 
-            AddIfNotExists(stylesPart, CodeCharStyleId, StyleValues.Character, "Code Char", style =>
+            AddIfNotExists(stylesPart, CodeCharStyleId, StyleValues.Character, "Dox Code Char", style =>
             {
                 style.BasedOn = new BasedOn() { Val = "DefaultParagraphFont" };
                 style.LinkedStyle = new LinkedStyle() { Val = CodeStyleId };
@@ -72,7 +72,7 @@ namespace Dox2Word.Generator
                 };
             });
 
-            AddIfNotExists(stylesPart, CodeStyleId, StyleValues.Paragraph, "Code", style =>
+            AddIfNotExists(stylesPart, CodeStyleId, StyleValues.Paragraph, "Dox Code", style =>
             {
                 style.BasedOn = new BasedOn() { Val = "Normal" };
                 style.LinkedStyle = new LinkedStyle() { Val = CodeCharStyleId };
@@ -102,7 +102,7 @@ namespace Dox2Word.Generator
                 };
             });
 
-            AddIfNotExists(stylesPart, WarningStyleId, StyleValues.Paragraph, "Warning", style =>
+            AddIfNotExists(stylesPart, WarningStyleId, StyleValues.Paragraph, "Dox Warning", style =>
             {
                 style.BasedOn = new BasedOn() { Val = "Normal" };
                 style.PrimaryStyle = new PrimaryStyle();

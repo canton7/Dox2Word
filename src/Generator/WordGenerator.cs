@@ -146,7 +146,7 @@ namespace Dox2Word.Generator
                 if (cls.Variables.Count > 0)
                 {
                     this.WriteMiniHeading("Members");
-                    var table = this.AppendChild(this.CreateTable().ApplyStyle(StyleManager.ParameterTableStyleId).AddColumns(2));
+                    var table = this.AppendChild(this.CreateTable(StyleManager.ParameterTableStyleId).AddColumns(2));
                     foreach (var variable in cls.Variables)
                     {
                         string? bitfield = variable.Bitfield == null
@@ -171,7 +171,7 @@ namespace Dox2Word.Generator
                 if (@enum.Values.Count > 0)
                 {
                     this.WriteMiniHeading("Values");
-                    var table = this.AppendChild(this.CreateTable().ApplyStyle(StyleManager.ParameterTableStyleId).AddColumns(2));
+                    var table = this.AppendChild(this.CreateTable(StyleManager.ParameterTableStyleId).AddColumns(2));
                     foreach (var value in @enum.Values)
                     {
                         table.AppendRow(value.Name, this.CreateDescriptions(value.Descriptions));
@@ -228,7 +228,7 @@ namespace Dox2Word.Generator
                 {
                     this.WriteMiniHeading("Parameters");
 
-                    var table = this.AppendChild(this.CreateTable().ApplyStyle(StyleManager.ParameterTableStyleId).AddColumns(2));
+                    var table = this.AppendChild(this.CreateTable(StyleManager.ParameterTableStyleId).AddColumns(2));
                     foreach (var parameter in macro.Parameters)
                     {
                         table.AppendRow(parameter.Name, this.CreateParagraph(parameter.Description));
@@ -284,7 +284,7 @@ namespace Dox2Word.Generator
                     this.WriteMiniHeading("Parameters");
 
                     bool hasInOut = function.Parameters.Any(x => x.Direction != ParameterDirection.None);
-                    var table = this.AppendChild(this.CreateTable().ApplyStyle(StyleManager.ParameterTableStyleId).AddColumns(hasInOut ? 3 : 2));
+                    var table = this.AppendChild(this.CreateTable(StyleManager.ParameterTableStyleId).AddColumns(hasInOut ? 3 : 2));
                     foreach (var parameter in function.Parameters)
                     {
                         string? inOut = hasInOut
@@ -315,7 +315,7 @@ namespace Dox2Word.Generator
             if (returnDescriptions.Values.Count > 0)
             {
                 this.WriteMiniHeading("Return values");
-                var table = this.AppendChild(this.CreateTable().ApplyStyle(StyleManager.ParameterTableStyleId).AddColumns(2));
+                var table = this.AppendChild(this.CreateTable(StyleManager.ParameterTableStyleId).AddColumns(2));
                 foreach (var returnValue in returnDescriptions.Values)
                 {
                     table.AppendRow(returnValue.Name, this.CreateParagraph(returnValue.Description));
@@ -336,9 +336,11 @@ namespace Dox2Word.Generator
             };
 
             // If the style specifies all-caps or small-caps, undo this
-            run.RunProperties ??= new RunProperties();
-            run.RunProperties.SmallCaps = new SmallCaps() { Val = false };
-            run.RunProperties.Caps = new Caps() { Val = false };
+            run.WithProperties(x =>
+            {
+                x.SmallCaps = new SmallCaps() { Val = false };
+                x.Caps = new Caps() { Val = false };
+            });
         }
 
         private void WriteMiniHeading(string text)
@@ -428,14 +430,17 @@ namespace Dox2Word.Generator
                 {
                     text.Space = SpaceProcessingModeValues.Preserve;
                 }
-                run.RunProperties = new RunProperties()
+                if (textRun.Format.HasFlag(TextRunFormat.Bold) || textRun.Format.HasFlag(TextRunFormat.Italic))
                 {
-                    Bold = textRun.Format.HasFlag(TextRunFormat.Bold) ? new Bold() : null,
-                    Italic = textRun.Format.HasFlag(TextRunFormat.Italic) ? new Italic() : null,
-                };
+                    run.WithProperties(x =>
+                    {
+                        x.Bold = textRun.Format.HasFlag(TextRunFormat.Bold) ? new Bold() : null;
+                        x.Italic = textRun.Format.HasFlag(TextRunFormat.Italic) ? new Italic() : null;
+                    });
+                }
                 if (textRun.Format.HasFlag(TextRunFormat.Monospace))
                 {
-                    run.RunProperties.RunFonts = new RunFonts() { Ascii = "Consolas" };
+                    run.WithProperties(x => x.RunFonts = new RunFonts() { Ascii = "Consolas" });
                 }
             }
             return paragraph;
@@ -503,7 +508,7 @@ namespace Dox2Word.Generator
 
         private OpenXmlElement CreateTable(TableDoc tableDoc)
         {
-            var table = this.CreateTable();
+            var table = new Table();
             var tableProperties = table.Elements<TableProperties>().FirstOrDefault() ??
                 table.AppendChild(new TableProperties());
             tableProperties.TableStyle = new TableStyle() { Val = StyleManager.TableStyleId };
@@ -532,6 +537,7 @@ namespace Dox2Word.Generator
                     {
                         cell.TableCellProperties ??= new TableCellProperties();
                         cell.TableCellProperties.VerticalMerge = new VerticalMerge();
+                        cell.Append(new Paragraph());
                         colIndexToRowSpan[i]--;
                         cellDocIndex--;
                     }
@@ -592,23 +598,13 @@ namespace Dox2Word.Generator
             return child;
         }
 
-        private Table CreateTable()
+        private Table CreateTable(string styleId)
         {
             var table = new Table();
-
-            // Add spacing after
-            //var paragraph = this.AppendChild(new Paragraph());
-            //paragraph.ParagraphProperties ??= new ParagraphProperties();
-            //paragraph.ParagraphProperties.SpacingBetweenLines = new SpacingBetweenLines()
-            //{
-            //    Before = "0",
-            //    After = "0",
-            //};
-
-            //var run = paragraph.AppendChild(new Run());
-            //run.RunProperties ??= new RunProperties();
-            //run.RunProperties.FontSize = new FontSize() { Val = "10" };
-
+            var tableProperties = table.Elements<TableProperties>().FirstOrDefault() ??
+                table.AppendChild(new TableProperties());
+            tableProperties.TableStyle = new TableStyle() { Val = styleId };
+            tableProperties.TableWidth = new TableWidth() { Type = TableWidthUnitValues.Auto, Width = "0" };
             return table;
         }
 
