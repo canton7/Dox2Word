@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <LangVersion>9</LangVersion>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <BaseOutputPath>..\bin</BaseOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,8 +22,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Costura.Fody" Version="4.1.0" />
+    <PackageReference Include="ILRepack" Version="2.0.18" />
     <PackageReference Include="DocumentFormat.OpenXml" Version="2.13.1" />
   </ItemGroup>
 
+  <Target Name="ILRepack">
+    <Exec Command="$(ILRepack) /out:$(OutputPath)Dox2Word.exe $(OutputPath)Dox2Word.exe $(OutputPath)DocumentFormat.OpenXml.dll"/>
+  </Target>
 </Project>
