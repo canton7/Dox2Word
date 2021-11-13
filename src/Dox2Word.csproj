@@ -15,9 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Generator\BulletStyle.xml">
-      <Generator></Generator>
-    </EmbeddedResource>
+    <EmbeddedResource Include="Generator\BulletStyle.xml" />
     <EmbeddedResource Include="Generator\DoxTableStyle.xml" />
     <EmbeddedResource Include="Generator\NumberedStyle.xml" />
   </ItemGroup>

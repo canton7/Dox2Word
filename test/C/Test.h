@@ -57,7 +57,7 @@
     } while (0)
 
 /// Constant macro
-#define COMMON_UNIT_CONST (uint32_t)3
+#define CONSTANT_MACRO (uint32_t)3
 
 /**
  * Global extern variable
