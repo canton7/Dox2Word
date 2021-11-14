@@ -11,8 +11,8 @@ namespace Dox2Word.Model
 
         public List<TableRowDoc> Rows { get; } = new();
 
-        int IParagraph.Count => this.Rows.Count;
+        public bool IsEmpty => this.Rows.Count == 0;
 
-        public void Trim() { }
+        public void TrimTrailingWhitespace() { }
     }
 }

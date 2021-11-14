@@ -26,12 +26,12 @@ namespace Dox2Word.Parser
 
             Parse(paragraphs, para, TextRunFormat.None);
 
-            paragraphs.LastOrDefault()?.Trim();
+            paragraphs.LastOrDefault()?.TrimTrailingWhitespace();
 
             return paragraphs;
         }
 
-        private static void Parse(List<IParagraph> paragraphs, DocPara? para, TextRunFormat format, ParagraphAlignment alignment = ParagraphAlignment.Default)
+        private static void Parse(List<IParagraph> paragraphs, DocPara? para, TextRunFormat format, TextParagraphAlignment alignment = TextParagraphAlignment.Default)
         {
             if (para == null)
                 return;
@@ -44,7 +44,7 @@ namespace Dox2Word.Parser
                         AddTextRun(paragraphs, alignment, s, format);
                         break;
                     case DocSimpleSect s when s.Kind == DoxSimpleSectKind.Warning:
-                        Add(paragraphs, new TextParagraph(ParagraphType.Warning));
+                        Add(paragraphs, new TextParagraph(TextParagraphType.Warning));
                         Parse(paragraphs, s.Para, format);
                         Add(paragraphs, new TextParagraph());
                         break;
@@ -98,13 +98,13 @@ namespace Dox2Word.Parser
         private static T Add<T>(List<IParagraph> paragraphs, T paragraph) where T : IParagraph
         {
             // Trim the previous paragraph
-            paragraphs.LastOrDefault()?.Trim();
+            paragraphs.LastOrDefault()?.TrimTrailingWhitespace();
 
             paragraphs.Add(paragraph);
             return paragraph;
         }
 
-        private static void Add(List<IParagraph> paragraphs, ParagraphAlignment alignment, TextRun textRun)
+        private static void Add(List<IParagraph> paragraphs, TextParagraphAlignment alignment, TextRun textRun)
         {
             if (paragraphs.LastOrDefault() is not TextParagraph paragraph)
             {
@@ -113,7 +113,7 @@ namespace Dox2Word.Parser
             paragraph.Add(textRun);
         }
 
-        private static void AddTextRun(List<IParagraph> paragraphs, ParagraphAlignment alignment, string text, TextRunFormat format) =>
+        private static void AddTextRun(List<IParagraph> paragraphs, TextParagraphAlignment alignment, string text, TextRunFormat format) =>
             Add(paragraphs, alignment, new TextRun(text.TrimStart('\n'), format));
 
         private static void ParseList(List<IParagraph> paragraphs, DocList docList, ListParagraphType type, TextRunFormat format)
@@ -128,7 +128,7 @@ namespace Dox2Word.Parser
                 {
                     Parse(paragraphList, para, format);
                 }
-                paragraphList.LastOrDefault()?.Trim();
+                paragraphList.LastOrDefault()?.TrimTrailingWhitespace();
                 list.Items.AddRange(paragraphList);
             }
         }
@@ -186,15 +186,15 @@ namespace Dox2Word.Parser
 
                     var alignment = entry.Align switch
                     {
-                        DoxAlign.Left => ParagraphAlignment.Left,
-                        DoxAlign.Center => ParagraphAlignment.Center,
-                        DoxAlign.Right => ParagraphAlignment.Right,
+                        DoxAlign.Left => TextParagraphAlignment.Left,
+                        DoxAlign.Center => TextParagraphAlignment.Center,
+                        DoxAlign.Right => TextParagraphAlignment.Right,
                     };
 
                     foreach (var para in entry.Paras)
                     {
                         Parse(cellDoc.Paragraphs, para, TextRunFormat.None, alignment);
-                        cellDoc.Paragraphs.LastOrDefault()?.Trim();
+                        cellDoc.Paragraphs.LastOrDefault()?.TrimTrailingWhitespace();
                     }
                 }
             }

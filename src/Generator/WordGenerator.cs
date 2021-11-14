@@ -224,7 +224,7 @@ namespace Dox2Word.Generator
 
                 this.WriteDescriptions(macro.Descriptions);
 
-                if (macro.Parameters.Count > 0 && macro.Parameters.Any(x => x.Description.Count > 0))
+                if (macro.Parameters.Count > 0 && macro.Parameters.Any(x => !x.Description.IsEmpty))
                 {
                     this.WriteMiniHeading("Parameters");
 
@@ -279,7 +279,7 @@ namespace Dox2Word.Generator
 
                 this.WriteDescriptions(function.Descriptions);
 
-                if (function.Parameters.Count > 0 && function.Parameters.Any(x => x.Description.Count > 0))
+                if (function.Parameters.Count > 0 && function.Parameters.Any(x => !x.Description.IsEmpty))
                 {
                     this.WriteMiniHeading("Parameters");
 
@@ -306,7 +306,7 @@ namespace Dox2Word.Generator
 
         private void WriteReturnDescription(ReturnDescriptions returnDescriptions)
         {
-            if (returnDescriptions.Description.Count > 0)
+            if (!returnDescriptions.Description.IsEmpty)
             {
                 this.WriteMiniHeading("Returns");
                 this.Append(this.CreateParagraph(returnDescriptions.Description));
@@ -374,7 +374,7 @@ namespace Dox2Word.Generator
             {
                 case TextParagraph textParagraph:
                     var paragraph = this.CreateTextParagraph(textParagraph);
-                    if (textParagraph.Type == ParagraphType.Warning)
+                    if (textParagraph.Type == TextParagraphType.Warning)
                     {
                         paragraph.ApplyStyle(StyleManager.WarningStyleId);
                     }
@@ -404,14 +404,14 @@ namespace Dox2Word.Generator
         private Paragraph CreateTextParagraph(TextParagraph textParagraph)
         {
             var paragraph = new Paragraph();
-            if (textParagraph.Alignment != ParagraphAlignment.Default)
+            if (textParagraph.Alignment != TextParagraphAlignment.Default)
             {
                 var justification = textParagraph.Alignment switch
                 {
-                    ParagraphAlignment.Left => JustificationValues.Left,
-                    ParagraphAlignment.Center => JustificationValues.Center,
-                    ParagraphAlignment.Right => JustificationValues.Right,
-                    ParagraphAlignment.Default => throw new Exception("Not possible"),
+                    TextParagraphAlignment.Left => JustificationValues.Left,
+                    TextParagraphAlignment.Center => JustificationValues.Center,
+                    TextParagraphAlignment.Right => JustificationValues.Right,
+                    TextParagraphAlignment.Default => throw new Exception("Not possible"),
                 };
 
                 paragraph.WithProperties(x => x.Justification = new Justification() { Val = justification });

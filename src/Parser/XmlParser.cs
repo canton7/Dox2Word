@@ -320,7 +320,7 @@ namespace Dox2Word.Parser
             if (paras == null)
                 return Enumerable.Empty<TextParagraph>();
 
-            return paras.SelectMany(x => ParaParser.Parse(x)).Where(x => x.Count > 0);
+            return paras.SelectMany(x => ParaParser.Parse(x)).Where(x => !x.IsEmpty);
         }
 
         private static void Merge<T>(List<T> collection, T newItem) where T : IMergable<T>
