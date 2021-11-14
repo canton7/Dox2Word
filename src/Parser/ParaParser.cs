@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -67,6 +68,10 @@ namespace Dox2Word.Parser
                         ParseListing(paragraphs, l);
                         break;
                     case Dot d:
+                        Add(paragraphs, new DotParagraph(d.Contents));
+                        break;
+                    case DotFile d:
+                        Add(paragraphs, new DotParagraph(File.ReadAllText(d.Name!)) { Caption = d.Contents });
                         break;
                     case BoldMarkup b:
                         Parse(paragraphs, b, format | TextRunFormat.Bold);

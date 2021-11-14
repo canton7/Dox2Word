@@ -19,6 +19,8 @@ Usage
 First, make get Doxygen installed and working.
 You'll need to set `GENERATE_XML = YES` in your Doxyfile, so that it generates an `xml` folder.
 
+If you want to render diagrams using `@dot` / `@dotfile`, install [Graphviz](https://graphviz.org/) and make sure that dot.exe is in your PATH.
+
 Create a template word document, in docx format.
 At the point that you want Dox2Word to insert its generated documentation, add a paragraph containing `<INSERT HERE>`.
 
@@ -67,6 +69,7 @@ Dox2Word currently supports the following Doxygen features:
  - Code snippets (using `@code`/`@endcode`)
  - Warnings (using `@warning`)
  - `@param`, `@returns`, `@retval`
+ - Graphviz graphs (using `@dot` and `@dotfile`, provided that dot.exe is in your PATH)
  - C: Structs, unions, enums, global variables, macros, functions
 
 Word Styles

@@ -21,6 +21,8 @@ namespace Dox2Word.Generator
         private readonly List<OpenXmlElement> bodyElements = new();
 
         private readonly ListManager listManager;
+        private readonly ImageManager imageManager;
+        private readonly DotRenderer dotRenderer = new();
 
         public static void Generate(Stream stream, Project project)
         {
@@ -46,6 +48,7 @@ namespace Dox2Word.Generator
             }
 
             this.listManager = new ListManager(numberingPart);
+            this.imageManager = new ImageManager(doc.MainDocumentPart);
             StyleManager.EnsureStyles(stylesPart);
         }
 
@@ -392,6 +395,14 @@ namespace Dox2Word.Generator
                     yield return this.CreateCodeParagraph(codeParagraph);
                     break;
 
+                case DotParagraph dotParagraph:
+                    var p = this.CreateDotParagraph(dotParagraph);
+                    if (p != null)
+                    {
+                        yield return p;
+                    }
+                    break;
+
                 case TableDoc table:
                     yield return this.CreateTable(table);
                     break;
@@ -496,6 +507,16 @@ namespace Dox2Word.Generator
             }
 
             return paragraph;
+        }
+
+        private OpenXmlElement? CreateDotParagraph(DotParagraph dotParagraph)
+        {
+            byte[]? output = this.dotRenderer.TryRender(dotParagraph.Contents);
+            if (output != null)
+            {
+                return new Paragraph(new Run(this.imageManager.CreateImage(output, ImagePartType.Png)));
+            }
+            return null;
         }
 
         private OpenXmlElement CreateTable(TableDoc tableDoc)

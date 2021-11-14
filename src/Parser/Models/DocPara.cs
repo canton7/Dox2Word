@@ -16,6 +16,7 @@ namespace Dox2Word.Parser.Models
         [XmlElement("xrefsect", typeof(DocXRefSect))]
         [XmlElement("programlisting", typeof(Listing))]
         [XmlElement("dot", typeof(Dot))]
+        [XmlElement("dotfile", typeof(DotFile))]
         [XmlElement("bold", typeof(BoldMarkup))]
         [XmlElement("emphasis", typeof(ItalicMarkup))]
         [XmlElement("computeroutput", typeof(MonospaceMarkup))]

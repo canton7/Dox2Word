@@ -35,6 +35,19 @@
  * | This is some long text | This is some long text   | This is some long text  |
  * | ^     | Merge  ||
  * 
+ * Dot diagram:
+ * @dot
+ * digraph example {
+ *     node [shape=record, fontname=Helvetica, fontsize=10];
+ *     b [ label="class B" ];
+ *     c [ label="class C" ];
+ *     b -> c [ arrowhead="open", style="dashed" ];
+ * }
+ * @enddot
+ * 
+ * Dot from external file:
+ * @dotfile Test.dot "Dot from external file"
+ * 
  * @{
  * @file
  */
