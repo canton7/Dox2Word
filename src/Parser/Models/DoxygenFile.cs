@@ -3,10 +3,10 @@ using System.Xml.Serialization;
 
 namespace Dox2Word.Parser.Models
 {
-    [XmlRoot("doxygen")]
+    [XmlRoot("doxyfile")]
     public class DoxygenFile
     {
-        [XmlElement("compounddef")]
-        public List<CompoundDef> CompoundDefs { get; } = new();
+        [XmlElement("option")]
+        public List<Option> Options { get; } = new();
     }
 }

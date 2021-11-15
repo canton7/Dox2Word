@@ -86,12 +86,31 @@ namespace Dox2Word.Generator
 
                 body.RemoveChild(markerParagraph);
 
+                this.SubstituteOptionPlaceholders(body, project);
+
                 this.Validate();
             }
             catch (GeneratorException e)
             {
                 logger.Error(e);
             }
+        }
+
+        private void SubstituteOptionPlaceholders(Body body, Project project)
+        {
+            var options = project.Options.ToDictionary(x => x.Id, x => string.Join(", ", x.Values));
+            foreach (var field in body.Descendants<SimpleField>())
+            {
+
+            }
+            FieldReplacer.Replace(body);
+            //new SimpleField()
+            //foreach (var paragraph in body.ChildElements.OfType<Paragraph>())
+            //{
+            //    if (options.TryGetValue($"<{paragraph.InnerText}>", out string value))
+            //    {
+            //    }
+            //}
         }
 
         private void Validate()

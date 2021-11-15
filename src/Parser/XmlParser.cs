@@ -27,9 +27,12 @@ namespace Dox2Word.Parser
 
             try
             {
+                string doxyfileFile = Path.Combine(this.basePath, "Doxyfile.xml");
+                var doxyfile = Parse<DoxygenFile>(doxyfileFile);
+                project.Options.AddRange(this.ParseOptions(doxyfile));
+
                 string indexFile = Path.Combine(this.basePath, "index.xml");
                 var index = Parse<DoxygenIndex>(indexFile);
-
 
                 // Discover the root groups
                 var groupCompoundDefs = index.Compounds.Where(x => x.Kind == CompoundKind.Group)
@@ -49,7 +52,28 @@ namespace Dox2Word.Parser
             {
                 logger.Error(e);
             }
+
             return project;
+        }
+
+        private IEnumerable<ProjectOption> ParseOptions(DoxygenFile doxyfile)
+        {
+            foreach (var option in doxyfile.Options)
+            {
+                var projectOption = new ProjectOption()
+                {
+                    Id = option.Id,
+                };
+                projectOption.Values.AddRange(option.Values);
+                projectOption.TypedValue = option.Type switch
+                {
+                    OptionType.Bool => option.Values[0] == "YES",
+                    OptionType.Int => int.Parse(option.Values[0]),
+                    OptionType.String => option.Values[0],
+                    OptionType.StringList => projectOption.Values,
+                };
+                yield return projectOption;
+            }
         }
 
         private Group ParseGroup(Dictionary<string, CompoundDef> groups, string refId)
@@ -339,7 +363,7 @@ namespace Dox2Word.Parser
         private CompoundDef ParseDoxygenFile(string refId)
         {
             string filePath = Path.Combine(this.basePath, refId + ".xml");
-            var file = Parse<DoxygenFile>(filePath);
+            var file = Parse<Doxygen>(filePath);
             if (file.CompoundDefs.Count > 1)
             {
                 logger.Warning($"File {filePath}: expected 1 compoundDef, got {file.CompoundDefs.Count}. Ignoring all but the first");
