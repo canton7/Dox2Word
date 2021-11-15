@@ -396,10 +396,10 @@ namespace Dox2Word.Generator
                     break;
 
                 case DotParagraph dotParagraph:
-                    var p = this.CreateDotParagraph(dotParagraph);
-                    if (p != null)
+                    var para = this.CreateDotParagraph(dotParagraph);
+                    if (para != null)
                     {
-                        yield return p;
+                        yield return para;
                     }
                     break;
 
