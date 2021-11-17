@@ -7,6 +7,7 @@
     <LangVersion>9</LangVersion>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <BaseOutputPath>..\bin</BaseOutputPath>
+    <Version>0</Version>
   </PropertyGroup>
 
   <ItemGroup>

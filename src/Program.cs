@@ -13,6 +13,10 @@ namespace Dox2Word
         {
             if (args.Length != 3)
             {
+                var version = typeof(Program).Assembly.GetName().Version;
+                Console.WriteLine($"Dox2Word version v{version.ToString(1)} (https://github.com/canton7/Dox2Word)");
+                Console.WriteLine();
+
                 string path = Path.GetFileNameWithoutExtension(Assembly.GetEntryAssembly().Location);
                 Console.WriteLine($"Usage: {path} xml-folder Template.docx Output.docx");
                 Console.WriteLine();
