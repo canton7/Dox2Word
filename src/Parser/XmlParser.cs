@@ -37,19 +37,39 @@ namespace Dox2Word.Parser
                 string indexFile = Path.Combine(this.basePath, "index.xml");
                 var index = Parse<DoxygenIndex>(indexFile);
 
-                // Discover the root groups
-                var groupCompoundDefs = index.Compounds.Where(x => x.Kind == CompoundKind.Group)
-                    .ToDictionary(x => x.RefId, x => this.ParseDoxygenFile(x.RefId));
-                var rootGroups = groupCompoundDefs.Keys.ToHashSet();
-                foreach (var group in groupCompoundDefs.Values.ToList())
+                var allFileCompoundDefs = index.Compounds.Where(x => x.Kind == CompoundKind.File)
+                    .ToDictionary(x => x.RefId, x => this.ParseCompoundDef(x.RefId));
+
+                var allGroupCompoundDefs = index.Compounds.Where(x => x.Kind == CompoundKind.Group)
+                    .ToDictionary(x => x.RefId, x => this.ParseCompoundDef(x.RefId));
+                project.AllGroups = allGroupCompoundDefs.Values.ToDictionary(x => x.Id, x => this.ParseGroup(x));
+
+                // Wire up the group->inner group relationships
+                var rootGroups = project.AllGroups.Values.ToHashSet();
+                foreach (var group in project.AllGroups.Values)
                 {
-                    foreach (var innerGroup in group.InnerGroups)
-                    {
-                        rootGroups.Remove(innerGroup.RefId);
-                    }
+                    group.SubGroups.AddRange(allGroupCompoundDefs[group.Id].InnerGroups.Select(x => project.AllGroups[x.RefId]));
+                    rootGroups.ExceptWith(group.SubGroups);
                 }
 
-                project.Groups.AddRange(rootGroups.Select(x => this.ParseGroup(groupCompoundDefs, x)).OrderBy(x => x.Name));
+                project.RootGroups.AddRange(rootGroups.OrderBy(x => x.Name));
+
+                // Wire up group -> referenced group relationships
+                var fileIdToOwningGroup = project.AllGroups.Values
+                    .SelectMany(g => g.Files.Select(f => (file: f, group: g)))
+                    .ToDictionary(x => x.file.Id, x => x.group);
+                foreach (var fileDef in allFileCompoundDefs.Values)
+                {
+                    foreach (var include in fileDef.Includes.Where(x => x.IsLocal == DoxBool.Yes))
+                    {
+                        var includedGroups = fileIdToOwningGroup[fileDef.Id].IncludedGroups;
+                        var includedGroup = fileIdToOwningGroup[include.RefId];
+                        if (!includedGroups.Contains(includedGroup))
+                        {
+                            includedGroups.Add(includedGroup);
+                        }
+                    }
+                }
             }
             catch (ParserException e)
             {
@@ -88,18 +108,17 @@ namespace Dox2Word.Parser
             static string TrimQuotes(string value) => value.TrimStart('"').TrimEnd('"');
         }
 
-        private Group ParseGroup(Dictionary<string, CompoundDef> groups, string refId)
+        private Group ParseGroup(CompoundDef compoundDef)
         {
-            var compoundDef = groups[refId];
             logger.Info($"Parsing compound {compoundDef.CompoundName}");
 
             var group = new Group()
             {
+                Id = compoundDef.Id,
                 Name = compoundDef.Title,
                 Descriptions = ParseDescriptions(compoundDef),
             };
-            group.SubGroups.AddRange(compoundDef.InnerGroups.Select(x => this.ParseGroup(groups, x.RefId)));
-            group.Files.AddRange(compoundDef.InnerFiles.Select(x => x.Name));
+            group.Files.AddRange(compoundDef.InnerFiles.Select(x => new FileDoc() { Id = x.RefId, Name = x.Name }));
             group.Classes.AddRange(compoundDef.InnerClasses.Select(x => this.ParseInnerClass(x.RefId)).Where(x => x != null)!);
 
             var members = compoundDef.Sections.SelectMany(x => x.Members);
@@ -227,7 +246,7 @@ namespace Dox2Word.Parser
 
         private ClassDoc? ParseInnerClass(string refId)
         {
-            var compoundDef = this.ParseDoxygenFile(refId);
+            var compoundDef = this.ParseCompoundDef(refId);
             logger.Info($"Parsing class {compoundDef.CompoundName}");
 
             if (compoundDef.Kind is not (CompoundKind.Struct or CompoundKind.Union))
@@ -372,7 +391,7 @@ namespace Dox2Word.Parser
             }
         }
 
-        private CompoundDef ParseDoxygenFile(string refId)
+        private CompoundDef ParseCompoundDef(string refId)
         {
             string filePath = Path.Combine(this.basePath, refId + ".xml");
             var file = Parse<Doxygen>(filePath);

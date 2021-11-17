@@ -72,7 +72,7 @@ namespace Dox2Word.Generator
                     }
                 }
 
-                foreach (var group in project.Groups)
+                foreach (var group in project.RootGroups)
                 {
                     this.WriteGroup(group, headingLevel);
                 }
@@ -119,9 +119,18 @@ namespace Dox2Word.Generator
             if (group.Files.Count > 0)
             {
                 this.WriteMiniHeading("Files");
-                var listParagraph = new ListParagraph(ListParagraphType.Bullet);
-                listParagraph.Items.AddRange(group.Files.Select(x => new TextParagraph() { new TextRun(x) }));
-                this.Append(this.CreateParagraph(listParagraph));
+                var filesList = new ListParagraph(ListParagraphType.Bullet);
+                filesList.Items.AddRange(group.Files.Select(x => new TextParagraph() { new TextRun(x.Name) }));
+                this.Append(this.CreateParagraph(filesList));
+
+                if (group.IncludedGroups.Count > 0)
+                {
+                    this.WriteMiniHeading("Referenced Units");
+                    this.AppendChild(StringToParagraph("The following units are referenced by this unit:"));
+                    var groupsList = new ListParagraph(ListParagraphType.Bullet);
+                    groupsList.Items.AddRange(group.IncludedGroups.Select(x => new TextParagraph() { new TextRun(x.Name) }));
+                    this.Append(this.CreateParagraph(groupsList));
+                }
             }
 
             this.WriteGlobalVariables(group.GlobalVariables, headingLevel + 1);
@@ -135,7 +144,6 @@ namespace Dox2Word.Generator
                 this.WriteGroup(subGroup, headingLevel + 1);
             }
         }
-
         private void WriteClasses(List<ClassDoc> classes, int headingLevel)
         {
             foreach (var cls in classes)
@@ -614,6 +622,8 @@ namespace Dox2Word.Generator
             this.bodyElements.Add(child);
             return child;
         }
+
+        private static Paragraph StringToParagraph(string text) => new Paragraph(new Run(new Text(text)));
 
         private Table CreateTable(string styleId)
         {

@@ -6,6 +6,8 @@ namespace Dox2Word.Model
     {
         public List<ProjectOption> Options { get; } = new();
 
-        public List<Group> Groups { get; } = new();
+        public Dictionary<string, Group> AllGroups { get; set; } = null!;
+
+        public List<Group> RootGroups { get; } = new();
     }
 }

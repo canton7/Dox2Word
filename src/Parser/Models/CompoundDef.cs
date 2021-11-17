@@ -17,6 +17,9 @@ namespace Dox2Word.Parser.Models
         [XmlElement("title")]
         public string Title { get; set; } = null!;
 
+        [XmlElement("includes")]
+        public List<Inc> Includes { get; } = new();
+
         [XmlElement("briefdescription")]
         public Description BriefDescription { get; set; } = null!;
 
