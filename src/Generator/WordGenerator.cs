@@ -457,7 +457,11 @@ namespace Dox2Word.Generator
                 });
                 if (textRun.Format.HasFlag(TextRunFormat.Monospace))
                 {
-                    run.WithProperties(x => x.RunFonts = new RunFonts() { Ascii = "Consolas" });
+                    run.WithProperties(x =>
+                    {
+                        x.FontSize = new FontSize() { Val = "20" };
+                        x.RunFonts = new RunFonts() { Ascii = "Consolas" };
+                    });
                 }
             }
             return paragraph;
