@@ -123,13 +123,23 @@ namespace Dox2Word.Generator
                 filesList.Items.AddRange(group.Files.Select(x => new TextParagraph() { new TextRun(x.Name) }));
                 this.Append(this.CreateParagraph(filesList));
 
-                if (group.IncludedGroups.Count > 0)
+                if (group.IncludedGroups.Count > 0 || group.IncludingGroups.Count > 0)
                 {
-                    this.WriteMiniHeading("Referenced Units");
-                    this.AppendChild(StringToParagraph("The following units are referenced by this unit:"));
-                    var groupsList = new ListParagraph(ListParagraphType.Bullet);
-                    groupsList.Items.AddRange(group.IncludedGroups.Select(x => new TextParagraph() { new TextRun(x.Name) }));
-                    this.Append(this.CreateParagraph(groupsList));
+                    this.WriteMiniHeading("Unit References");
+                    if (group.IncludedGroups.Count > 0)
+                    {
+                        this.AppendChild(StringToParagraph("The following units are referenced by this unit:"));
+                        var groupsList = new ListParagraph(ListParagraphType.Bullet);
+                        groupsList.Items.AddRange(group.IncludedGroups.Select(x => new TextParagraph() { new TextRun(x.Name) }));
+                        this.Append(this.CreateParagraph(groupsList));
+                    }
+                    if (group.IncludingGroups.Count > 0)
+                    {
+                        this.AppendChild(StringToParagraph("This unit is referenced by the following units:"));
+                        var groupsList = new ListParagraph(ListParagraphType.Bullet);
+                        groupsList.Items.AddRange(group.IncludingGroups.Select(x => new TextParagraph() { new TextRun(x.Name) }));
+                        this.Append(this.CreateParagraph(groupsList));
+                    }
                 }
             }
 

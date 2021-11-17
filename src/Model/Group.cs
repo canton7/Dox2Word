@@ -9,6 +9,7 @@ namespace Dox2Word.Model
         public Descriptions Descriptions { get; set; } = null!;
         public List<Group> SubGroups { get; } = new();
         public List<Group> IncludedGroups { get; } = new();
+        public List<Group> IncludingGroups { get; } = new();
         public List<FileDoc> Files { get; } = new();
         public List<ClassDoc> Classes { get; } = new();
         public List<EnumDoc> Enums { get; } = new();
