@@ -13,7 +13,7 @@ namespace Dox2Word.Generator
 {
     public class WordGenerator
     {
-        public const string Placeholder = "<INSERT HERE>";
+        public const string Placeholder = "MODULES";
         private static readonly Logger logger = Logger.Instance;
 
         private readonly WordprocessingDocument doc;
@@ -58,9 +58,7 @@ namespace Dox2Word.Generator
             {
                 var body = this.doc.MainDocumentPart!.Document.Body!;
 
-                var markerParagraph = body.ChildElements.OfType<Paragraph>()
-                    .FirstOrDefault(x => x.InnerText == Placeholder);
-
+                var markerParagraph = PlaceholderHelper.FindParagraphPlaceholder(body, Placeholder);
                 if (markerParagraph == null)
                     throw new GeneratorException($"Could not find placeholder text '{Placeholder}'");
 
@@ -99,18 +97,7 @@ namespace Dox2Word.Generator
         private void SubstituteOptionPlaceholders(Body body, Project project)
         {
             var options = project.Options.ToDictionary(x => x.Id, x => string.Join(", ", x.Values));
-            foreach (var field in body.Descendants<SimpleField>())
-            {
-
-            }
-            FieldReplacer.Replace(body);
-            //new SimpleField()
-            //foreach (var paragraph in body.ChildElements.OfType<Paragraph>())
-            //{
-            //    if (options.TryGetValue($"<{paragraph.InnerText}>", out string value))
-            //    {
-            //    }
-            //}
+            PlaceholderHelper.Replace(body, options);
         }
 
         private void Validate()

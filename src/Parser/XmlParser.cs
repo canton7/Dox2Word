@@ -64,16 +64,25 @@ namespace Dox2Word.Parser
                 {
                     Id = option.Id,
                 };
-                projectOption.Values.AddRange(option.Values);
                 projectOption.TypedValue = option.Type switch
                 {
                     OptionType.Bool => option.Values[0] == "YES",
                     OptionType.Int => int.Parse(option.Values[0]),
-                    OptionType.String => option.Values[0],
+                    OptionType.String => TrimQuotes(option.Values[0]),
                     OptionType.StringList => projectOption.Values,
                 };
+                if (option.Type is OptionType.String or OptionType.StringList)
+                {
+                    projectOption.Values.AddRange(option.Values.Select(TrimQuotes));
+                }
+                else
+                {
+                    projectOption.Values.AddRange(option.Values);
+                }
                 yield return projectOption;
             }
+
+            static string TrimQuotes(string value) => value.TrimStart('"').TrimEnd('"');
         }
 
         private Group ParseGroup(Dictionary<string, CompoundDef> groups, string refId)
