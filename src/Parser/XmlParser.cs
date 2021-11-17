@@ -28,8 +28,11 @@ namespace Dox2Word.Parser
             try
             {
                 string doxyfileFile = Path.Combine(this.basePath, "Doxyfile.xml");
-                var doxyfile = Parse<DoxygenFile>(doxyfileFile);
-                project.Options.AddRange(this.ParseOptions(doxyfile));
+                if (File.Exists(doxyfileFile))
+                {
+                    var doxyfile = Parse<DoxygenFile>(doxyfileFile);
+                    project.Options.AddRange(this.ParseOptions(doxyfile));
+                }
 
                 string indexFile = Path.Combine(this.basePath, "index.xml");
                 var index = Parse<DoxygenIndex>(indexFile);

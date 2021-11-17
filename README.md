@@ -39,7 +39,7 @@ Placeholders
 You can put placeholders in your template document, which will be replaced with corresponding values by Dox2Word.
 Placeholders start with `<` and end with `>`, e.g. `<PLACEHOLDER_NAME>`.
 
-By default, all of the configuration options in your Doxyfile are available as placeholders.
+If you're using Doxygen 1.9.2+, all of the configuration options in your Doxyfile are available as placeholders.
 This means that you can use e.g. `<PROJECT_NAME>` and `<PROJECT_NUMBER>` in your template to insert the project name and version from the Doxyfile.
 
 
