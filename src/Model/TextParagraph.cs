@@ -1,4 +1,5 @@
-﻿using System.Collections.ObjectModel;
+﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 
 namespace Dox2Word.Model
@@ -29,6 +30,14 @@ namespace Dox2Word.Model
         {
             this.Type = type;
             this.Alignment = alignment;
+        }
+
+        public void AddRange(IEnumerable<TextRun> elements)
+        {
+            foreach (var element in elements)
+            {
+                this.Add(element);
+            }
         }
 
         public void TrimTrailingWhitespace()

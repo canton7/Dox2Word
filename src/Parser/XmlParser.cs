@@ -151,7 +151,7 @@ namespace Dox2Word.Parser
                             Id = member.Id,
                             Name = member.Name,
                             Descriptions = ParseDescriptions(member),
-                            ReturnType = LinkedTextToString(member.Type) ?? "",
+                            ReturnType = LinkedTextToRuns(member.Type),
                             ReturnDescriptions = ParseReturnDescriptions(member),
                             Definition = member.Definition ?? "",
                             ArgsString = member.ArgsString ?? "",
@@ -252,7 +252,7 @@ namespace Dox2Word.Parser
                 var functionParameter = new ParameterDoc()
                 {
                     Name = name,
-                    Type = LinkedTextToString(param.Type),
+                    Type = LinkedTextToRuns(param.Type),
                     Description = ParasToParagraph(paramDesc?.desc.Para),
                     Direction = direction,
                 };
@@ -351,8 +351,27 @@ namespace Dox2Word.Parser
         private static string? LinkedTextToString(LinkedText? linkedText) =>
             EmbeddedRefTextToString(linkedText?.Type);
 
+        private static List<TextRun> LinkedTextToRuns(LinkedText? linkedText) =>
+            EmbeddedRefTextToRuns(linkedText?.Type).ToList();
+
         private static string? DocParamNameToString(DocParamName? docParamName) =>
             EmbeddedRefTextToString(docParamName?.Name);
+
+        private static IEnumerable<TextRun> EmbeddedRefTextToRuns(IEnumerable<object>? input)
+        {
+            if (input == null)
+                yield break;
+
+            foreach (object element in input)
+            {
+                yield return element switch
+                {
+                    string s => new TextRun(s),
+                    RefText r => new TextRun(r.Name, referenceId: r.RefId),
+                    _ => throw new ParserException($"Unknown element in EmbeddedRefText: {element}"),
+                };
+            }
+        }
 
         private static string? EmbeddedRefTextToString(IEnumerable<object>? input)
         {
@@ -364,7 +383,7 @@ namespace Dox2Word.Parser
                 {
                     string s => s,
                     RefText r => r.Name,
-                    _ => throw new ParserException($"Unknown element in DocParamName: {x}"),
+                    _ => throw new ParserException($"Unknown element in EmbeddedRefText: {x}"),
                 }));
         }
 

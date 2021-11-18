@@ -174,7 +174,7 @@ void VoidlessFunction();
  * 
  * Text after parameter docs
  */
-uint8_t FunctionWithParameters(uint8_t* a, const TypedefType_t* b, Struct_t* const c, Enum_t d);
+TypedefType_t FunctionWithParameters(uint8_t *a, const TypedefType_t* b, Struct_t* const c, Enum_t d);
 
 /**
  * A static inline function

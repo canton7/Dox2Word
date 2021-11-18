@@ -297,32 +297,28 @@ namespace Dox2Word.Generator
 
                 this.WriteMiniHeading("Signature");
                 var paragraph = this.AppendChild(new Paragraph().LeftAlign());
-                var run = paragraph.AppendChild(new Run().ApplyStyle(StyleManager.CodeCharStyleId));
-                run.AppendChild(new Text(function.Definition));
+                Run NewRun(OpenXmlElement e) => paragraph.AppendChild(new Run(e).ApplyStyle(StyleManager.CodeCharStyleId));
+                
+                NewRun(new Text(function.Definition));
 
                 if (function.Parameters.Count > 0)
                 {
-                    // It's safest to split the argsstring on ',' than to reconstruct each parameters.
-                    // This is because the parameters don't contain info such as whether a '*' was next to the
-                    // type or variable name, and it's hard to work this out after the fact.
-
-                    run.AppendChild(new Text("("));
-                    string[] parameters = function.ArgsString.TrimStart('(').TrimEnd(')').Split(',');
-                    for (int i = 0; i < parameters.Length; i++)
+                    NewRun(new Text("("));
+                    for (int i = 0; i < function.Parameters.Count;i++)
                     {
-                        string parameter = parameters[i];
-                        string comma = i == parameters.Length - 1 ? "" : ",";
-                        run.AppendChild(new Break());
-                        run.AppendChild(new Text($"    {parameter.Trim()}{comma}")
-                        {
-                            Space = SpaceProcessingModeValues.Preserve
-                        });
+                        string comma = i == function.Parameters.Count - 1 ? "" : ",";
+                        var run = NewRun(new Break());
+                        run.AppendChild(new Text("    ") { Space = SpaceProcessingModeValues.Preserve });
+                        paragraph.Append(this.TextRunsToRuns(function.Parameters[i].Type).Select(x => x.ApplyStyle(StyleManager.CodeCharStyleId)));
+                        string space = paragraph.InnerText.EndsWith(" *") ? "" : " ";
+                        NewRun(new Text($"{space}{function.Parameters[i].Name}{comma}") { Space = SpaceProcessingModeValues.Preserve });
                     }
-                    run.AppendChild(new Text(")"));
+
+                    NewRun(new Text(")"));
                 }
                 else
                 {
-                    run.AppendChild(new Text(function.ArgsString));
+                    NewRun(new Text(function.ArgsString));
                 }
 
                 this.WriteDescriptions(function.Descriptions);
@@ -482,7 +478,14 @@ namespace Dox2Word.Generator
                 paragraph.WithProperties(x => x.Justification = new Justification() { Val = justification });
             }
 
-            foreach (var textRun in textParagraph)
+            paragraph.Append(this.TextRunsToRuns(textParagraph));
+            
+            return paragraph;
+        }
+
+        private IEnumerable<Run> TextRunsToRuns(IEnumerable<TextRun> textRuns)
+        {
+            foreach (var textRun in textRuns)
             {
                 var run = new Run();
                 var text = run.AppendChild(new Text(textRun.Text));
@@ -507,14 +510,16 @@ namespace Dox2Word.Generator
 
                 if (textRun.ReferenceId == null)
                 {
-                    paragraph.AppendChild(run);
+                    yield return run;
                 }
                 else
                 {
-                    paragraph.Append(this.bookmarkManager.CreateLink(textRun.ReferenceId, run));
+                    foreach (var x in this.bookmarkManager.CreateLink(textRun.ReferenceId, run))
+                    {
+                        yield return x;
+                    }
                 }
             }
-            return paragraph;
         }
 
         private IEnumerable<OpenXmlElement> CreateListParagraph(ListParagraph listParagraph, int level = 0)

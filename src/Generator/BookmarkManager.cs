@@ -13,7 +13,7 @@ namespace Dox2Word.Generator
     {
         private static readonly Logger logger = Logger.Instance;
 
-        private const int MaxLength = 40;
+        private const int MaxLength = 35;
 
         // Original, requested name -> name we had to use
         private readonly Dictionary<string, string> names = new();
