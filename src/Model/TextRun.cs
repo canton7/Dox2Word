@@ -17,10 +17,13 @@ namespace Dox2Word.Model
 
         public string Text { get; set; }
 
-        public TextRun(string text, TextRunFormat format = TextRunFormat.None)
+        public string? ReferenceId { get; }
+
+        public TextRun(string text, TextRunFormat format = TextRunFormat.None, string? referenceId = null)
         {
             this.Text = text;
             this.Format = format;
+            this.ReferenceId = referenceId;
         }
     }
 }

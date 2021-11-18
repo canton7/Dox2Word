@@ -22,6 +22,7 @@ namespace Dox2Word.Generator
 
         private readonly ListManager listManager;
         private readonly ImageManager imageManager;
+        private readonly BookmarkManager bookmarkManager;
         private readonly DotRenderer dotRenderer = new();
 
         public static void Generate(Stream stream, Project project)
@@ -49,6 +50,7 @@ namespace Dox2Word.Generator
 
             this.listManager = new ListManager(numberingPart);
             this.imageManager = new ImageManager(doc.MainDocumentPart);
+            this.bookmarkManager = new BookmarkManager(doc.MainDocumentPart.Document.Body!);
             StyleManager.EnsureStyles(stylesPart);
         }
 
@@ -107,12 +109,13 @@ namespace Dox2Word.Generator
             {
                 logger.Warning($"Validation failure. Description: {error.Description}; ErrorType: {error.ErrorType}; Node: {error.Node}; Path: {error.Path?.XPath}; Part: {error.Part?.Uri}");
             }
+            this.bookmarkManager.Validate();
         }
 
         private void WriteGroup(Group group, int headingLevel)
         {
             logger.Info($"Writing group {group.Name}");
-            this.WriteHeading(group.Name, headingLevel);
+            this.WriteHeading(null, group.Name, group.Id, headingLevel);
 
             this.WriteDescriptions(group.Descriptions);
 
@@ -130,19 +133,20 @@ namespace Dox2Word.Generator
                     {
                         this.AppendChild(StringToParagraph("This unit references the following units:"));
                         var groupsList = new ListParagraph(ListParagraphType.Bullet);
-                        groupsList.Items.AddRange(group.IncludedGroups.Select(x => new TextParagraph() { new TextRun(x.Name) }));
+                        groupsList.Items.AddRange(group.IncludedGroups.Select(x => new TextParagraph() { new TextRun(x.Name, TextRunFormat.Monospace, x.Id) }));
                         this.Append(this.CreateParagraph(groupsList));
                     }
                     if (group.IncludingGroups.Count > 0)
                     {
                         this.AppendChild(StringToParagraph("This unit is referenced by the following units:"));
                         var groupsList = new ListParagraph(ListParagraphType.Bullet);
-                        groupsList.Items.AddRange(group.IncludingGroups.Select(x => new TextParagraph() { new TextRun(x.Name) }));
+                        groupsList.Items.AddRange(group.IncludingGroups.Select(x => new TextParagraph() { new TextRun(x.Name, TextRunFormat.Monospace, x.Id) }));
                         this.Append(this.CreateParagraph(groupsList));
                     }
                 }
             }
 
+            this.WriteTypedefs(group.Typedefs, headingLevel + 1);
             this.WriteGlobalVariables(group.GlobalVariables, headingLevel + 1);
             this.WriteMacros(group.Macros, headingLevel + 1);
             this.WriteEnums(group.Enums, headingLevel + 1);
@@ -154,6 +158,7 @@ namespace Dox2Word.Generator
                 this.WriteGroup(subGroup, headingLevel + 1);
             }
         }
+
         private void WriteClasses(List<ClassDoc> classes, int headingLevel)
         {
             foreach (var cls in classes)
@@ -166,7 +171,7 @@ namespace Dox2Word.Generator
                     ClassType.Union => "Union",
                 };
 
-                this.WriteHeading($"{title} {cls.Name}", headingLevel);
+                this.WriteHeading(title, cls.Name, cls.Id, headingLevel);
 
                 this.WriteDescriptions(cls.Descriptions);
 
@@ -179,7 +184,7 @@ namespace Dox2Word.Generator
                         string? bitfield = variable.Bitfield == null
                             ? null
                             : $" :{variable.Bitfield}";
-                        table.AppendRow($"{variable.Type} {variable.Name}{variable.ArgsString}{bitfield}", this.CreateDescriptions(variable.Descriptions));
+                        table.AppendRow($"{variable.Type} {variable.Name}{variable.ArgsString}{bitfield}", this.bookmarkManager.CreateBookmark(variable.Id), this.CreateDescriptions(variable.Descriptions));
                     }
                 }
             }
@@ -191,7 +196,7 @@ namespace Dox2Word.Generator
             {
                 logger.Info($"Writing Enum {@enum.Name}");
 
-                this.WriteHeading($"Enum {@enum.Name}", headingLevel);
+                this.WriteHeading("Enum", @enum.Name, @enum.Id, headingLevel);
 
                 this.WriteDescriptions(@enum.Descriptions);
 
@@ -201,9 +206,25 @@ namespace Dox2Word.Generator
                     var table = this.AppendChild(this.CreateTable(StyleManager.ParameterTableStyleId).AddColumns(2));
                     foreach (var value in @enum.Values)
                     {
-                        table.AppendRow(value.Name, this.CreateDescriptions(value.Descriptions));
+                        table.AppendRow(value.Name, this.bookmarkManager.CreateBookmark(value.Id), this.CreateDescriptions(value.Descriptions));
                     }
                 }
+            }
+        }
+
+        private void WriteTypedefs(List<TypedefDoc> typedefs, int headingLevel)
+        {
+            foreach (var typedef in typedefs)
+            {
+                logger.Info($"Writing typedef {typedef.Name}");
+
+                this.WriteHeading("Typedef", typedef.Name, typedef.Id, headingLevel);
+
+                this.WriteMiniHeading("Definition");
+                var paragraph = this.AppendChild(new Paragraph().LeftAlign());
+                paragraph.AppendChild(new Run(new Text(typedef.Definition)).ApplyStyle(StyleManager.CodeCharStyleId));
+
+                this.WriteDescriptions(typedef.Descriptions);
             }
         }
 
@@ -213,7 +234,7 @@ namespace Dox2Word.Generator
             {
                 logger.Info($"Writing variable {variable.Name}");
 
-                this.WriteHeading($"Global variable {variable.Name}", headingLevel);
+                this.WriteHeading("Global variable", variable.Name!, variable.Id, headingLevel);
 
                 this.WriteMiniHeading("Definition");
                 var paragraph = this.AppendChild(new Paragraph().LeftAlign());
@@ -233,7 +254,7 @@ namespace Dox2Word.Generator
             {
                 logger.Info($"Writing macro {macro.Name}");
 
-                this.WriteHeading($"Macro {macro.Name}", headingLevel);
+                this.WriteHeading("Macro", macro.Name, macro.Id, headingLevel);
 
                 this.WriteMiniHeading($"Definition");
 
@@ -258,7 +279,7 @@ namespace Dox2Word.Generator
                     var table = this.AppendChild(this.CreateTable(StyleManager.ParameterTableStyleId).AddColumns(2));
                     foreach (var parameter in macro.Parameters)
                     {
-                        table.AppendRow(parameter.Name, this.CreateParagraph(parameter.Description));
+                        table.AppendRow(parameter.Name, null, this.CreateParagraph(parameter.Description));
                     }
                 }
 
@@ -272,7 +293,7 @@ namespace Dox2Word.Generator
             {
                 logger.Info($"Writing function {function.Name}");
 
-                this.WriteHeading($"Function {function.Name}", headingLevel);
+                this.WriteHeading("Function", function.Name, function.Id, headingLevel);
 
                 this.WriteMiniHeading("Signature");
                 var paragraph = this.AppendChild(new Paragraph().LeftAlign());
@@ -323,7 +344,7 @@ namespace Dox2Word.Generator
                                 ParameterDirection.InOut => "in,out",
                             }
                             : null;
-                        table.AppendRow(parameter.Name, this.CreateParagraph(parameter.Description), inOut);
+                        table.AppendRow(parameter.Name, null, this.CreateParagraph(parameter.Description), inOut);
                     }
                 }
 
@@ -345,15 +366,24 @@ namespace Dox2Word.Generator
                 var table = this.AppendChild(this.CreateTable(StyleManager.ParameterTableStyleId).AddColumns(2));
                 foreach (var returnValue in returnDescriptions.Values)
                 {
-                    table.AppendRow(returnValue.Name, this.CreateParagraph(returnValue.Description));
+                    table.AppendRow(returnValue.Name, null, this.CreateParagraph(returnValue.Description));
                 }
             }
         }
 
-        private void WriteHeading(string text, int headingLevel)
+        private void WriteHeading(string? prefix, string text, string id, int headingLevel)
         {
             var paragraph = this.AppendChild(new Paragraph());
-            var run = paragraph.AppendChild(new Run(new Text(text)));
+
+            if (prefix != null)
+            {
+                paragraph.Append(new Run(new Text(prefix + " ") { Space = SpaceProcessingModeValues.Preserve }));
+            }
+
+            var run = new Run(new Text(text));
+            var (bookmarkStart, bookmarkEnd) = this.bookmarkManager.CreateBookmark(id);
+            paragraph.Append(bookmarkStart, run, bookmarkEnd);
+
             // The style might not have enough spacing, so force this
             paragraph.ApplyStyle($"Heading{headingLevel}")
                 .WithProperties(x => x.SpacingBetweenLines = new SpacingBetweenLines() { Before = $"{8 * 20}" });
@@ -454,12 +484,13 @@ namespace Dox2Word.Generator
 
             foreach (var textRun in textParagraph)
             {
-                var run = paragraph.AppendChild(new Run());
+                var run = new Run();
                 var text = run.AppendChild(new Text(textRun.Text));
                 if (textRun.Text.StartsWith(" ") || textRun.Text.EndsWith(" "))
                 {
                     text.Space = SpaceProcessingModeValues.Preserve;
                 }
+
                 run.WithProperties(x =>
                 {
                     x.Bold = textRun.Format.HasFlag(TextRunFormat.Bold) ? new Bold() : null;
@@ -472,6 +503,15 @@ namespace Dox2Word.Generator
                         x.FontSize = new FontSize() { Val = "20" };
                         x.RunFonts = new RunFonts() { Ascii = "Consolas" };
                     });
+                }
+
+                if (textRun.ReferenceId == null)
+                {
+                    paragraph.AppendChild(run);
+                }
+                else
+                {
+                    paragraph.Append(this.bookmarkManager.CreateLink(textRun.ReferenceId, run));
                 }
             }
             return paragraph;

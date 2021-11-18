@@ -148,6 +148,7 @@ namespace Dox2Word.Parser
                     {
                         var function = new FunctionDoc()
                         {
+                            Id = member.Id,
                             Name = member.Name,
                             Descriptions = ParseDescriptions(member),
                             ReturnType = LinkedTextToString(member.Type) ?? "",
@@ -163,6 +164,7 @@ namespace Dox2Word.Parser
                     {
                         var macro = new MacroDoc()
                         {
+                            Id = member.Id,
                             Name = member.Name,
                             Descriptions = ParseDescriptions(member),
                             ReturnDescriptions = ParseReturnDescriptions(member),
@@ -177,6 +179,7 @@ namespace Dox2Word.Parser
                     {
                         var typedef = new TypedefDoc()
                         {
+                            Id = member.Id,
                             Name = member.Name,
                             Type = LinkedTextToString(member.Type) ?? "",
                             Definition = member.Definition ?? "",
@@ -189,11 +192,13 @@ namespace Dox2Word.Parser
                     {
                         var enumDoc = new EnumDoc()
                         {
+                            Id = member.Id,
                             Name = member.Name,
                             Descriptions = ParseDescriptions(member),
                         };
                         enumDoc.Values.AddRange(member.EnumValues.Select(x => new EnumValueDoc()
                         {
+                            Id = x.Id,
                             Name = x.Name,
                             Initializer = LinkedTextToString(x.Initializer),
                             Descriptions = ParseDescriptions(x),
@@ -277,6 +282,7 @@ namespace Dox2Word.Parser
             var cls = new ClassDoc()
             {
                 Type = type,
+                Id = compoundDef.Id,
                 Name = compoundDef.CompoundName ?? "",
                 Descriptions = ParseDescriptions(compoundDef),
             };

@@ -83,7 +83,7 @@ namespace Dox2Word.Parser
                         Parse(paragraphs, m, format | TextRunFormat.Monospace);
                         break;
                     case Ref r:
-                        AddTextRun(paragraphs, alignment, r.Name, format | TextRunFormat.Monospace);
+                        AddTextRun(paragraphs, alignment, r.Name, format | TextRunFormat.Monospace, r.RefId);
                         break;
                     case DocTable t:
                         ParseTable(paragraphs, t);
@@ -118,8 +118,8 @@ namespace Dox2Word.Parser
             paragraph.Add(textRun);
         }
 
-        private static void AddTextRun(List<IParagraph> paragraphs, TextParagraphAlignment alignment, string text, TextRunFormat format) =>
-            Add(paragraphs, alignment, new TextRun(text.TrimStart('\n'), format));
+        private static void AddTextRun(List<IParagraph> paragraphs, TextParagraphAlignment alignment, string text, TextRunFormat format, string? referenceId = null) =>
+            Add(paragraphs, alignment, new TextRun(text.TrimStart('\n'), format, referenceId));
 
         private static void ParseList(List<IParagraph> paragraphs, DocList docList, ListParagraphType type, TextRunFormat format)
         {
