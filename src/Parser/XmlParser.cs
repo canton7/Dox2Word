@@ -168,7 +168,7 @@ namespace Dox2Word.Parser
                             Name = member.Name,
                             Descriptions = ParseDescriptions(member),
                             ReturnDescriptions = ParseReturnDescriptions(member),
-                            Initializer = LinkedTextToString(member.Initializer) ?? "",
+                            Initializer = LinkedTextToRuns(member.Initializer),
                             HasParameters = member.Params.Count > 0,
                         };
                         macro.Parameters.AddRange(ParseParameters(member));

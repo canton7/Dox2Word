@@ -57,22 +57,22 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+/// Constant macro
+#define CONSTANT_MACRO (uint32_t)3
+
 /// Single-line function-like macro
 ///
 /// @param x Input parameter
 /// @returns Return value
 /// @retval 1 Retval 1
 /// @retval 2 Retval 2
-#define FUNCTION_LIKE_MACRO(x) (uint32_t)(x * 2)
+#define FUNCTION_LIKE_MACRO(x) (uint32_t)(x * CONSTANT_MACRO)
 
 /// Multi-line function-like macro
 #define MULTI_FUNCTION_LIKE_MACRO(x, y) \
     do { \
         printf("%i\n", x + y); \
     } while (0)
-
-/// Constant macro
-#define CONSTANT_MACRO (uint32_t)3
 
 /**
  * Global extern variable

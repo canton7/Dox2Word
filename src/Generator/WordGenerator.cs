@@ -258,17 +258,21 @@ namespace Dox2Word.Generator
 
                 this.WriteMiniHeading($"Definition");
 
-                // If it's a multi-line macro declaration, push it only a new line and add \ to the first line
-                string initializer = macro.Initializer;
-                if (initializer.StartsWith(" ") && initializer.Contains("\n"))
-                {
-                    initializer = "\\\n" + initializer;
-                }
                 string? paramsStr = macro.HasParameters
                     ? "(" + string.Join(", ", macro.Parameters.Select(x => x.Name)) + ")"
                     : null;
+                var paragraph = this.AppendChild(new Paragraph(new Run(new Text($"#define {macro.Name}{paramsStr} ")
+                {
+                    Space = SpaceProcessingModeValues.Preserve
+                }).ApplyStyle(StyleManager.CodeCharStyleId)).LeftAlign());
 
-                this.AppendChild(new Paragraph(new Run(StringToElements($"#define {macro.Name}{paramsStr} {initializer}")).ApplyStyle(StyleManager.CodeCharStyleId)).LeftAlign());
+                // If it's a multi-line macro declaration, push it onto a new line and add \ to the first line
+                if (macro.Initializer.Count > 0 && macro.Initializer[0].Text.StartsWith(" ") &&
+                    macro.Initializer.Any(x => x.Text.Contains("\n")))
+                {
+                    paragraph.AppendChild(new Run(new Text("\\"), new Break()));
+                }
+                paragraph.Append(this.TextRunsToRuns(macro.Initializer).ApplyStyle(StyleManager.CodeCharStyleId));
 
                 this.WriteDescriptions(macro.Descriptions);
 
@@ -309,7 +313,7 @@ namespace Dox2Word.Generator
                         string comma = i == function.Parameters.Count - 1 ? "" : ",";
                         var run = NewRun(new Break());
                         run.AppendChild(new Text("    ") { Space = SpaceProcessingModeValues.Preserve });
-                        paragraph.Append(this.TextRunsToRuns(function.Parameters[i].Type).Select(x => x.ApplyStyle(StyleManager.CodeCharStyleId)));
+                        paragraph.Append(this.TextRunsToRuns(function.Parameters[i].Type).ApplyStyle(StyleManager.CodeCharStyleId));
                         string space = paragraph.InnerText.EndsWith(" *") ? "" : " ";
                         NewRun(new Text($"{space}{function.Parameters[i].Name}{comma}") { Space = SpaceProcessingModeValues.Preserve });
                     }
@@ -487,12 +491,7 @@ namespace Dox2Word.Generator
         {
             foreach (var textRun in textRuns)
             {
-                var run = new Run();
-                var text = run.AppendChild(new Text(textRun.Text));
-                if (textRun.Text.StartsWith(" ") || textRun.Text.EndsWith(" "))
-                {
-                    text.Space = SpaceProcessingModeValues.Preserve;
-                }
+                var run = new Run(StringToElements(textRun.Text));
 
                 run.WithProperties(x =>
                 {
@@ -668,7 +667,7 @@ namespace Dox2Word.Generator
                     yield return new Break();
                 }
                 var text = new Text(lines[i]);
-                if (lines[i].StartsWith(" "))
+                if (lines[i].StartsWith(" ") || lines[i].EndsWith(" "))
                 {
                     text.Space = SpaceProcessingModeValues.Preserve;
                 }

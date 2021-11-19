@@ -18,6 +18,14 @@ namespace Dox2Word.Generator
             return run.WithProperties(x => x.RunStyle = new RunStyle() { Val = styleId });
         }
 
+        public static IEnumerable<Run> ApplyStyle(this IEnumerable<Run> runs, string styleId)
+        {
+            foreach (var run in runs)
+            {
+                yield return run.ApplyStyle(styleId);
+            }
+        }
+
         public static Table ApplyStyle(this Table table, string styleId)
         {
             return table.WithProperties(x => x.TableStyle = new TableStyle() { Val = styleId });
