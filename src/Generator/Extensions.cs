@@ -31,6 +31,12 @@ namespace Dox2Word.Generator
             return table.WithProperties(x => x.TableStyle = new TableStyle() { Val = styleId });
         }
 
+        public static Text PreserveSpace(this Text text)
+        {
+            text.Space = SpaceProcessingModeValues.Preserve;
+            return text;
+        }
+
         public static Paragraph WithProperties(this Paragraph paragraph, Action<ParagraphProperties> updater)
         {
             if (paragraph.ParagraphProperties == null)
@@ -119,7 +125,10 @@ namespace Dox2Word.Generator
             return table;
         }
 
-        public static void AppendRow(this Table table, string name, (BookmarkStart start, BookmarkEnd end)? bookmark, IEnumerable<OpenXmlElement> value, string? inOut = null)
+        public static void AppendRow(this Table table, string name, (BookmarkStart start, BookmarkEnd end)? bookmark, IEnumerable<OpenXmlElement> value, string? inOut = null) =>
+            table.AppendRow(new[] { new Run(new Text(name)) }, bookmark, value, inOut);
+
+        public static void AppendRow(this Table table, IEnumerable<Run> name, (BookmarkStart start, BookmarkEnd end)? bookmark, IEnumerable<OpenXmlElement> value, string? inOut = null)
         {
             var row = table.AppendChild(new TableRow());
 
@@ -133,7 +142,6 @@ namespace Dox2Word.Generator
             }
 
             var nameCell = row.AppendChild(new TableCell());
-            var nameRun = new Run(new Text(name)).ApplyStyle(StyleManager.CodeCharStyleId);
             var nameParagraph = nameCell.AppendChild(new Paragraph());
             nameParagraph.FormatTableCellElement(after: true);
 
@@ -141,7 +149,7 @@ namespace Dox2Word.Generator
             {
                 nameParagraph.AppendChild(bookmark.Value.start);
             }
-            nameParagraph.AppendChild(nameRun);
+            nameParagraph.Append(name.ApplyStyle(StyleManager.CodeCharStyleId));
             if (bookmark != null)
             {
                 nameParagraph.AppendChild(bookmark.Value.end);

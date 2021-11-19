@@ -181,7 +181,7 @@ namespace Dox2Word.Parser
                         {
                             Id = member.Id,
                             Name = member.Name,
-                            Type = LinkedTextToString(member.Type) ?? "",
+                            Type = LinkedTextToRuns(member.Type),
                             Definition = member.Definition ?? "",
                             Descriptions = ParseDescriptions(member),
                         };
@@ -200,7 +200,7 @@ namespace Dox2Word.Parser
                         {
                             Id = x.Id,
                             Name = x.Name,
-                            Initializer = LinkedTextToString(x.Initializer),
+                            Initializer = LinkedTextToRuns(x.Initializer),
                             Descriptions = ParseDescriptions(x),
                         }));
                         group.Enums.Add(enumDoc);
@@ -303,10 +303,10 @@ namespace Dox2Word.Parser
             {
                 Id = member.Id,
                 Name = member.Name,
-                Type = LinkedTextToString(member.Type),
+                Type = LinkedTextToRuns(member.Type),
                 Definition = member.Definition,
                 Descriptions = ParseDescriptions(member),
-                Initializer = LinkedTextToString(member.Initializer),
+                Initializer = LinkedTextToRuns(member.Initializer),
                 Bitfield = member.Bitfield,
                 ArgsString = member.ArgsString,
             };
@@ -347,9 +347,6 @@ namespace Dox2Word.Parser
             descriptions.Values.AddRange(ParseReturnValues(member));
             return descriptions;
         }
-
-        private static string? LinkedTextToString(LinkedText? linkedText) =>
-            EmbeddedRefTextToString(linkedText?.Type);
 
         private static List<TextRun> LinkedTextToRuns(LinkedText? linkedText) =>
             EmbeddedRefTextToRuns(linkedText?.Type).ToList();

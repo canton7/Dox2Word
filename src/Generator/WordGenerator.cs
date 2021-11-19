@@ -184,7 +184,8 @@ namespace Dox2Word.Generator
                         string? bitfield = variable.Bitfield == null
                             ? null
                             : $" :{variable.Bitfield}";
-                        table.AppendRow($"{variable.Type} {variable.Name}{variable.ArgsString}{bitfield}", this.bookmarkManager.CreateBookmark(variable.Id), this.CreateDescriptions(variable.Descriptions));
+                        table.AppendRow(this.TextRunsToRuns(variable.Type).Append(new Run(new Text($" {variable.Name}{variable.ArgsString}{bitfield}").PreserveSpace())),
+                            this.bookmarkManager.CreateBookmark(variable.Id), this.CreateDescriptions(variable.Descriptions));
                     }
                 }
             }
@@ -222,7 +223,9 @@ namespace Dox2Word.Generator
 
                 this.WriteMiniHeading("Definition");
                 var paragraph = this.AppendChild(new Paragraph().LeftAlign());
-                paragraph.AppendChild(new Run(new Text(typedef.Definition)).ApplyStyle(StyleManager.CodeCharStyleId));
+                paragraph.AppendChild(new Run(new Text("typedef ").PreserveSpace()).ApplyStyle(StyleManager.CodeCharStyleId));
+                paragraph.Append(this.TextRunsToRuns(typedef.Type).ApplyStyle(StyleManager.CodeCharStyleId));
+                paragraph.AppendChild(new Run(new Text(" " + typedef.Name).PreserveSpace()).ApplyStyle(StyleManager.CodeCharStyleId));
 
                 this.WriteDescriptions(typedef.Descriptions);
             }
@@ -238,10 +241,12 @@ namespace Dox2Word.Generator
 
                 this.WriteMiniHeading("Definition");
                 var paragraph = this.AppendChild(new Paragraph().LeftAlign());
-                var run = paragraph.AppendChild(new Run(new Text(variable.Definition ?? "")).ApplyStyle(StyleManager.CodeCharStyleId));
-                if (variable.Initializer != null)
+                paragraph.Append(this.TextRunsToRuns(variable.Type).ApplyStyle(StyleManager.CodeCharStyleId));
+                paragraph.Append(new Run(new Text($" {variable.Name}").PreserveSpace()).ApplyStyle(StyleManager.CodeCharStyleId));
+                if (variable.Initializer.Count > 0)
                 {
-                    run.Append(StringToElements(" " + variable.Initializer));
+                    paragraph.AppendChild(new Run(new Text(" ").PreserveSpace()).ApplyStyle(StyleManager.CodeCharStyleId));
+                    paragraph.Append(this.TextRunsToRuns(variable.Initializer).ApplyStyle(StyleManager.CodeCharStyleId));
                 }
 
                 this.WriteDescriptions(variable.Descriptions);
@@ -262,9 +267,7 @@ namespace Dox2Word.Generator
                     ? "(" + string.Join(", ", macro.Parameters.Select(x => x.Name)) + ")"
                     : null;
                 var paragraph = this.AppendChild(new Paragraph(new Run(new Text($"#define {macro.Name}{paramsStr} ")
-                {
-                    Space = SpaceProcessingModeValues.Preserve
-                }).ApplyStyle(StyleManager.CodeCharStyleId)).LeftAlign());
+                    .PreserveSpace()).ApplyStyle(StyleManager.CodeCharStyleId)).LeftAlign());
 
                 // If it's a multi-line macro declaration, push it onto a new line and add \ to the first line
                 if (macro.Initializer.Count > 0 && macro.Initializer[0].Text.StartsWith(" ") &&
@@ -312,10 +315,10 @@ namespace Dox2Word.Generator
                     {
                         string comma = i == function.Parameters.Count - 1 ? "" : ",";
                         var run = NewRun(new Break());
-                        run.AppendChild(new Text("    ") { Space = SpaceProcessingModeValues.Preserve });
+                        run.AppendChild(new Text("    ").PreserveSpace());
                         paragraph.Append(this.TextRunsToRuns(function.Parameters[i].Type).ApplyStyle(StyleManager.CodeCharStyleId));
                         string space = paragraph.InnerText.EndsWith(" *") ? "" : " ";
-                        NewRun(new Text($"{space}{function.Parameters[i].Name}{comma}") { Space = SpaceProcessingModeValues.Preserve });
+                        NewRun(new Text($"{space}{function.Parameters[i].Name}{comma}").PreserveSpace());
                     }
 
                     NewRun(new Text(")"));
@@ -377,7 +380,7 @@ namespace Dox2Word.Generator
 
             if (prefix != null)
             {
-                paragraph.Append(new Run(new Text(prefix + " ") { Space = SpaceProcessingModeValues.Preserve }));
+                paragraph.Append(new Run(new Text(prefix + " ").PreserveSpace()));
             }
 
             var run = new Run(new Text(text));
@@ -575,7 +578,7 @@ namespace Dox2Word.Generator
                 {
                     run.AppendChild(new Break());
                 }
-                run.AppendChild(new Text(codeParagraph.Lines[i]) { Space = SpaceProcessingModeValues.Preserve });
+                run.AppendChild(new Text(codeParagraph.Lines[i]).PreserveSpace());
             }
 
             return paragraph;
@@ -669,7 +672,7 @@ namespace Dox2Word.Generator
                 var text = new Text(lines[i]);
                 if (lines[i].StartsWith(" ") || lines[i].EndsWith(" "))
                 {
-                    text.Space = SpaceProcessingModeValues.Preserve;
+                    text.PreserveSpace();
                 }
                 yield return text;
             }

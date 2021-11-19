@@ -1,13 +1,15 @@
-﻿namespace Dox2Word.Model
+﻿using System.Collections.Generic;
+
+namespace Dox2Word.Model
 {
     public class VariableDoc : IMergable<VariableDoc>
     {
         public string Id { get; set; } = null!;
         public string? Name { get; set; }
-        public string? Type { get; set; }
+        public List<TextRun> Type { get; set; } = null!;
         public string? Definition { get; set; }
         public Descriptions Descriptions { get; set; } = null!;
-        public string? Initializer { get; internal set; }
+        public List<TextRun> Initializer { get; set; } = null!;
         public string? Bitfield { get; set; }
         public string? ArgsString { get; set; }
 
@@ -23,9 +25,9 @@
             this.Type ??= other.Type;
             this.Definition ??= other.Definition;
             this.Descriptions.MergeWith(other.Descriptions);
-            if (other.Initializer == null)
+            if (other.Initializer.Count == 0)
             {
-                this.Initializer = null;
+                this.Initializer.Clear();
             }
             this.Bitfield ??= other.Bitfield;
             this.ArgsString ??= other.ArgsString;

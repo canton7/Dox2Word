@@ -75,15 +75,20 @@
     } while (0)
 
 /**
- * Global extern variable
+ * An enum
  */
-extern int32_t GlobalVariable;
+typedef enum Enum_tag
+{
+    Enum_One,       ///< Implicit value
+    Enum_Two = 2,   ///< Explicit value
 
-/**
- * Global variable with multi-line initializer
- */
-static const int32_t MultilineGlobalVariable = 1 +
-    (2 * 3) + 4;
+    /// Brief description.
+    /// Detailed description.
+    Enum_Three,
+
+    /// Explicit value which is another member
+    Enum_Four = Enum_Three
+} Enum_t;
 
 /**
  * A structure
@@ -99,24 +104,8 @@ typedef struct Struct_tag
     /// Detailed description paragraph 2
 	int32_t i;
 
-    bool j; ///< Single-line comment
+    Enum_t j; ///< Single-line comment
 } Struct_t;
-
-/**
- * An enum
- */
-typedef enum Enum_tag
-{
-    Enum_One,       ///< Implicit value
-    Enum_Two = 2,   ///< Explicit value
-
-    /// Brief description.
-    /// Detailed description.
-    Enum_Three,
-
-    /// Explicit value which is another member
-    Enum_Four = Enum_Three
-} Enum_t;
 
 /**
  * A test union
@@ -145,9 +134,20 @@ typedef struct StructWithUnion_tag
 } StructWithUnion_t;
 
 /**
- * A typedef to another type
+ * A typedef to another, linked type
  */
-typedef uint8_t TypedefType_t;
+typedef StructWithUnion_t TypedefType_t;
+
+/**
+ * Global extern variable
+ */
+extern Struct_t GlobalVariable;
+
+/**
+ * Global variable with multi-line initializer
+ */
+static const int32_t MultilineGlobalVariable = 1 +
+    (2 * 3) + CONSTANT_MACRO;
 
 /**
  * A function which takes void and returns void
