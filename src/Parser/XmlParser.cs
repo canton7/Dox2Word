@@ -14,14 +14,35 @@ namespace Dox2Word.Parser
     public class XmlParser
     {
         private static readonly Logger logger = Logger.Instance;
-        private readonly string basePath;
 
-        public XmlParser(string basePath)
+        private readonly string basePath;
+        private readonly Index index;
+        private readonly ParaParser paraParser;
+
+        private XmlParser(string basePath, DoxygenIndex doxygenIndex)
         {
             this.basePath = basePath;
+            this.index = new Index(doxygenIndex);
+            this.paraParser = new ParaParser(this.index);
         }
 
-        public Project Parse()
+        public static Project Parse(string basePath)
+        {
+            try
+            {
+                string indexFile = Path.Combine(basePath, "index.xml");
+                var index = Parse<DoxygenIndex>(indexFile);
+
+                return new XmlParser(basePath, index).Parse();
+            }
+            catch (ParserException e)
+            {
+                logger.Error(e);
+                throw;
+            }
+        }
+
+        private Project Parse()
         {
             var project = new Project();
 
@@ -34,13 +55,10 @@ namespace Dox2Word.Parser
                     project.Options.AddRange(this.ParseOptions(doxyfile));
                 }
 
-                string indexFile = Path.Combine(this.basePath, "index.xml");
-                var index = Parse<DoxygenIndex>(indexFile);
-
-                var allFileCompoundDefs = index.Compounds.Where(x => x.Kind == CompoundKind.File)
+                var allFileCompoundDefs = this.index.Compounds.Values.Where(x => x.Kind == CompoundKind.File)
                     .ToDictionary(x => x.RefId, x => this.ParseCompoundDef(x.RefId));
 
-                var allGroupCompoundDefs = index.Compounds.Where(x => x.Kind == CompoundKind.Group)
+                var allGroupCompoundDefs = this.index.Compounds.Values.Where(x => x.Kind == CompoundKind.Group)
                     .ToDictionary(x => x.RefId, x => this.ParseCompoundDef(x.RefId));
                 project.AllGroups = allGroupCompoundDefs.Values.ToDictionary(x => x.Id, x => this.ParseGroup(x));
 
@@ -128,7 +146,7 @@ namespace Dox2Word.Parser
             {
                 Id = compoundDef.Id,
                 Name = compoundDef.Title,
-                Descriptions = ParseDescriptions(compoundDef),
+                Descriptions = this.ParseDescriptions(compoundDef),
             };
             group.Files.AddRange(compoundDef.InnerFiles.Select(x => new FileDoc() { Id = x.RefId, Name = x.Name }));
             group.Classes.AddRange(compoundDef.InnerClasses.Select(x => this.ParseInnerClass(x.RefId)).Where(x => x != null)!);
@@ -150,13 +168,13 @@ namespace Dox2Word.Parser
                         {
                             Id = member.Id,
                             Name = member.Name,
-                            Descriptions = ParseDescriptions(member),
-                            ReturnType = LinkedTextToRuns(member.Type),
-                            ReturnDescriptions = ParseReturnDescriptions(member),
+                            Descriptions = this.ParseDescriptions(member),
+                            ReturnType = this.LinkedTextToRuns(member.Type),
+                            ReturnDescriptions = this.ParseReturnDescriptions(member),
                             Definition = member.Definition ?? "",
                             ArgsString = member.ArgsString ?? "",
                         };
-                        function.Parameters.AddRange(ParseParameters(member));
+                        function.Parameters.AddRange(this.ParseParameters(member));
                         group.Functions.Add(function);
                     }
                     break;
@@ -166,12 +184,12 @@ namespace Dox2Word.Parser
                         {
                             Id = member.Id,
                             Name = member.Name,
-                            Descriptions = ParseDescriptions(member),
-                            ReturnDescriptions = ParseReturnDescriptions(member),
-                            Initializer = LinkedTextToRuns(member.Initializer),
+                            Descriptions = this.ParseDescriptions(member),
+                            ReturnDescriptions = this.ParseReturnDescriptions(member),
+                            Initializer = this.LinkedTextToRuns(member.Initializer),
                             HasParameters = member.Params.Count > 0,
                         };
-                        macro.Parameters.AddRange(ParseParameters(member));
+                        macro.Parameters.AddRange(this.ParseParameters(member));
                         group.Macros.Add(macro);
                     }
                     break;
@@ -181,9 +199,9 @@ namespace Dox2Word.Parser
                         {
                             Id = member.Id,
                             Name = member.Name,
-                            Type = LinkedTextToRuns(member.Type),
+                            Type = this.LinkedTextToRuns(member.Type),
                             Definition = member.Definition ?? "",
-                            Descriptions = ParseDescriptions(member),
+                            Descriptions = this.ParseDescriptions(member),
                         };
                         group.Typedefs.Add(typedef);
                     }
@@ -194,21 +212,21 @@ namespace Dox2Word.Parser
                         {
                             Id = member.Id,
                             Name = member.Name,
-                            Descriptions = ParseDescriptions(member),
+                            Descriptions = this.ParseDescriptions(member),
                         };
                         enumDoc.Values.AddRange(member.EnumValues.Select(x => new EnumValueDoc()
                         {
                             Id = x.Id,
                             Name = x.Name,
-                            Initializer = LinkedTextToRuns(x.Initializer),
-                            Descriptions = ParseDescriptions(x),
+                            Initializer = this.LinkedTextToRuns(x.Initializer),
+                            Descriptions = this.ParseDescriptions(x),
                         }));
                         group.Enums.Add(enumDoc);
                     }
                     break;
                     case DoxMemberKind.Variable:
                     {
-                        Merge(group.GlobalVariables, ParseVariable(member));
+                        Merge(group.GlobalVariables, this.ParseVariable(member));
                     }
                     break;
                     default:
@@ -220,7 +238,7 @@ namespace Dox2Word.Parser
             return group;
         }
 
-        private static IEnumerable<ParameterDoc> ParseParameters(MemberDef member)
+        private IEnumerable<ParameterDoc> ParseParameters(MemberDef member)
         {
             foreach (var param in member.Params)
             {
@@ -252,8 +270,8 @@ namespace Dox2Word.Parser
                 var functionParameter = new ParameterDoc()
                 {
                     Name = name,
-                    Type = LinkedTextToRuns(param.Type),
-                    Description = ParasToParagraph(paramDesc?.desc.Para),
+                    Type = this.LinkedTextToRuns(param.Type),
+                    Description = this.ParasToParagraph(paramDesc?.desc.Para),
                     Direction = direction,
                 };
 
@@ -284,43 +302,43 @@ namespace Dox2Word.Parser
                 Type = type,
                 Id = compoundDef.Id,
                 Name = compoundDef.CompoundName ?? "",
-                Descriptions = ParseDescriptions(compoundDef),
+                Descriptions = this.ParseDescriptions(compoundDef),
             };
 
             var members = compoundDef.Sections.SelectMany(x => x.Members)
                 .Where(x => x.Kind == DoxMemberKind.Variable);
             foreach (var member in members)
             {
-                cls.Variables.Add(ParseVariable(member));
+                cls.Variables.Add(this.ParseVariable(member));
             }
 
             return cls;
         }
 
-        private static VariableDoc ParseVariable(MemberDef member)
+        private VariableDoc ParseVariable(MemberDef member)
         {
             var variable = new VariableDoc()
             {
                 Id = member.Id,
                 Name = member.Name,
-                Type = LinkedTextToRuns(member.Type),
+                Type = this.LinkedTextToRuns(member.Type),
                 Definition = member.Definition,
-                Descriptions = ParseDescriptions(member),
-                Initializer = LinkedTextToRuns(member.Initializer),
+                Descriptions = this.ParseDescriptions(member),
+                Initializer = this.LinkedTextToRuns(member.Initializer),
                 Bitfield = member.Bitfield,
                 ArgsString = member.ArgsString,
             };
             return variable;
         }
 
-        private static IParagraph ParseReturnDescription(MemberDef member)
+        private IParagraph ParseReturnDescription(MemberDef member)
         {
-            return ParaToParagraph(member.DetailedDescription?.Para.SelectMany(x => x.Parts)
+            return this.ParaToParagraph(member.DetailedDescription?.Para.SelectMany(x => x.Parts)
                 .OfType<DocSimpleSect>()
                 .FirstOrDefault(x => x.Kind == DoxSimpleSectKind.Return)?.Para);
         }
 
-        private static IEnumerable<ReturnValueDoc> ParseReturnValues(MemberDef member)
+        private IEnumerable<ReturnValueDoc> ParseReturnValues(MemberDef member)
         {
             var items = member.DetailedDescription?.Para.SelectMany(x => x.ParameterLists)
                 .FirstOrDefault(x => x.Kind == DoxParamListKind.RetVal)?.ParameterItems;
@@ -333,28 +351,28 @@ namespace Dox2Word.Parser
                 yield return new ReturnValueDoc()
                 {
                     Name = DocParamNameToString(item.ParameterNameList[0].ParameterName) ?? "",
-                    Description = ParasToParagraph(item.ParameterDescription.Para),
+                    Description = this.ParasToParagraph(item.ParameterDescription.Para),
                 };
             }
         }
 
-        private static ReturnDescriptions ParseReturnDescriptions(MemberDef member)
+        private ReturnDescriptions ParseReturnDescriptions(MemberDef member)
         {
             var descriptions = new ReturnDescriptions()
             {
-                Description = ParseReturnDescription(member),
+                Description = this.ParseReturnDescription(member),
             };
-            descriptions.Values.AddRange(ParseReturnValues(member));
+            descriptions.Values.AddRange(this.ParseReturnValues(member));
             return descriptions;
         }
 
-        private static List<TextRun> LinkedTextToRuns(LinkedText? linkedText) =>
-            EmbeddedRefTextToRuns(linkedText?.Type).ToList();
+        private List<TextRun> LinkedTextToRuns(LinkedText? linkedText) =>
+            this.EmbeddedRefTextToRuns(linkedText?.Type).ToList();
 
         private static string? DocParamNameToString(DocParamName? docParamName) =>
             EmbeddedRefTextToString(docParamName?.Name);
 
-        private static IEnumerable<TextRun> EmbeddedRefTextToRuns(IEnumerable<object>? input)
+        private IEnumerable<TextRun> EmbeddedRefTextToRuns(IEnumerable<object>? input)
         {
             if (input == null)
                 yield break;
@@ -364,7 +382,7 @@ namespace Dox2Word.Parser
                 yield return element switch
                 {
                     string s => new TextRun(s),
-                    RefText r => new TextRun(r.Name, referenceId: r.RefId),
+                    RefText r => new TextRun(r.Name, referenceId: this.index.ShouldReference(r.RefId) ? r.RefId : null),
                     _ => throw new ParserException($"Unknown element in EmbeddedRefText: {element}"),
                 };
             }
@@ -384,32 +402,32 @@ namespace Dox2Word.Parser
                 }));
         }
 
-        private static Descriptions ParseDescriptions(IDoxDescribable member)
+        private Descriptions ParseDescriptions(IDoxDescribable member)
         {
             var descriptions = new Descriptions()
             {
-                BriefDescription = ParasToParagraph(member.BriefDescription?.Para),
+                BriefDescription = this.ParasToParagraph(member.BriefDescription?.Para),
             };
-            descriptions.DetailedDescription.AddRange(ParasToParagraphs(member.DetailedDescription?.Para));
+            descriptions.DetailedDescription.AddRange(this.ParasToParagraphs(member.DetailedDescription?.Para));
             return descriptions;
         }
 
-        private static IParagraph ParaToParagraph(DocPara? para)
+        private IParagraph ParaToParagraph(DocPara? para)
         {
-            return ParaParser.Parse(para).FirstOrDefault() ?? new TextParagraph();
+            return this.paraParser.Parse(para).FirstOrDefault() ?? new TextParagraph();
         }
 
-        private static IParagraph ParasToParagraph(IEnumerable<DocPara>? paras)
+        private IParagraph ParasToParagraph(IEnumerable<DocPara>? paras)
         {
-            return ParasToParagraphs(paras).FirstOrDefault() ?? new TextParagraph();
+            return this.ParasToParagraphs(paras).FirstOrDefault() ?? new TextParagraph();
         }
 
-        private static IEnumerable<IParagraph> ParasToParagraphs(IEnumerable<DocPara>? paras)
+        private IEnumerable<IParagraph> ParasToParagraphs(IEnumerable<DocPara>? paras)
         {
             if (paras == null)
                 return Enumerable.Empty<TextParagraph>();
 
-            return paras.SelectMany(x => ParaParser.Parse(x)).Where(x => !x.IsEmpty);
+            return paras.SelectMany(x => this.paraParser.Parse(x)).Where(x => !x.IsEmpty);
         }
 
         private static void Merge<T>(List<T> collection, T newItem) where T : IMergable<T>

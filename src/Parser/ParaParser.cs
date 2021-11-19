@@ -14,25 +14,31 @@ using Dox2Word.Parser.Models;
 
 namespace Dox2Word.Parser
 {
-    internal static class ParaParser
+    internal class ParaParser
     {
         private static readonly Logger logger = Logger.Instance;
+        private readonly Index index;
 
-        public static List<IParagraph> Parse(DocPara? para)
+        public ParaParser(Index index)
+        {
+            this.index = index;
+        }
+
+        public List<IParagraph> Parse(DocPara? para)
         {
             var paragraphs = new List<IParagraph>();
 
             if (para == null)
                 return paragraphs;
 
-            Parse(paragraphs, para, TextRunFormat.None);
+            this.Parse(paragraphs, para, TextRunFormat.None);
 
             paragraphs.LastOrDefault()?.TrimTrailingWhitespace();
 
             return paragraphs;
         }
 
-        private static void Parse(List<IParagraph> paragraphs, DocPara? para, TextRunFormat format, TextParagraphAlignment alignment = TextParagraphAlignment.Default)
+        private void Parse(List<IParagraph> paragraphs, DocPara? para, TextRunFormat format, TextParagraphAlignment alignment = TextParagraphAlignment.Default)
         {
             if (para == null)
                 return;
@@ -46,21 +52,21 @@ namespace Dox2Word.Parser
                         break;
                     case DocSimpleSect s when s.Kind == DoxSimpleSectKind.Warning:
                         Add(paragraphs, new TextParagraph(TextParagraphType.Warning));
-                        Parse(paragraphs, s.Para, format);
+                        this.Parse(paragraphs, s.Para, format);
                         Add(paragraphs, new TextParagraph());
                         break;
                     case OrderedList o:
-                        ParseList(paragraphs, o, ListParagraphType.Number, format);
+                        this.ParseList(paragraphs, o, ListParagraphType.Number, format);
                         break;
                     case UnorderedList u:
-                        ParseList(paragraphs, u, ListParagraphType.Bullet, format);
+                        this.ParseList(paragraphs, u, ListParagraphType.Bullet, format);
                         break;
                     case DocXRefSect r:
                         if (r.Title.FirstOrDefault() != "Todo")
                         {
                             foreach (var docPara in r.Description.Para)
                             {
-                                Parse(paragraphs, docPara, format);
+                                this.Parse(paragraphs, docPara, format);
                             }
                         }
                         break;
@@ -74,19 +80,19 @@ namespace Dox2Word.Parser
                         Add(paragraphs, new DotParagraph(File.ReadAllText(d.Name!)) { Caption = d.Contents });
                         break;
                     case BoldMarkup b:
-                        Parse(paragraphs, b, format | TextRunFormat.Bold);
+                        this.Parse(paragraphs, b, format | TextRunFormat.Bold);
                         break;
                     case ItalicMarkup i:
-                        Parse(paragraphs, i, format | TextRunFormat.Italic);
+                        this.Parse(paragraphs, i, format | TextRunFormat.Italic);
                         break;
                     case MonospaceMarkup m:
-                        Parse(paragraphs, m, format | TextRunFormat.Monospace);
+                        this.Parse(paragraphs, m, format | TextRunFormat.Monospace);
                         break;
                     case Ref r:
-                        AddTextRun(paragraphs, alignment, r.Name, format | TextRunFormat.Monospace, r.RefId);
+                        AddTextRun(paragraphs, alignment, r.Name, format | TextRunFormat.Monospace, this.index.ShouldReference(r.RefId) ? r.RefId : null);
                         break;
                     case DocTable t:
-                        ParseTable(paragraphs, t);
+                        this.ParseTable(paragraphs, t);
                         break;
                     case XmlElement e:
                         AddTextRun(paragraphs, alignment, e.InnerText, format);
@@ -121,7 +127,7 @@ namespace Dox2Word.Parser
         private static void AddTextRun(List<IParagraph> paragraphs, TextParagraphAlignment alignment, string text, TextRunFormat format, string? referenceId = null) =>
             Add(paragraphs, alignment, new TextRun(text.TrimStart('\n'), format, referenceId));
 
-        private static void ParseList(List<IParagraph> paragraphs, DocList docList, ListParagraphType type, TextRunFormat format)
+        private void ParseList(List<IParagraph> paragraphs, DocList docList, ListParagraphType type, TextRunFormat format)
         {
             var list = Add(paragraphs, new ListParagraph(type));
             foreach (var item in docList.Items)
@@ -131,7 +137,7 @@ namespace Dox2Word.Parser
                 var paragraphList = new List<IParagraph>();
                 foreach (var para in item.Paras)
                 {
-                    Parse(paragraphList, para, format);
+                    this.Parse(paragraphList, para, format);
                 }
                 paragraphList.LastOrDefault()?.TrimTrailingWhitespace();
                 list.Items.AddRange(paragraphList);
@@ -169,7 +175,7 @@ namespace Dox2Word.Parser
             }
         }
 
-        private static void ParseTable(List<IParagraph> paragraphs, DocTable table)
+        private void ParseTable(List<IParagraph> paragraphs, DocTable table)
         {
             var tableDoc = new TableDoc()
             {
@@ -198,7 +204,7 @@ namespace Dox2Word.Parser
 
                     foreach (var para in entry.Paras)
                     {
-                        Parse(cellDoc.Paragraphs, para, TextRunFormat.None, alignment);
+                        this.Parse(cellDoc.Paragraphs, para, TextRunFormat.None, alignment);
                         cellDoc.Paragraphs.LastOrDefault()?.TrimTrailingWhitespace();
                     }
                 }

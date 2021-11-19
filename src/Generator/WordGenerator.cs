@@ -305,8 +305,9 @@ namespace Dox2Word.Generator
                 this.WriteMiniHeading("Signature");
                 var paragraph = this.AppendChild(new Paragraph().LeftAlign());
                 Run NewRun(OpenXmlElement e) => paragraph.AppendChild(new Run(e).ApplyStyle(StyleManager.CodeCharStyleId));
-                
-                NewRun(new Text(function.Definition));
+
+                paragraph.Append(this.TextRunsToRuns(function.ReturnType).ApplyStyle(StyleManager.CodeCharStyleId));
+                NewRun(new Text($" {function.Name}").PreserveSpace());
 
                 if (function.Parameters.Count > 0)
                 {

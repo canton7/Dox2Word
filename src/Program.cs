@@ -32,7 +32,7 @@ namespace Dox2Word
 
             try
             {
-                var project = new XmlParser(xmlFolder).Parse();
+                var project = XmlParser.Parse(xmlFolder);
 
                 File.Delete(outputPath);
                 File.Copy(templatePath, outputPath);
