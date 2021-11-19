@@ -91,25 +91,15 @@ namespace Dox2Word.Generator
                 }
                 else
                 {
-                    // Try just truncating it
-                    string truncated = name.Substring(0, MaxLength);
-                    if (!this.names.ContainsKey(truncated))
+                    for (int i = 1; ; i++)
                     {
-                        this.names[name] = truncated;
-                        actualName = truncated;
-                    }
-                    else
-                    {
-                        // That didn't work. 
-                        for (int i = 1; ; i++)
+                        string iString = i.ToString();
+                        string renamed = name.Substring(0, MaxLength - (1 + iString.Length)) + "+" + iString;
+                        if (!this.names.ContainsKey(renamed))
                         {
-                            string renamed = name.Substring(0, MaxLength - 10) + i;
-                            if (!this.names.ContainsKey(renamed))
-                            {
-                                this.names[name] = renamed;
-                                actualName = renamed;
-                                break;
-                            }
+                            this.names[name] = renamed;
+                            actualName = renamed;
+                            break;
                         }
                     }
                 }
