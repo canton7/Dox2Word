@@ -58,5 +58,11 @@ namespace Dox2Word.Parser.Models
 
         [XmlElement("initializer")]
         public LinkedText? Initializer { get; set; }
+
+        [XmlElement("references")]
+        public List<Reference> References { get; } = new();
+
+        [XmlElement("referencedby")]
+        public List<Reference> ReferencedBy { get; } = new();
     }
 }

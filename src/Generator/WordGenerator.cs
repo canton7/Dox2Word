@@ -308,10 +308,10 @@ namespace Dox2Word.Generator
                 this.WriteHeading("Function", function.Name, function.Id, headingLevel);
 
                 this.WriteMiniHeading("Signature");
-                var paragraph = this.AppendChild(new Paragraph().LeftAlign());
-                Run NewRun(OpenXmlElement e) => paragraph.AppendChild(new Run(e).ApplyStyle(StyleManager.CodeCharStyleId));
+                var signatureParagraph = this.AppendChild(new Paragraph().LeftAlign());
+                Run NewRun(OpenXmlElement e) => signatureParagraph.AppendChild(new Run(e).ApplyStyle(StyleManager.CodeCharStyleId));
 
-                paragraph.Append(this.TextRunsToRuns(function.ReturnType).ApplyStyle(StyleManager.CodeCharStyleId));
+                signatureParagraph.Append(this.TextRunsToRuns(function.ReturnType).ApplyStyle(StyleManager.CodeCharStyleId));
                 NewRun(new Text($" {function.Name}").PreserveSpace());
 
                 if (function.Parameters.Count > 0)
@@ -322,8 +322,8 @@ namespace Dox2Word.Generator
                         string comma = i == function.Parameters.Count - 1 ? "" : ",";
                         var run = NewRun(new Break());
                         run.AppendChild(new Text("    ").PreserveSpace());
-                        paragraph.Append(this.TextRunsToRuns(function.Parameters[i].Type).ApplyStyle(StyleManager.CodeCharStyleId));
-                        string space = paragraph.InnerText.EndsWith(" *") ? "" : " ";
+                        signatureParagraph.Append(this.TextRunsToRuns(function.Parameters[i].Type).ApplyStyle(StyleManager.CodeCharStyleId));
+                        string space = signatureParagraph.InnerText.EndsWith(" *") ? "" : " ";
                         NewRun(new Text($"{space}{function.Parameters[i].Name}{comma}").PreserveSpace());
                     }
 
@@ -358,6 +358,24 @@ namespace Dox2Word.Generator
                 }
 
                 this.WriteReturnDescription(function.ReturnDescriptions);
+
+                void CreateReferences(List<FunctionDoc> references, string blurb)
+                {
+                    if (references.Count > 0)
+                    {
+                        this.AppendChild(new Paragraph(new Run(new Text(blurb))));
+                        var list = new ListParagraph(ListParagraphType.Bullet);
+                        list.Items.AddRange(references.Select(x => new TextParagraph() { new TextRun(x.Name, TextRunFormat.Monospace, x.Id) }));
+                        this.Append(this.CreateParagraph(list));
+                    }
+                }
+
+                if (function.References.Count > 0 || function.ReferencedBy.Count > 0)
+                {
+                    this.WriteMiniHeading("References");
+                    CreateReferences(function.References, "This function references the following functions: ");
+                    CreateReferences(function.ReferencedBy, "This function is referenced by the following functions: ");
+                }
             }
         }
 

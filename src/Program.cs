@@ -60,6 +60,7 @@ namespace Dox2Word
             {
                 var project = XmlParser.Parse(xmlFolder!);
 
+                Logger.Instance.Info("Loading template");
                 File.Delete(outputPath);
                 File.Copy(templatePath, outputPath);
                 using var output = File.Open(outputPath, FileMode.Open);

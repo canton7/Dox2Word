@@ -18,12 +18,15 @@ namespace Dox2Word.Parser
         private readonly string basePath;
         private readonly Index index;
         private readonly ParaParser paraParser;
+        private readonly Project project;
 
         private XmlParser(string basePath, DoxygenIndex doxygenIndex)
         {
             this.basePath = basePath;
             this.index = new Index(doxygenIndex);
             this.paraParser = new ParaParser(this.index);
+
+            this.project = new Project();
         }
 
         public static Project Parse(string basePath)
@@ -44,15 +47,13 @@ namespace Dox2Word.Parser
 
         private Project Parse()
         {
-            var project = new Project();
-
             try
             {
                 string doxyfileFile = Path.Combine(this.basePath, "Doxyfile.xml");
                 if (File.Exists(doxyfileFile))
                 {
                     var doxyfile = Parse<DoxygenFile>(doxyfileFile);
-                    project.Options.AddRange(this.ParseOptions(doxyfile));
+                    this.project.Options.AddRange(this.ParseOptions(doxyfile));
                 }
 
                 var allFileCompoundDefs = this.index.Compounds.Values.Where(x => x.Kind == CompoundKind.File)
@@ -60,20 +61,22 @@ namespace Dox2Word.Parser
 
                 var allGroupCompoundDefs = this.index.Compounds.Values.Where(x => x.Kind == CompoundKind.Group)
                     .ToDictionary(x => x.RefId, x => this.ParseCompoundDef(x.RefId));
-                project.AllGroups = allGroupCompoundDefs.Values.ToDictionary(x => x.Id, x => this.ParseGroup(x));
+                this.project.AllGroups = allGroupCompoundDefs.Values.ToDictionary(x => x.Id, x => this.ParseGroup(x));
 
                 // Wire up the group->inner group relationships
-                var rootGroups = project.AllGroups.Values.ToHashSet();
-                foreach (var group in project.AllGroups.Values)
+                logger.Info("Creating group to inner group relationships");
+                var rootGroups = this.project.AllGroups.Values.ToHashSet();
+                foreach (var group in this.project.AllGroups.Values)
                 {
-                    group.SubGroups.AddRange(allGroupCompoundDefs[group.Id].InnerGroups.Select(x => project.AllGroups[x.RefId]));
+                    group.SubGroups.AddRange(allGroupCompoundDefs[group.Id].InnerGroups.Select(x => this.project.AllGroups[x.RefId]));
                     rootGroups.ExceptWith(group.SubGroups);
                 }
 
-                project.RootGroups.AddRange(rootGroups.OrderBy(x => x.Name));
+                this.project.RootGroups.AddRange(rootGroups.OrderBy(x => x.Name));
 
                 // Wire up group -> referenced group relationships
-                var fileIdToOwningGroup = project.AllGroups.Values
+                logger.Info("Creating group to referenced group relationships");
+                var fileIdToOwningGroup = this.project.AllGroups.Values
                     .SelectMany(g => g.Files.Select(f => (file: f, group: g)))
                     .ToDictionary(x => x.file.Id, x => x.group);
                 foreach (var fileDef in allFileCompoundDefs.Values)
@@ -95,10 +98,36 @@ namespace Dox2Word.Parser
                         }
                     }
                 }
-                foreach (var group in project.AllGroups.Values)
+                foreach (var group in this.project.AllGroups.Values)
                 {
                     group.IncludedGroups.Sort((x, y) => x.Id.CompareTo(y.Id));
                     group.IncludingGroups.Sort((x, y) => x.Id.CompareTo(y.Id));
+                }
+
+                // Wire up function -> function references
+                logger.Info("Creating function to function references");
+                foreach (var groupDef in allGroupCompoundDefs.Values)
+                {
+                    foreach (var function in groupDef.Sections.SelectMany(x => x.Members).Where(x => x.Kind == DoxMemberKind.Function))
+                    {
+                        if (this.project.AllFunctions.TryGetValue(function.Id, out var functionDoc))
+                        {
+                            foreach (var references in function.References)
+                            {
+                                if (this.project.AllFunctions.TryGetValue(references.RefId, out var referencesDoc))
+                                {
+                                    functionDoc.References.Add(referencesDoc);
+                                }
+                            }
+                            foreach (var referencedBy in function.ReferencedBy)
+                            {
+                                if (this.project.AllFunctions.TryGetValue(referencedBy.RefId, out var referencedByDoc))
+                                {
+                                    functionDoc.ReferencedBy.Add(referencedByDoc);
+                                }
+                            }
+                        }
+                    }
                 }
             }
             catch (ParserException e)
@@ -106,7 +135,7 @@ namespace Dox2Word.Parser
                 logger.Error(e);
             }
 
-            return project;
+            return this.project;
         }
 
         private IEnumerable<ProjectOption> ParseOptions(DoxygenFile doxyfile)
@@ -175,6 +204,7 @@ namespace Dox2Word.Parser
                             ArgsString = member.ArgsString ?? "",
                         };
                         function.Parameters.AddRange(this.ParseParameters(member));
+                        this.project.AllFunctions.Add(member.Id, function);
                         group.Functions.Add(function);
                     }
                     break;

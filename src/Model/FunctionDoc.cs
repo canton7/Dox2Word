@@ -12,5 +12,7 @@ namespace Dox2Word.Model
         public string Definition { get; set; } = null!;
         public string ArgsString { get; set; } = null!;
         public List<ParameterDoc> Parameters { get; } = new();
+        public List<FunctionDoc> References { get; } = new();
+        public List<FunctionDoc> ReferencedBy { get; } = new();
     }
 }

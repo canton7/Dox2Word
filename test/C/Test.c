@@ -14,6 +14,7 @@ static uint32_t StaticWithValue = 3;
 uint8_t FunctionWithParameters(uint8_t* a, const TypedefType_t* b, Struct_t* const c, Enum_t d)
 {
     ReferencedFunction();
+    VoidFunction();
     return 0;
 }
 

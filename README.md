@@ -83,6 +83,7 @@ Dox2Word currently supports the following Doxygen features:
  - `@param`, `@returns`, `@retval`
  - Graphviz graphs (using `@dot` and `@dotfile`, provided that dot.exe is in your PATH)
  - C: Structs, unions, enums, typedefs, global variables, macros, functions
+ - Function to function references, if `REFERENCED_BY_RELATION` and/or `REFERENCES_RELATION` is set to `YES`.
 
 Word Styles
 -----------
