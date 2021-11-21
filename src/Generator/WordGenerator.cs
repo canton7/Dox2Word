@@ -17,7 +17,7 @@ namespace Dox2Word.Generator
         private static readonly Logger logger = Logger.Instance;
 
         private readonly WordprocessingDocument doc;
-
+        private readonly Options options;
         private readonly List<OpenXmlElement> bodyElements = new();
 
         private readonly ListManager listManager;
@@ -25,15 +25,16 @@ namespace Dox2Word.Generator
         private readonly BookmarkManager bookmarkManager;
         private readonly DotRenderer dotRenderer = new();
 
-        public static void Generate(Stream stream, Project project)
+        public static void Generate(Stream stream, Project project, Options options)
         {
             using var doc = WordprocessingDocument.Open(stream, isEditable: true);
-            new WordGenerator(doc).Generate(project);
+            new WordGenerator(doc, options).Generate(project);
         }
 
-        private WordGenerator(WordprocessingDocument doc)
+        private WordGenerator(WordprocessingDocument doc, Options options)
         {
             this.doc = doc;
+            this.options = options;
 
             var numberingPart = doc.MainDocumentPart!.NumberingDefinitionsPart!;
             if (numberingPart == null)
@@ -86,7 +87,7 @@ namespace Dox2Word.Generator
 
                 body.RemoveChild(markerParagraph);
 
-                this.SubstituteOptionPlaceholders(body, project);
+                this.SubstitutePlaceholders(body, project);
 
                 this.Validate();
             }
@@ -96,10 +97,14 @@ namespace Dox2Word.Generator
             }
         }
 
-        private void SubstituteOptionPlaceholders(Body body, Project project)
+        private void SubstitutePlaceholders(Body body, Project project)
         {
-            var options = project.Options.ToDictionary(x => x.Id, x => string.Join(", ", x.Values));
-            PlaceholderHelper.Replace(body, options);
+            var placeholders = project.Options.ToDictionary(x => $"DOXYFILE_{x.Id}", x => string.Join(", ", x.Values));
+            foreach (var kvp in this.options.Placeholders)
+            {
+                placeholders[kvp.Key] = kvp.Value;
+            }
+            PlaceholderHelper.Replace(body, placeholders);
         }
 
         private void Validate()

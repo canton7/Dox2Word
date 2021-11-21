@@ -60,6 +60,9 @@ namespace Dox2Word.Generator
 
                     while (true)
                     {
+                        if (string.IsNullOrEmpty(text.Text))
+                            break;
+
                         index = text.Text.IndexOfAny(new[] { '<', '>' }, index + 1);
                         if (index == -1)
                         {
