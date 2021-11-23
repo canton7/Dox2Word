@@ -95,6 +95,7 @@ namespace Dox2Word.Parser
                         this.ParseTable(paragraphs, t);
                         break;
                     case XmlElement e:
+                        logger.Warning($"Unrecognised text part {e.Name}. Taking raw string content");
                         AddTextRun(paragraphs, alignment, e.InnerText, format);
                         break;
                     case DocSimpleSect:
