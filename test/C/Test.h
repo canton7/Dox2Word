@@ -49,7 +49,7 @@
  * @dotfile Test.dot "Dot from external file"
  * 
  * Some symbols: © -- ±<br>
- * A newline
+ * A newline with a link: https://www.google.com
  * 
  * @{
  * @file

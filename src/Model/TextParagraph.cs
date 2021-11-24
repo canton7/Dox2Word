@@ -18,7 +18,11 @@ namespace Dox2Word.Model
         Right,
     }
 
-    public class TextParagraph : Collection<TextRun>, IParagraph
+    public interface IParagraphElement
+    {
+    }
+
+    public class TextParagraph : Collection<IParagraphElement>, IParagraph
     {
         public TextParagraphType Type { get; }
 
@@ -42,7 +46,7 @@ namespace Dox2Word.Model
 
         public void TrimTrailingWhitespace()
         {
-            if (this.LastOrDefault() is { } run && run.Text.EndsWith(" "))
+            if (this.LastOrDefault() is TextRun run && run.Text.EndsWith(" "))
             {
                 run.Text = run.Text.TrimEnd(' ');
             }

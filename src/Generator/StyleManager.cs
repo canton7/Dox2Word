@@ -17,6 +17,7 @@ namespace Dox2Word.Generator
         public const string CodeStyleId = "DoxCode";
         public const string CodeCharStyleId = "DoxCodeChar";
         public const string WarningStyleId = "DoxWarning";
+        public const string HyperlinkStyleId = "Hyperlink";
         public const string ListParagraphStyleId = "ListParagraph";
 
         public static void EnsureStyles(StyleDefinitionsPart stylesPart)
@@ -115,6 +116,17 @@ namespace Dox2Word.Generator
                         Size = 18,
                         Color = "FFC000",
                     }),
+                };
+            });
+
+            AddIfNotExists(stylesPart, HyperlinkStyleId, StyleValues.Character, "Hyperlink", style =>
+            {
+                style.BasedOn = new BasedOn() { Val = "DefaultParagraphFont" };
+                style.UnhideWhenUsed = new UnhideWhenUsed();
+                style.StyleRunProperties = new StyleRunProperties()
+                {
+                    Color = new Color() { ThemeColor = ThemeColorValues.Hyperlink, Val = "0563C1" },
+                    Underline = new Underline() {  Val = UnderlineValues.Single },
                 };
             });
 

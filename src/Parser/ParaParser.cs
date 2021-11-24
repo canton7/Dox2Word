@@ -79,6 +79,9 @@ namespace Dox2Word.Parser
                     case DotFile d:
                         Add(paragraphs, new DotParagraph(File.ReadAllText(d.Name!)) { Caption = d.Contents });
                         break;
+                    case DocUrlLink l:
+                        this.ParseUrlLink(paragraphs, alignment, l, format);
+                        break;
                     case BoldMarkup b:
                         this.Parse(paragraphs, b, format | TextRunFormat.Bold);
                         break;
@@ -115,7 +118,7 @@ namespace Dox2Word.Parser
             }
         }
 
-        private static T Add<T>(List<IParagraph> paragraphs, T paragraph) where T : IParagraph
+        private static T Add<T>(ICollection<IParagraph> paragraphs, T paragraph) where T : IParagraph
         {
             // Trim the previous paragraph
             paragraphs.LastOrDefault()?.TrimTrailingWhitespace();
@@ -124,22 +127,44 @@ namespace Dox2Word.Parser
             return paragraph;
         }
 
-        private static void Add(List<IParagraph> paragraphs, TextParagraphAlignment alignment, TextRun textRun)
+        private static void Add(ICollection<IParagraph> paragraphs, TextParagraphAlignment alignment, IParagraphElement element)
         {
             if (paragraphs.LastOrDefault() is not TextParagraph paragraph)
             {
                 paragraph = Add(paragraphs, new TextParagraph(alignment: alignment));
             }
             // If we're inserting text straight after a stand-alone line break (from newline), trim the leading space -- Doxygen seems to insert it for some reason
-            if (paragraph.LastOrDefault() is { } previousTextRun && previousTextRun.Text == "\n")
+            if (element is TextRun textRun && paragraph.LastOrDefault() is TextRun previousTextRun && previousTextRun.Text == "\n")
             {
                 textRun.Text = textRun.Text.TrimStart(' ');
             }
-            paragraph.Add(textRun);
+            paragraph.Add(element);
         }
 
         private static void AddTextRun(List<IParagraph> paragraphs, TextParagraphAlignment alignment, string text, TextRunFormat format, string? referenceId = null) =>
             Add(paragraphs, alignment, new TextRun(text.TrimStart('\n'), format, referenceId));
+
+        private void ParseUrlLink(List<IParagraph> paragraphs, TextParagraphAlignment alignment, DocUrlLink urlLink, TextRunFormat format)
+        {
+            var link = new UrlLink(urlLink.Url);
+            var children = new List<IParagraph>();
+            this.Parse(children, urlLink, format);
+            // We should only get one child, and it should be a TextParagraph
+            if (children.Count > 0 && children[0] is TextParagraph textParagraph)
+            {
+                if (children.Count > 1)
+                {
+                    logger.Warning($"Unexpected number of children for DocUrlLink with URL {link.Url}");
+                }
+
+                link.AddRange(textParagraph.OfType<TextRun>());
+                Add(paragraphs, alignment, link);
+            }
+            else
+            {
+                logger.Warning($"Unexpected content for DocUrlLink with URL {link.Url}");
+            }
+        }
 
         private void ParseList(List<IParagraph> paragraphs, DocList docList, ListParagraphType type, TextRunFormat format)
         {

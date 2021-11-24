@@ -11,7 +11,7 @@ namespace Dox2Word.Model
         Monospace = 4,
     }
 
-    public class TextRun
+    public class TextRun : IParagraphElement
     {
         public TextRunFormat Format { get; }
 

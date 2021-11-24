@@ -10,6 +10,7 @@ namespace Dox2Word.Parser.Models
         public List<DocParamList> ParameterLists { get; } = new();
 
         [XmlText(typeof(string))]
+        [XmlElement("ulink", typeof(DocUrlLink))]
         [XmlElement("simplesect", typeof(DocSimpleSect))]
         [XmlElement("orderedlist", typeof(OrderedList))]
         [XmlElement("itemizedlist", typeof(UnorderedList))]

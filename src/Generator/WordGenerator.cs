@@ -229,7 +229,7 @@ namespace Dox2Word.Generator
                 this.WriteMiniHeading("Definition");
                 var paragraph = this.AppendChild(new Paragraph().LeftAlign());
                 paragraph.AppendChild(new Run(new Text("typedef ").PreserveSpace()).ApplyStyle(StyleManager.CodeCharStyleId));
-                paragraph.Append(this.TextRunsToRuns(typedef.Type).ApplyStyle(StyleManager.CodeCharStyleId));
+                paragraph.Append(this.TextRunsToRuns(typedef.Type).ApplyRunStyle(StyleManager.CodeCharStyleId));
                 paragraph.AppendChild(new Run(new Text(" " + typedef.Name).PreserveSpace()).ApplyStyle(StyleManager.CodeCharStyleId));
 
                 this.WriteDescriptions(typedef.Descriptions);
@@ -246,12 +246,12 @@ namespace Dox2Word.Generator
 
                 this.WriteMiniHeading("Definition");
                 var paragraph = this.AppendChild(new Paragraph().LeftAlign());
-                paragraph.Append(this.TextRunsToRuns(variable.Type).ApplyStyle(StyleManager.CodeCharStyleId));
+                paragraph.Append(this.TextRunsToRuns(variable.Type).ApplyRunStyle(StyleManager.CodeCharStyleId));
                 paragraph.Append(new Run(new Text($" {variable.Name}").PreserveSpace()).ApplyStyle(StyleManager.CodeCharStyleId));
                 if (variable.Initializer.Count > 0)
                 {
                     paragraph.AppendChild(new Run(new Text(" ").PreserveSpace()).ApplyStyle(StyleManager.CodeCharStyleId));
-                    paragraph.Append(this.TextRunsToRuns(variable.Initializer).ApplyStyle(StyleManager.CodeCharStyleId));
+                    paragraph.Append(this.TextRunsToRuns(variable.Initializer).ApplyRunStyle(StyleManager.CodeCharStyleId));
                 }
 
                 this.WriteDescriptions(variable.Descriptions);
@@ -280,7 +280,7 @@ namespace Dox2Word.Generator
                 {
                     paragraph.AppendChild(new Run(new Text("\\"), new Break()));
                 }
-                paragraph.Append(this.TextRunsToRuns(macro.Initializer).ApplyStyle(StyleManager.CodeCharStyleId));
+                paragraph.Append(this.TextRunsToRuns(macro.Initializer).ApplyRunStyle(StyleManager.CodeCharStyleId));
 
                 this.WriteDescriptions(macro.Descriptions);
 
@@ -311,7 +311,7 @@ namespace Dox2Word.Generator
                 var signatureParagraph = this.AppendChild(new Paragraph().LeftAlign());
                 Run NewRun(OpenXmlElement e) => signatureParagraph.AppendChild(new Run(e).ApplyStyle(StyleManager.CodeCharStyleId));
 
-                signatureParagraph.Append(this.TextRunsToRuns(function.ReturnType).ApplyStyle(StyleManager.CodeCharStyleId));
+                signatureParagraph.Append(this.TextRunsToRuns(function.ReturnType).ApplyRunStyle(StyleManager.CodeCharStyleId));
                 NewRun(new Text($" {function.Name}").PreserveSpace());
 
                 if (function.Parameters.Count > 0)
@@ -322,7 +322,7 @@ namespace Dox2Word.Generator
                         string comma = i == function.Parameters.Count - 1 ? "" : ",";
                         var run = NewRun(new Break());
                         run.AppendChild(new Text("    ").PreserveSpace());
-                        signatureParagraph.Append(this.TextRunsToRuns(function.Parameters[i].Type).ApplyStyle(StyleManager.CodeCharStyleId));
+                        signatureParagraph.Append(this.TextRunsToRuns(function.Parameters[i].Type).ApplyRunStyle(StyleManager.CodeCharStyleId));
                         string space = signatureParagraph.InnerText.EndsWith(" *") ? "" : " ";
                         NewRun(new Text($"{space}{function.Parameters[i].Name}{comma}").PreserveSpace());
                     }
@@ -514,36 +514,55 @@ namespace Dox2Word.Generator
             return paragraph;
         }
 
-        private IEnumerable<Run> TextRunsToRuns(IEnumerable<TextRun> textRuns)
+        private IEnumerable<OpenXmlElement> TextRunsToRuns(IEnumerable<IParagraphElement> paragraphElement)
         {
-            foreach (var textRun in textRuns)
+            foreach (var element in paragraphElement)
             {
-                var run = new Run(StringToElements(textRun.Text));
-
-                run.WithProperties(x =>
+                switch (element)
                 {
-                    x.Bold = textRun.Format.HasFlag(TextRunFormat.Bold) ? new Bold() : null;
-                    x.Italic = textRun.Format.HasFlag(TextRunFormat.Italic) ? new Italic() : null;
-                });
-                if (textRun.Format.HasFlag(TextRunFormat.Monospace))
-                {
-                    run.WithProperties(x =>
+                    case TextRun textRun:
                     {
-                        x.FontSize = new FontSize() { Val = "20" };
-                        x.RunFonts = new RunFonts() { Ascii = "Consolas" };
-                    });
-                }
+                        var run = new Run(StringToElements(textRun.Text));
 
-                if (textRun.ReferenceId == null)
-                {
-                    yield return run;
-                }
-                else
-                {
-                    foreach (var x in this.bookmarkManager.CreateLink(textRun.ReferenceId, run))
-                    {
-                        yield return x;
+                        run.WithProperties(x =>
+                        {
+                            x.Bold = textRun.Format.HasFlag(TextRunFormat.Bold) ? new Bold() : null;
+                            x.Italic = textRun.Format.HasFlag(TextRunFormat.Italic) ? new Italic() : null;
+                        });
+                        if (textRun.Format.HasFlag(TextRunFormat.Monospace))
+                        {
+                            run.WithProperties(x =>
+                            {
+                                x.FontSize = new FontSize() { Val = "20" };
+                                x.RunFonts = new RunFonts() { Ascii = "Consolas" };
+                            });
+                        }
+
+                        if (textRun.ReferenceId == null)
+                        {
+                            yield return run;
+                        }
+                        else
+                        {
+                            foreach (var x in this.bookmarkManager.CreateLink(textRun.ReferenceId, run))
+                            {
+                                yield return x;
+                            }
+                        }
                     }
+                    break;
+
+                    case UrlLink link:
+                    {
+                        var rel = this.doc.MainDocumentPart!.AddHyperlinkRelationship(new Uri(link.Url), isExternal: true);
+                        var hyperlink = new Hyperlink() { Id = rel.Id };
+                        hyperlink.Append(this.TextRunsToRuns(link).ApplyRunStyle(StyleManager.HyperlinkStyleId));
+                        yield return hyperlink;
+                    }
+                    break;
+
+                    default:
+                        throw new GeneratorException($"Unexpected IParagraphElement type {element} ({element.GetType()})");
                 }
             }
         }

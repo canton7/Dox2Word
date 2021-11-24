@@ -93,6 +93,7 @@ The following styles will be inserted if they do not already exist, but you can 
 Make sure that Word actually adds them to the template: it has a habit of omitting them if they're unused!
 
  - `Heading 1`, `Heading 2`, etc: these must exist in the document
+ - `Hyperlink`: used for hyperlinks
  - `Dox Mini Heading`: used for sub-headings within a member documentation, for e.g. "Description" and "Parameters"
  - `Dox Table`: used for user-defined tables
  - `Dox Parameter Table`: used for tables containing parameters, return values, struct members, etc

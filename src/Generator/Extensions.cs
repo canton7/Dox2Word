@@ -18,11 +18,18 @@ namespace Dox2Word.Generator
             return run.WithProperties(x => x.RunStyle = new RunStyle() { Val = styleId });
         }
 
-        public static IEnumerable<Run> ApplyStyle(this IEnumerable<Run> runs, string styleId)
+        public static IEnumerable<OpenXmlElement> ApplyRunStyle(this IEnumerable<OpenXmlElement> elements, string styleId)
         {
-            foreach (var run in runs)
+            foreach (var element in elements)
             {
-                yield return run.ApplyStyle(styleId);
+                if (element is Run run)
+                {
+                    yield return run.ApplyStyle(styleId);
+                }
+                else
+                {
+                    yield return element;
+                }
             }
         }
 
@@ -128,7 +135,7 @@ namespace Dox2Word.Generator
         public static void AppendRow(this Table table, string name, (BookmarkStart start, BookmarkEnd end)? bookmark, IEnumerable<OpenXmlElement> value, string? inOut = null) =>
             table.AppendRow(new[] { new Run(new Text(name)) }, bookmark, value, inOut);
 
-        public static void AppendRow(this Table table, IEnumerable<Run> name, (BookmarkStart start, BookmarkEnd end)? bookmark, IEnumerable<OpenXmlElement> value, string? inOut = null)
+        public static void AppendRow(this Table table, IEnumerable<OpenXmlElement> name, (BookmarkStart start, BookmarkEnd end)? bookmark, IEnumerable<OpenXmlElement> value, string? inOut = null)
         {
             var row = table.AppendChild(new TableRow());
 
@@ -149,7 +156,7 @@ namespace Dox2Word.Generator
             {
                 nameParagraph.AppendChild(bookmark.Value.start);
             }
-            nameParagraph.Append(name.ApplyStyle(StyleManager.CodeCharStyleId));
+            nameParagraph.Append(name.ApplyRunStyle(StyleManager.CodeCharStyleId));
             if (bookmark != null)
             {
                 nameParagraph.AppendChild(bookmark.Value.end);
