@@ -189,8 +189,19 @@ namespace Dox2Word.Generator
                         string? bitfield = variable.Bitfield == null
                             ? null
                             : $" :{variable.Bitfield}";
-                        table.AppendRow(this.TextRunsToRuns(variable.Type).Append(new Run(new Text($" {variable.Name}{variable.ArgsString}{bitfield}").PreserveSpace())),
-                            this.bookmarkManager.CreateBookmark(variable.Id), this.CreateDescriptions(variable.Descriptions));
+
+                        var bookmark = this.bookmarkManager.CreateBookmark(variable.Id);
+                        var name = this.TextRunsToRuns(variable.Type).ToList();
+                        name.Add(new Run(new Text(" ").PreserveSpace()));
+                        name.Add(bookmark.start);
+                        name.Add(new Run(new Text(variable.Name ?? "")));
+                        name.Add(bookmark.end);
+                        if (variable.ArgsString != null || bitfield != null)
+                        {
+                            name.Add(new Run(new Text($"{variable.ArgsString}{bitfield}").PreserveSpace()));
+                        }
+
+                        table.AppendRow(name, this.CreateDescriptions(variable.Descriptions));
                     }
                 }
             }
@@ -212,7 +223,14 @@ namespace Dox2Word.Generator
                     var table = this.AppendChild(this.CreateTable(StyleManager.ParameterTableStyleId).AddColumns(2));
                     foreach (var value in @enum.Values)
                     {
-                        table.AppendRow(value.Name, this.bookmarkManager.CreateBookmark(value.Id), this.CreateDescriptions(value.Descriptions));
+                        var bookmark = this.bookmarkManager.CreateBookmark(value.Id);
+                        var name = new OpenXmlElement[]
+                        {
+                            bookmark.start,
+                            new Run(new Text(value.Name)),
+                            bookmark.end,
+                        };
+                        table.AppendRow(name, this.CreateDescriptions(value.Descriptions));
                     }
                 }
             }
@@ -291,7 +309,7 @@ namespace Dox2Word.Generator
                     var table = this.AppendChild(this.CreateTable(StyleManager.ParameterTableStyleId).AddColumns(2));
                     foreach (var parameter in macro.Parameters)
                     {
-                        table.AppendRow(parameter.Name, null, this.CreateParagraph(parameter.Description));
+                        table.AppendRow(parameter.Name, this.CreateParagraph(parameter.Description));
                     }
                 }
 
@@ -353,7 +371,7 @@ namespace Dox2Word.Generator
                                 ParameterDirection.InOut => "in,out",
                             }
                             : null;
-                        table.AppendRow(parameter.Name, null, this.CreateParagraph(parameter.Description), inOut);
+                        table.AppendRow(parameter.Name, this.CreateParagraph(parameter.Description), inOut);
                     }
                 }
 
@@ -393,7 +411,7 @@ namespace Dox2Word.Generator
                 var table = this.AppendChild(this.CreateTable(StyleManager.ParameterTableStyleId).AddColumns(2));
                 foreach (var returnValue in returnDescriptions.Values)
                 {
-                    table.AppendRow(returnValue.Name, null, this.CreateParagraph(returnValue.Description));
+                    table.AppendRow(returnValue.Name, this.CreateParagraph(returnValue.Description));
                 }
             }
         }

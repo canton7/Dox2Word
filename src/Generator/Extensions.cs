@@ -132,10 +132,10 @@ namespace Dox2Word.Generator
             return table;
         }
 
-        public static void AppendRow(this Table table, string name, (BookmarkStart start, BookmarkEnd end)? bookmark, IEnumerable<OpenXmlElement> value, string? inOut = null) =>
-            table.AppendRow(new[] { new Run(new Text(name)) }, bookmark, value, inOut);
+        public static void AppendRow(this Table table, string name, IEnumerable<OpenXmlElement> value, string? inOut = null) =>
+            table.AppendRow(new[] { new Run(new Text(name)) }, value, inOut);
 
-        public static void AppendRow(this Table table, IEnumerable<OpenXmlElement> name, (BookmarkStart start, BookmarkEnd end)? bookmark, IEnumerable<OpenXmlElement> value, string? inOut = null)
+        public static void AppendRow(this Table table, IEnumerable<OpenXmlElement> name, IEnumerable<OpenXmlElement> value, string? inOut = null)
         {
             var row = table.AppendChild(new TableRow());
 
@@ -151,16 +151,7 @@ namespace Dox2Word.Generator
             var nameCell = row.AppendChild(new TableCell());
             var nameParagraph = nameCell.AppendChild(new Paragraph());
             nameParagraph.FormatTableCellElement(after: true);
-
-            if (bookmark != null)
-            {
-                nameParagraph.AppendChild(bookmark.Value.start);
-            }
             nameParagraph.Append(name.ApplyRunStyle(StyleManager.CodeCharStyleId));
-            if (bookmark != null)
-            {
-                nameParagraph.AppendChild(bookmark.Value.end);
-            }
 
             var valueCell = row.AppendChild(new TableCell());
             var valueList = value.ToList();
