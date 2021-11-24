@@ -17,6 +17,7 @@ namespace Dox2Word.Generator
 
         // Original, requested name -> name we had to use
         private readonly Dictionary<string, string> names = new();
+        private readonly HashSet<string> namesInUse = new();
         private readonly HashSet<string> referencedButNotCreated = new();
 
         private int id;
@@ -81,13 +82,15 @@ namespace Dox2Word.Generator
 
         private string TransformName(string name)
         {
-            string actualName;
-            if (!this.names.TryGetValue(name, out actualName))
+            string transformedName;
+            // Have we transformed this one before? Use the result of that?
+            if (!this.names.TryGetValue(name, out transformedName))
             {
                 if (name.Length <= MaxLength)
                 {
                     this.names[name] = name;
-                    actualName = name;
+                    this.namesInUse.Add(name);
+                    transformedName = name;
                 }
                 else
                 {
@@ -95,17 +98,18 @@ namespace Dox2Word.Generator
                     {
                         string iString = i.ToString();
                         string renamed = name.Substring(0, MaxLength - (1 + iString.Length)) + "+" + iString;
-                        if (!this.names.ContainsKey(renamed))
+                        if (!this.namesInUse.Contains(renamed))
                         {
                             this.names[name] = renamed;
-                            actualName = renamed;
+                            this.namesInUse.Add(renamed);
+                            transformedName = renamed;
                             break;
                         }
                     }
                 }
             }
 
-            return actualName;
+            return transformedName;
         }
     }
 }
