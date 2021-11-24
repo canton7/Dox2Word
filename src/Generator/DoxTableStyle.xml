@@ -1,0 +1,50 @@
+﻿<w:name w:val="Dox Table"/>
+<w:basedOn w:val="TableNormal"/>
+<w:uiPriority w:val="46"/>
+<w:rsid w:val="007627FA"/>
+<w:pPr>
+	<w:spacing w:after="0" w:line="240" w:lineRule="auto"/>
+</w:pPr>
+<w:tblPr>
+	<w:tblStyleRowBandSize w:val="1"/>
+	<w:tblStyleColBandSize w:val="1"/>
+	<w:tblBorders>
+		<w:top w:color="999999" w:space="0" w:sz="4" w:themeColor="text1" w:themeTint="66" w:val="single"/>
+		<w:left w:color="999999" w:space="0" w:sz="4" w:themeColor="text1" w:themeTint="66" w:val="single"/>
+		<w:bottom w:color="999999" w:space="0" w:sz="4" w:themeColor="text1" w:themeTint="66" w:val="single"/>
+		<w:right w:color="999999" w:space="0" w:sz="4" w:themeColor="text1" w:themeTint="66" w:val="single"/>
+		<w:insideH w:color="999999" w:space="0" w:sz="4" w:themeColor="text1" w:themeTint="66" w:val="single"/>
+		<w:insideV w:color="999999" w:space="0" w:sz="4" w:themeColor="text1" w:themeTint="66" w:val="single"/>
+	</w:tblBorders>
+</w:tblPr>
+<w:tblStylePr w:type="firstRow">
+	<w:rPr>
+		<w:b/>
+		<w:bCs/>
+	</w:rPr>
+	<w:tblPr/>
+</w:tblStylePr>
+<w:tblStylePr w:type="lastRow">
+	<w:rPr>
+		<w:b/>
+		<w:bCs/>
+	</w:rPr>
+	<w:tblPr/>
+	<w:tcPr>
+		<w:tcBorders>
+			<w:top w:color="666666" w:space="0" w:sz="2" w:themeColor="text1" w:themeTint="99" w:val="double"/>
+		</w:tcBorders>
+	</w:tcPr>
+</w:tblStylePr>
+<w:tblStylePr w:type="firstCol">
+	<w:rPr>
+		<w:b/>
+		<w:bCs/>
+	</w:rPr>
+</w:tblStylePr>
+<w:tblStylePr w:type="lastCol">
+	<w:rPr>
+		<w:b/>
+		<w:bCs/>
+	</w:rPr>
+</w:tblStylePr>

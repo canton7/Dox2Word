@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31521.260
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dox2Word", "Dox2Word.csproj", "{8EA8B35F-A984-4CC9-9A7B-C81CF69FCAA5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8EA8B35F-A984-4CC9-9A7B-C81CF69FCAA5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8EA8B35F-A984-4CC9-9A7B-C81CF69FCAA5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8EA8B35F-A984-4CC9-9A7B-C81CF69FCAA5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8EA8B35F-A984-4CC9-9A7B-C81CF69FCAA5}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3B6B9702-1CDA-4D52-AAD5-1B94BC73A5D4}
+	EndGlobalSection
+EndGlobal
