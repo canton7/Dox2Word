@@ -48,6 +48,9 @@
  * Dot from external file:
  * @dotfile Test.dot "Dot from external file"
  * 
+ * Some symbols: © -- ±<br>
+ * A newline
+ * 
  * @{
  * @file
  */

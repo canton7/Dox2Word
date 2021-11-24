@@ -29,6 +29,6 @@
   </ItemGroup>
 
   <Target Name="ILRepack">
-    <Exec Command="$(ILRepack) /out:$(OutputPath)Dox2Word.exe $(OutputPath)Dox2Word.exe $(OutputPath)DocumentFormat.OpenXml.dll $(OutputPath)Mono.Options.dll" />
+    <Exec Command="&quot;$(ILRepack)&quot; &quot;/out:$(OutputPath)Dox2Word.exe&quot; &quot;$(OutputPath)Dox2Word.exe&quot; &quot;$(OutputPath)DocumentFormat.OpenXml.dll&quot; &quot;$(OutputPath)Mono.Options.dll&quot;" />
   </Target>
 </Project>

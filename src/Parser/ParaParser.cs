@@ -95,8 +95,16 @@ namespace Dox2Word.Parser
                         this.ParseTable(paragraphs, t);
                         break;
                     case XmlElement e:
-                        logger.Warning($"Unrecognised text part {e.Name}. Taking raw string content");
-                        AddTextRun(paragraphs, alignment, e.InnerText, format);
+                        if (DocEmptyParser.TryLookup(e, out string? empty))
+                        {
+                            // Can't use AddTextRun, as that trims leading \n
+                            Add(paragraphs, alignment, new TextRun(empty!, format));
+                        }
+                        else
+                        {
+                            logger.Warning($"Unrecognised text part {e.Name}. Taking raw string content");
+                            AddTextRun(paragraphs, alignment, e.InnerText, format);
+                        }
                         break;
                     case DocSimpleSect:
                         break; // Ignore
@@ -121,6 +129,11 @@ namespace Dox2Word.Parser
             if (paragraphs.LastOrDefault() is not TextParagraph paragraph)
             {
                 paragraph = Add(paragraphs, new TextParagraph(alignment: alignment));
+            }
+            // If we're inserting text straight after a stand-alone line break (from newline), trim the leading space -- Doxygen seems to insert it for some reason
+            if (paragraph.LastOrDefault() is { } previousTextRun && previousTextRun.Text == "\n")
+            {
+                textRun.Text = textRun.Text.TrimStart(' ');
             }
             paragraph.Add(textRun);
         }
