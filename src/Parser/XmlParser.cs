@@ -4,14 +4,13 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Xml;
-using System.Xml.Serialization;
 using Dox2Word.Logging;
 using Dox2Word.Model;
 using Dox2Word.Parser.Models;
 
 namespace Dox2Word.Parser
 {
-    public class XmlParser
+    public partial class XmlParser
     {
         private static readonly Logger logger = Logger.Instance;
 
@@ -487,16 +486,13 @@ namespace Dox2Word.Parser
             }
             return file.CompoundDefs[0];
         }
-
-        private static class SerializerCache<T>
-        {
-            public static readonly XmlSerializer Instance = new(typeof(T));
-        }
         private static T Parse<T>(string filePath)
         {
             using (var stream = File.OpenRead(filePath))
+            using (var reader = new XmlTextReader(stream))
             {
-                return (T)SerializerCache<T>.Instance.Deserialize(stream)!;
+                reader.WhitespaceHandling = WhitespaceHandling.All;
+                return (T)SerializerCache<T>.Instance.Deserialize(reader)!;
             }
         }
     }
