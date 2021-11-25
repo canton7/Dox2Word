@@ -24,7 +24,7 @@ namespace Dox2Word.Parser
             this.index = index;
         }
 
-        public List<IParagraph> Parse(DocTitleCmdGroup? para)
+        public List<IParagraph> Parse(ITextContainer? para)
         {
             var paragraphs = new List<IParagraph>();
 
@@ -38,7 +38,7 @@ namespace Dox2Word.Parser
             return paragraphs;
         }
 
-        private void Parse(List<IParagraph> paragraphs, DocTitleCmdGroup? para, TextRunFormat format, TextParagraphAlignment alignment = TextParagraphAlignment.Default)
+        private void Parse(List<IParagraph> paragraphs, ITextContainer? para, TextRunFormat format, TextParagraphAlignment alignment = TextParagraphAlignment.Default)
         {
             if (para == null)
                 return;
@@ -229,7 +229,7 @@ namespace Dox2Word.Parser
 
                     foreach (var para in entry.Paras)
                     {
-                        this.Parse(cellDoc.Paragraphs, para, TextRunFormat.None, alignment);
+                        //this.Parse(cellDoc.Paragraphs, para, TextRunFormat.None, alignment);
                         cellDoc.Paragraphs.LastOrDefault()?.TrimTrailingWhitespace();
                     }
                 }

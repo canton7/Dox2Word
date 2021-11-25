@@ -10,7 +10,7 @@ using Dox2Word.Model;
 
 namespace Dox2Word.Parser.Models
 {
-    public abstract class DocTitleCmdGroup : IXmlSerializable
+    public class DocTitleCmdGroup
     {
         public List<object> Parts { get; } = new();
 
@@ -50,6 +50,9 @@ namespace Dox2Word.Parser.Models
                     case XmlNodeType.EndElement:
                         reader.ReadEndElement();
                         return;
+
+                    default:
+                        throw new ParserException($"Unexpected XML node type {reader.NodeType}");
                 }
             }
         }

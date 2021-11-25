@@ -2,7 +2,7 @@
 
 namespace Dox2Word.Parser.Models
 {
-    public abstract class DocCmdGroup : DocTitleCmdGroup
+    public class DocCmdGroup : DocTitleCmdGroup
     {
         protected override object? ParseElement(XmlReader reader)
         {

@@ -6,9 +6,21 @@ using System.Xml.Serialization;
 
 namespace Dox2Word.Parser.Models
 {
-    public class DocPara : DocCmdGroup
+    public interface ITextContainer
+    {
+        List<DocCmdGroup> Parts { get; }
+    }
+
+    public class DocPara : ITextContainer
     {
         public List<DocParamList> ParameterLists { get; } = new();
+
+        //[XmlText(typeof(string))]
+        //[XmlText]
+        public List<DocCmdGroup> Parts { get; } = new();
+
+        [XmlAnyElement]
+        public XmlElement Body { get; set; } = null!;
 
         //[XmlText(typeof(string))]
         //[XmlElement("ulink", typeof(DocUrlLink))]
