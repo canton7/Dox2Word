@@ -265,10 +265,9 @@ namespace Dox2Word.Parser
             { "linebreak", "\n" },
         };
 
-        public static bool TryLookup(XmlElement element, out string? result)
+        public static bool TryLookup(string name, out string? result)
         {
-            result = null;
-            return !element.HasAttributes && !element.HasChildNodes && lookup.TryGetValue(element.Name, out result);
+            return lookup.TryGetValue(name, out result);
         }
     }
 }

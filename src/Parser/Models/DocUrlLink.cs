@@ -2,7 +2,7 @@
 
 namespace Dox2Word.Parser.Models
 {
-    public class DocUrlLink : DocPara
+    public class DocUrlLink : DocTitleCmdGroup
     {
         [XmlAttribute("url")]
         public string Url { get; set; } = null!;

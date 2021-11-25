@@ -24,7 +24,7 @@ namespace Dox2Word.Parser
             this.index = index;
         }
 
-        public List<IParagraph> Parse(DocPara? para)
+        public List<IParagraph> Parse(DocTitleCmdGroup? para)
         {
             var paragraphs = new List<IParagraph>();
 
@@ -38,7 +38,7 @@ namespace Dox2Word.Parser
             return paragraphs;
         }
 
-        private void Parse(List<IParagraph> paragraphs, DocPara? para, TextRunFormat format, TextParagraphAlignment alignment = TextParagraphAlignment.Default)
+        private void Parse(List<IParagraph> paragraphs, DocTitleCmdGroup? para, TextRunFormat format, TextParagraphAlignment alignment = TextParagraphAlignment.Default)
         {
             if (para == null)
                 return;
@@ -82,14 +82,8 @@ namespace Dox2Word.Parser
                     case DocUrlLink l:
                         this.ParseUrlLink(paragraphs, alignment, l, format);
                         break;
-                    case BoldMarkup b:
-                        this.Parse(paragraphs, b, format | TextRunFormat.Bold);
-                        break;
-                    case ItalicMarkup i:
-                        this.Parse(paragraphs, i, format | TextRunFormat.Italic);
-                        break;
-                    case MonospaceMarkup m:
-                        this.Parse(paragraphs, m, format | TextRunFormat.Monospace);
+                    case DocMarkup m:
+                        this.Parse(paragraphs, m, format | m.Format);
                         break;
                     case Ref r:
                         AddTextRun(paragraphs, alignment, r.Name, format | TextRunFormat.Monospace, this.index.ShouldReference(r.RefId) ? r.RefId : null);
@@ -98,16 +92,8 @@ namespace Dox2Word.Parser
                         this.ParseTable(paragraphs, t);
                         break;
                     case XmlElement e:
-                        if (DocEmptyParser.TryLookup(e, out string? empty))
-                        {
-                            // Can't use AddTextRun, as that trims leading \n
-                            Add(paragraphs, alignment, new TextRun(empty!, format));
-                        }
-                        else
-                        {
-                            logger.Warning($"Unrecognised text part {e.Name}. Taking raw string content");
-                            AddTextRun(paragraphs, alignment, e.InnerText, format);
-                        }
+                        logger.Warning($"Unrecognised text part {e.Name}. Taking raw string content");
+                        AddTextRun(paragraphs, alignment, e.InnerText, format);
                         break;
                     case DocSimpleSect:
                         break; // Ignore
