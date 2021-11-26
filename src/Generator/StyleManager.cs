@@ -17,11 +17,24 @@ namespace Dox2Word.Generator
         public const string HyperlinkStyleId = "Hyperlink";
         public const string ListParagraphStyleId = "ListParagraph";
 
-        public static void EnsureStyles(StyleDefinitionsPart stylesPart)
-        {
-            AddIfNotExists(stylesPart, TableStyleId, StyleValues.Table, "DoxTableStyle.xml");
+        private readonly StyleDefinitionsPart stylesPart;
 
-            AddIfNotExists(stylesPart, ParameterTableStyleId, StyleValues.Table, "Dox Parameter Table", style =>
+        public int DefaultFontSize { get; }
+
+        public StyleManager(StyleDefinitionsPart stylesPart)
+        {
+            this.stylesPart = stylesPart;
+
+            this.DefaultFontSize = this.stylesPart.Styles!.DocDefaults?.RunPropertiesDefault?.RunPropertiesBaseStyle?.FontSize is { } size
+                ? int.Parse(size.Val)
+                : 22;
+        }
+
+        public void EnsureStyles()
+        {
+            this.AddIfNotExists(TableStyleId, StyleValues.Table, "DoxTableStyle.xml");
+
+            this.AddIfNotExists(ParameterTableStyleId, StyleValues.Table, "Dox Parameter Table", style =>
             {
                 style.BasedOn = new BasedOn() { Val = "TableNormal" };
                 style.StyleTableProperties = new StyleTableProperties()
@@ -38,7 +51,7 @@ namespace Dox2Word.Generator
                 };
             });
 
-            AddIfNotExists(stylesPart, MiniHeadingStyleId, StyleValues.Paragraph, "Dox Mini Heading", style =>
+            this.AddIfNotExists(MiniHeadingStyleId, StyleValues.Paragraph, "Dox Mini Heading", style =>
             {
                 style.BasedOn = new BasedOn() { Val = "Normal" };
                 style.PrimaryStyle = new PrimaryStyle();
@@ -59,18 +72,18 @@ namespace Dox2Word.Generator
                 };
             });
 
-            AddIfNotExists(stylesPart, CodeCharStyleId, StyleValues.Character, "Dox Code Char", style =>
+            this.AddIfNotExists(CodeCharStyleId, StyleValues.Character, "Dox Code Char", style =>
             {
                 style.BasedOn = new BasedOn() { Val = "DefaultParagraphFont" };
                 style.LinkedStyle = new LinkedStyle() { Val = CodeStyleId };
                 style.StyleRunProperties = new StyleRunProperties()
                 {
-                    FontSize = new FontSize() { Val = "20" },
+                    FontSize = new FontSize() { Val = (this.DefaultFontSize - 2).ToString() },
                     RunFonts = new RunFonts() { Ascii = "Consolas" },
                 };
             });
 
-            AddIfNotExists(stylesPart, CodeStyleId, StyleValues.Paragraph, "Dox Code", style =>
+            this.AddIfNotExists(CodeStyleId, StyleValues.Paragraph, "Dox Code", style =>
             {
                 style.BasedOn = new BasedOn() { Val = "Normal" };
                 style.LinkedStyle = new LinkedStyle() { Val = CodeCharStyleId };
@@ -95,12 +108,12 @@ namespace Dox2Word.Generator
                 };
                 style.StyleRunProperties = new StyleRunProperties()
                 {
-                    FontSize = new FontSize() { Val = "20" },
+                    FontSize = new FontSize() { Val = (this.DefaultFontSize - 2).ToString() },
                     RunFonts = new RunFonts() { Ascii = "Consolas" },
                 };
             });
 
-            AddIfNotExists(stylesPart, WarningStyleId, StyleValues.Paragraph, "Dox Warning", style =>
+            this.AddIfNotExists(WarningStyleId, StyleValues.Paragraph, "Dox Warning", style =>
             {
                 style.BasedOn = new BasedOn() { Val = "Normal" };
                 style.PrimaryStyle = new PrimaryStyle();
@@ -116,7 +129,7 @@ namespace Dox2Word.Generator
                 };
             });
 
-            AddIfNotExists(stylesPart, HyperlinkStyleId, StyleValues.Character, "Hyperlink", style =>
+            this.AddIfNotExists(HyperlinkStyleId, StyleValues.Character, "Hyperlink", style =>
             {
                 style.BasedOn = new BasedOn() { Val = "DefaultParagraphFont" };
                 style.UnhideWhenUsed = new UnhideWhenUsed();
@@ -127,7 +140,7 @@ namespace Dox2Word.Generator
                 };
             });
 
-            AddIfNotExists(stylesPart, ListParagraphStyleId, StyleValues.Paragraph, "List Paragraph", style =>
+            this.AddIfNotExists(ListParagraphStyleId, StyleValues.Paragraph, "List Paragraph", style =>
             {
                 // In order to get list items next to each other, but still have space under the list, we
                 // apply the same style to each, and set "Don't add space between paragraphs of the same style"
@@ -142,11 +155,11 @@ namespace Dox2Word.Generator
             });
         }
 
-        private static void AddIfNotExists(StyleDefinitionsPart stylesPart, string styleId, StyleValues styleType, string filename)
+        private void AddIfNotExists(string styleId, StyleValues styleType, string filename)
         {
-            if (!stylesPart.Styles!.Elements<Style>().Any(x => x.StyleId == styleId))
+            if (!this.stylesPart.Styles!.Elements<Style>().Any(x => x.StyleId == styleId))
             {
-                var style = stylesPart.Styles.AppendChild(new Style()
+                var style = this.stylesPart.Styles.AppendChild(new Style()
                 {
                     StyleId = styleId,
                     Type = styleType,
@@ -156,11 +169,11 @@ namespace Dox2Word.Generator
             }
         }
 
-        private static void AddIfNotExists(StyleDefinitionsPart stylesPart, string styleId, StyleValues styleType, string styleName, Action<Style> configurer)
+        private void AddIfNotExists(string styleId, StyleValues styleType, string styleName, Action<Style> configurer)
         {
-            if (!stylesPart.Styles!.Elements<Style>().Any(x => x.StyleId == styleId))
+            if (!this.stylesPart.Styles!.Elements<Style>().Any(x => x.StyleId == styleId))
             {
-                var style = stylesPart.Styles.AppendChild(new Style()
+                var style = this.stylesPart.Styles.AppendChild(new Style()
                 {
                     StyleId = styleId,
                     StyleName = new StyleName() { Val = styleName },

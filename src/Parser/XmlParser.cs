@@ -258,7 +258,7 @@ namespace Dox2Word.Parser
                     }
                     break;
                     default:
-                        logger.Warning($"Unknown DoxMemberKinnd '{member.Kind}' for member {member.Name}");
+                        logger.Unsupported($"Unknown DoxMemberKind '{member.Kind}' for member {member.Name}. Ignoring");
                         break;
                 }
             }
@@ -314,7 +314,7 @@ namespace Dox2Word.Parser
 
             if (compoundDef.Kind is not (CompoundKind.Struct or CompoundKind.Union))
             {
-                logger.Warning($"Don't know how to parse class kind {compoundDef.Kind} in {compoundDef.CompoundName}. Ignoring");
+                logger.Unsupported($"Don't know how to parse class kind {compoundDef.Kind} in {compoundDef.CompoundName}. Ignoring");
                 return null;
             }
 
@@ -491,7 +491,7 @@ namespace Dox2Word.Parser
             using (var reader = new XmlTextReader(stream))
             {
                 reader.WhitespaceHandling = WhitespaceHandling.All;
-                return (T)SerializerCache<T>.Instance.Deserialize(reader)!;
+                return (T)SerializerCache.Get<T>().Deserialize(reader)!;
             }
         }
     }

@@ -25,6 +25,12 @@ namespace Dox2Word.Logging
             Console.WriteLine(text);
         }
 
+        public void Unsupported(string text)
+        {
+            WriteLevel(ConsoleColor.Cyan, "UNSUPPORTED");
+            Console.WriteLine(text);
+        }
+
         public void Error(Exception e)
         {
             this.HasErrors = true;

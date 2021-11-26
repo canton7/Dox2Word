@@ -36,6 +36,11 @@ namespace Dox2Word.Model
             this.Alignment = alignment;
         }
 
+        public TextParagraph(TextParagraphAlignment alignment)
+            : this(TextParagraphType.Normal, alignment)
+        {
+        }
+
         public void AddRange(IEnumerable<TextRun> elements)
         {
             foreach (var element in elements)
@@ -49,6 +54,10 @@ namespace Dox2Word.Model
             if (this.LastOrDefault() is TextRun run && run.Text.EndsWith(" "))
             {
                 run.Text = run.Text.TrimEnd(' ');
+                if (run.Text.Length == 0)
+                {
+                    this.Remove(run);
+                }
             }
         }
     }

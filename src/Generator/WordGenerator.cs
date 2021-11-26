@@ -23,6 +23,7 @@ namespace Dox2Word.Generator
         private readonly ListManager listManager;
         private readonly ImageManager imageManager;
         private readonly BookmarkManager bookmarkManager;
+        private readonly StyleManager styleManager;
         private readonly DotRenderer dotRenderer = new();
 
         public static void Generate(Stream stream, Project project, Options options)
@@ -52,7 +53,8 @@ namespace Dox2Word.Generator
             this.listManager = new ListManager(numberingPart);
             this.imageManager = new ImageManager(doc.MainDocumentPart);
             this.bookmarkManager = new BookmarkManager(doc.MainDocumentPart.Document.Body!);
-            StyleManager.EnsureStyles(stylesPart);
+            this.styleManager = new StyleManager(stylesPart);
+            this.styleManager.EnsureStyles();
         }
 
         public void Generate(Project project)
@@ -138,14 +140,14 @@ namespace Dox2Word.Generator
                     {
                         this.AppendChild(StringToParagraph("This unit references the following units:"));
                         var groupsList = new ListParagraph(ListParagraphType.Bullet);
-                        groupsList.Items.AddRange(group.IncludedGroups.Select(x => new TextParagraph() { new TextRun(x.Name, TextRunFormat.Monospace, x.Id) }));
+                        groupsList.Items.AddRange(group.IncludedGroups.Select(x => new TextParagraph() { new TextRun(x.Name, new(TextRunFormat.Monospace), x.Id) }));
                         this.Append(this.CreateParagraph(groupsList));
                     }
                     if (group.IncludingGroups.Count > 0)
                     {
                         this.AppendChild(StringToParagraph("This unit is referenced by the following units:"));
                         var groupsList = new ListParagraph(ListParagraphType.Bullet);
-                        groupsList.Items.AddRange(group.IncludingGroups.Select(x => new TextParagraph() { new TextRun(x.Name, TextRunFormat.Monospace, x.Id) }));
+                        groupsList.Items.AddRange(group.IncludingGroups.Select(x => new TextParagraph() { new TextRun(x.Name, new(TextRunFormat.Monospace), x.Id) }));
                         this.Append(this.CreateParagraph(groupsList));
                     }
                 }
@@ -383,7 +385,7 @@ namespace Dox2Word.Generator
                     {
                         this.AppendChild(new Paragraph(new Run(new Text(blurb))));
                         var list = new ListParagraph(ListParagraphType.Bullet);
-                        list.Items.AddRange(references.Select(x => new TextParagraph() { new TextRun(x.Name, TextRunFormat.Monospace, x.Id) }));
+                        list.Items.AddRange(references.Select(x => new TextParagraph() { new TextRun(x.Name, new(TextRunFormat.Monospace), x.Id) }));
                         this.Append(this.CreateParagraph(list));
                     }
                 }
@@ -542,19 +544,33 @@ namespace Dox2Word.Generator
                     {
                         var run = new Run(StringToElements(textRun.Text));
 
+                        int fontSize = this.styleManager.DefaultFontSize;
                         run.WithProperties(x =>
                         {
-                            x.Bold = textRun.Format.HasFlag(TextRunFormat.Bold) ? new Bold() : null;
-                            x.Italic = textRun.Format.HasFlag(TextRunFormat.Italic) ? new Italic() : null;
-                            x.Strike = textRun.Format.HasFlag(TextRunFormat.Strikethrough) ? new Strike() : null;
-                        });
-                        if (textRun.Format.HasFlag(TextRunFormat.Monospace))
-                        {
-                            run.WithProperties(x =>
+                            x.Bold = textRun.Properties.Format.HasFlag(TextRunFormat.Bold) ? new Bold() : null;
+                            x.Italic = textRun.Properties.Format.HasFlag(TextRunFormat.Italic) ? new Italic() : null;
+                            x.Strike = textRun.Properties.Format.HasFlag(TextRunFormat.Strikethrough) ? new Strike() : null;
+                            x.Underline = textRun.Properties.Format.HasFlag(TextRunFormat.Underline) ? new Underline() { Val = UnderlineValues.Single } : null;
+                            x.VerticalTextAlignment = textRun.Properties.VerticalPosition switch
                             {
-                                x.FontSize = new FontSize() { Val = "20" };
-                                x.RunFonts = new RunFonts() { Ascii = "Consolas" };
-                            });
+                                TextRunVerticalPosition.Baseline => null,
+                                TextRunVerticalPosition.Superscript => new VerticalTextAlignment() {  Val = VerticalPositionValues.Superscript },
+                                TextRunVerticalPosition.Subscript => new VerticalTextAlignment() {  Val = VerticalPositionValues.Subscript },
+                            };
+                        });
+                        if (textRun.Properties.Format.HasFlag(TextRunFormat.Monospace))
+                        {
+                            fontSize -= 2;
+                            run.WithProperties(x => x.RunFonts = new RunFonts() { Ascii = "Consolas" });
+                        }
+                        if (textRun.Properties.IsSmall)
+                        {
+                            fontSize -= 2;
+                        }
+
+                        if (fontSize != this.styleManager.DefaultFontSize)
+                        {
+                            run.WithProperties(x => x.FontSize = new FontSize() { Val = fontSize.ToString() });
                         }
 
                         if (textRun.ReferenceId == null)

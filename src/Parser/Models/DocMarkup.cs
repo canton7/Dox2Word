@@ -4,6 +4,8 @@ namespace Dox2Word.Parser.Models
 {
     public class DocMarkup : DocCmdGroup
     {
-        public TextRunFormat Format { get; set; }
+        public TextRunProperties Properties { get; set; }
+
+        public bool Center { get; set; }
     }
 }

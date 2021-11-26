@@ -10,9 +10,46 @@ namespace Dox2Word.Parser.Models
 {
     public abstract class DocTitleCmdGroup : IXmlSerializable
     {
+        private static Logger logger = Logger.Instance;
+
         public List<object> Parts { get; } = new();
 
-        public XmlSchema? GetSchema() => null;
+        protected virtual object? ParseElement(XmlReader reader)
+        {
+            if (DocEmptyParser.TryLookup(reader.Name, out string? result))
+            {
+                return result;
+            }
+
+            return reader.Name switch
+            {
+                "ulink" => Load<DocUrlLink>(reader),
+                "bold" => Load<DocMarkup>(reader, x => x.Properties = new(TextRunFormat.Bold)),
+                "s" or "strike" => Load<DocMarkup>(reader, x => x.Properties = new(TextRunFormat.Strikethrough)),
+                "underline" => Load<DocMarkup>(reader, x => x.Properties = new(TextRunFormat.Underline)),
+                "emphasis" => Load<DocMarkup>(reader, x => x.Properties = new(TextRunFormat.Italic)),
+                "computeroutput" => Load<DocMarkup>(reader, x => x.Properties = new(TextRunFormat.Monospace)),
+                "subscript" => Load<DocMarkup>(reader, x => x.Properties = new(TextRunVerticalPosition.Subscript)),
+                "superscript" => Load<DocMarkup>(reader, x => x.Properties = new(TextRunVerticalPosition.Superscript)),
+                "center" => Load<DocMarkup>(reader, x => x.Center = true),
+                "small" => Load<DocMarkup>(reader, x => x.Properties = TextRunProperties.Small),
+                "del" => Load<DocMarkup>(reader, x => x.Properties = new(TextRunFormat.Strikethrough)),
+                "ins" => Load<DocMarkup>(reader, x => x.Properties = new(TextRunFormat.Underline)),
+                "htmlonly" or "manonly" => null,
+                "xmlonly" => reader.ReadElementContentAsString().Trim(' ', '\n'), // We don't actually get these...
+                "rtfonly" or "latexonly" or "docbookonly" => null,
+                "image" => Unsupported("image"), // TODO: image
+                "dot" => Load<Dot>(reader),
+                "msc" => Unsupported("msc"),
+                "plantuml" => Unsupported("plantuml"), // TODO: plantuml
+                "anchor" => Unsupported("anchor"), // TODO: Not sure how well we can support this in Word
+                "formula" => reader.ReadElementContentAsString().Trim(' ', '\n'), // TODO: HTML doesn't handle these well, but maybe we can use plantuml here?
+                "ref" => Load<Ref>(reader),
+                "emoji" => Load<DocEmoji>(reader),
+                "linebreak" => "\n",
+                _ => LoadXmlElement(reader),
+            };
+        }
 
         public void ReadXml(XmlReader reader)
         {
@@ -39,6 +76,10 @@ namespace Dox2Word.Parser.Models
                     {
                         this.ProcessPart(result);
                     }
+                    else
+                    {
+                        subReader.Close();
+                    }
                 }
 
                 whitespace = null;
@@ -47,8 +88,11 @@ namespace Dox2Word.Parser.Models
                 {
                     case XmlNodeType.Text:
                     case XmlNodeType.CDATA:
+                        this.ProcessPart(reader.Value.Trim(' ', '\n'));
+                        break;
+
                     case XmlNodeType.SignificantWhitespace: // Whitespace within xml:space="preserve"
-                        this.ProcessPart(reader.Value.TrimStart('\n'));
+                        this.ProcessPart(reader.Value);
                         break;
 
                     case XmlNodeType.Whitespace:
@@ -56,7 +100,7 @@ namespace Dox2Word.Parser.Models
                         break;
 
                     case XmlNodeType.EntityReference:
-                        Logger.Instance.Warning($"Unknown entity reference {reader.Name}");
+                        logger.Warning($"Unknown entity reference {reader.Name}");
                         break;
 
                     case XmlNodeType.EndElement when reader.Depth == startingDepth:
@@ -76,31 +120,9 @@ namespace Dox2Word.Parser.Models
 
         protected virtual void ReadAttributes(XmlReader reader) { }
 
-        protected virtual object? ParseElement(XmlReader reader)
-        {
-            if (DocEmptyParser.TryLookup(reader.Name, out string? result))
-            {
-                return result;
-            }
-
-            return reader.Name switch
-            {
-                "ulink" => Load<DocUrlLink>(reader),
-                "bold" => Load<DocMarkup>(reader, x => x.Format = TextRunFormat.Bold),
-                "s" or "strike" => Load<DocMarkup>(reader, x => x.Format = TextRunFormat.Strikethrough),
-                "emphasis" => Load<DocMarkup>(reader, x => x.Format = TextRunFormat.Italic),
-                "computeroutput" => Load<DocMarkup>(reader, x => x.Format = TextRunFormat.Monospace),
-                "del" => Load<DocMarkup>(reader, x => x.Format = TextRunFormat.Strikethrough),
-                "dot" => Load<Dot>(reader),
-                "ref" => Load<Ref>(reader),
-                "linebreak" => "\n",
-                _ => LoadXmlElement(reader),
-            };
-        }
-
         protected static T Load<T>(XmlReader reader, Action<T>? configurer = null)
         {
-            var instance = (T)new XmlSerializer(typeof(T), new XmlRootAttribute(reader.Name)).Deserialize(reader);
+            var instance = (T)SerializerCache.Get<T>(reader.Name).Deserialize(reader);
             configurer?.Invoke(instance);
             return instance;
         }
@@ -112,6 +134,12 @@ namespace Dox2Word.Parser.Models
             return doc.DocumentElement;
         }
 
+        protected static object? Unsupported(string name)
+        {
+            logger.Unsupported($"Doxygen command {name} is not supported. Ignoring");
+            return null;
+        }
+
         public static object? Do(Action a)
         {
             a();
@@ -119,5 +147,7 @@ namespace Dox2Word.Parser.Models
         }
 
         public void WriteXml(XmlWriter writer) => throw new NotSupportedException();
+        public XmlSchema? GetSchema() => null;
+
     }
 }

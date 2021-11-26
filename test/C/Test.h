@@ -6,19 +6,28 @@
  * 
  * Detailed description.
  * 
- * <strong>Bold</strong> <s>strike</s> <em>italic @c typewriter text</em>
+ * <strong>Bold<sup>2<b>b</b></sup></strong> <s>strike<sub>3</sub></s> <em>italic @c typewriter text</em> <u>underline</u> <center>Centered 1</center> <center>Centered 2</center>
+ * <small>Small</small> Normal
  * 
  * @warning Warning with <strong>bold text</strong>
  *
  * A numbered list:
  *  1. Item 1
- *    1. Item 1.1
+ *    1. Item 1.1 @emoji :smile:
  *  2. Item 2
  * 
  * A bulleted list:
  * - Item 1
  *   - Item 1.1
  * - Item2
+ * 
+ * @htmlonly
+ * This is only for HTML
+ * @endhtmlonly
+ * 
+ * @xmlonly
+ * This is only for XML
+ * @endxmlonly
  * 
  * @code{.c}
  * This is a code sample
@@ -50,6 +59,8 @@
  * 
  * Some symbols: © -- ±<br>
  * A newline with a link: https://www.google.com
+ * 
+ * \f$\sqrt{(x_2-x_1)^2+(y_2-y_1)^2}\f$.
  * 
  * @{
  * @file
