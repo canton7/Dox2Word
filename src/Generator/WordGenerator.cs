@@ -546,6 +546,7 @@ namespace Dox2Word.Generator
                         {
                             x.Bold = textRun.Format.HasFlag(TextRunFormat.Bold) ? new Bold() : null;
                             x.Italic = textRun.Format.HasFlag(TextRunFormat.Italic) ? new Italic() : null;
+                            x.Strike = textRun.Format.HasFlag(TextRunFormat.Strikethrough) ? new Strike() : null;
                         });
                         if (textRun.Format.HasFlag(TextRunFormat.Monospace))
                         {

@@ -6,8 +6,7 @@
  * 
  * Detailed description.
  * 
- * <strong>Bold</strong> <em>italic</em>.
- * <strong>Bold <em>italic @c typewriter text</em></strong>
+ * <strong>Bold</strong> <s>strike</s> <em>italic @c typewriter text</em>
  * 
  * @warning Warning with <strong>bold text</strong>
  *

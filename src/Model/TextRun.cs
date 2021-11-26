@@ -9,6 +9,7 @@ namespace Dox2Word.Model
         Bold = 1,
         Italic = 2,
         Monospace = 4,
+        Strikethrough = 8,
     }
 
     public class TextRun : IParagraphElement

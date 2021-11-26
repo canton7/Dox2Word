@@ -87,8 +87,10 @@ namespace Dox2Word.Parser.Models
             {
                 "ulink" => Load<DocUrlLink>(reader),
                 "bold" => Load<DocMarkup>(reader, x => x.Format = TextRunFormat.Bold),
+                "s" or "strike" => Load<DocMarkup>(reader, x => x.Format = TextRunFormat.Strikethrough),
                 "emphasis" => Load<DocMarkup>(reader, x => x.Format = TextRunFormat.Italic),
                 "computeroutput" => Load<DocMarkup>(reader, x => x.Format = TextRunFormat.Monospace),
+                "del" => Load<DocMarkup>(reader, x => x.Format = TextRunFormat.Strikethrough),
                 "dot" => Load<Dot>(reader),
                 "ref" => Load<Ref>(reader),
                 "linebreak" => "\n",
