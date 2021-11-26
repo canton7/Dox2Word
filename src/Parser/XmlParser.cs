@@ -2,29 +2,27 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Xml;
-using System.Xml.Serialization;
 using Dox2Word.Logging;
 using Dox2Word.Model;
 using Dox2Word.Parser.Models;
 
 namespace Dox2Word.Parser
 {
-    public class XmlParser
+    public partial class XmlParser
     {
         private static readonly Logger logger = Logger.Instance;
 
         private readonly string basePath;
         private readonly Index index;
-        private readonly ParaParser paraParser;
+        private readonly MixedModeParser mixedModeParser;
         private readonly Project project;
 
         private XmlParser(string basePath, DoxygenIndex doxygenIndex)
         {
             this.basePath = basePath;
             this.index = new Index(doxygenIndex);
-            this.paraParser = new ParaParser(this.index);
+            this.mixedModeParser = new MixedModeParser(this.index);
 
             this.project = new Project();
         }
@@ -444,7 +442,7 @@ namespace Dox2Word.Parser
 
         private IParagraph ParaToParagraph(DocPara? para)
         {
-            return this.paraParser.Parse(para).FirstOrDefault() ?? new TextParagraph();
+            return this.mixedModeParser.Parse(para?.Parts).FirstOrDefault() ?? new TextParagraph();
         }
 
         private IParagraph ParasToParagraph(IEnumerable<DocPara>? paras)
@@ -457,7 +455,7 @@ namespace Dox2Word.Parser
             if (paras == null)
                 return Enumerable.Empty<TextParagraph>();
 
-            return paras.SelectMany(x => this.paraParser.Parse(x)).Where(x => !x.IsEmpty);
+            return paras.SelectMany(x => this.mixedModeParser.Parse(x.Parts)).Where(x => !x.IsEmpty);
         }
 
         private static void Merge<T>(List<T> collection, T newItem) where T : IMergable<T>
@@ -487,16 +485,13 @@ namespace Dox2Word.Parser
             }
             return file.CompoundDefs[0];
         }
-
-        private static class SerializerCache<T>
-        {
-            public static readonly XmlSerializer Instance = new(typeof(T));
-        }
         private static T Parse<T>(string filePath)
         {
             using (var stream = File.OpenRead(filePath))
+            using (var reader = new XmlTextReader(stream))
             {
-                return (T)SerializerCache<T>.Instance.Deserialize(stream)!;
+                reader.WhitespaceHandling = WhitespaceHandling.All;
+                return (T)SerializerCache<T>.Instance.Deserialize(reader)!;
             }
         }
     }

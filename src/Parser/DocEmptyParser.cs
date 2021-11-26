@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml;
+﻿using System.Collections.Generic;
 
 namespace Dox2Word.Parser
 {
@@ -260,15 +255,11 @@ namespace Dox2Word.Parser
             { "rsaquo", "\x203A" },
             { "euro", "\x20AC" },
             { "tm", "\x2122" },
-
-            // Additional ones, not from that table
-            { "linebreak", "\n" },
         };
 
-        public static bool TryLookup(XmlElement element, out string? result)
+        public static bool TryLookup(string name, out string? result)
         {
-            result = null;
-            return !element.HasAttributes && !element.HasChildNodes && lookup.TryGetValue(element.Name, out result);
+            return lookup.TryGetValue(name, out result);
         }
     }
 }

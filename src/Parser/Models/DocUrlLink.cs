@@ -1,10 +1,14 @@
-﻿using System.Xml.Serialization;
+﻿using System.Xml;
 
 namespace Dox2Word.Parser.Models
 {
-    public class DocUrlLink : DocPara
+    public class DocUrlLink : DocTitleCmdGroup
     {
-        [XmlAttribute("url")]
         public string Url { get; set; } = null!;
+
+        protected override void ReadAttributes(XmlReader reader)
+        {
+            this.Url = reader.GetAttribute("url");
+        }
     }
 }
