@@ -11,11 +11,13 @@ namespace Dox2Word.Generator
         public const string TableStyleId = "DoxTable";
         public const string ParameterTableStyleId = "DoxParameterTable";
         public const string MiniHeadingStyleId = "DoxMiniHeading";
+        public const string ParHeadingStyleId = "DoxParHeading";
         public const string CodeListingStyleId = "DoxCodeListing";
         public const string CodeStyleId = "DoxCode";
         public const string CodeCharStyleId = "DoxCodeChar";
         public const string WarningStyleId = "DoxWarning";
         public const string NoteStyleId = "DoxNote";
+        public const string BlockQuoteStyleId = "DoxBlockQuote";
         public const string HyperlinkStyleId = "Hyperlink";
         public const string ListParagraphStyleId = "ListParagraph";
 
@@ -60,7 +62,7 @@ namespace Dox2Word.Generator
                 style.StyleRunProperties = new StyleRunProperties()
                 {
                     Bold = new Bold(),
-                    FontSize = new FontSize() { Val = "24" },
+                    FontSize = new FontSize() { Val = (this.DefaultFontSize + 2).ToString() },
                 };
                 style.StyleParagraphProperties = new StyleParagraphProperties()
                 {
@@ -71,6 +73,27 @@ namespace Dox2Word.Generator
                          Line = "240",
                      },
                      KeepNext = new KeepNext(),
+                };
+            });
+
+            this.AddIfNotExists(ParHeadingStyleId, StyleValues.Paragraph, "Dox Par Heading", style =>
+            {
+                style.BasedOn = new BasedOn() { Val = "Normal" };
+                style.PrimaryStyle = new PrimaryStyle();
+                style.StyleRunProperties = new StyleRunProperties()
+                {
+                    Bold = new Bold(),
+                    FontSize = new FontSize() { Val = (this.DefaultFontSize + 1).ToString() },
+                };
+                style.StyleParagraphProperties = new StyleParagraphProperties()
+                {
+                    SpacingBetweenLines = new SpacingBetweenLines()
+                    {
+                        LineRule = LineSpacingRuleValues.Auto,
+                        Before = "160",
+                        Line = "240",
+                    },
+                    KeepNext = new KeepNext(),
                 };
             });
 
@@ -154,6 +177,16 @@ namespace Dox2Word.Generator
                         Size = 18,
                         Color = "D0C000",
                     }),
+                };
+            });
+
+            this.AddIfNotExists(BlockQuoteStyleId, StyleValues.Paragraph, "Dox Block Quote", style =>
+            {
+                style.BasedOn = new BasedOn() { Val = "Normal" };
+                style.PrimaryStyle = new PrimaryStyle();
+                style.StyleParagraphProperties = new StyleParagraphProperties()
+                {
+                    Indentation = new Indentation() { Left = "567" },
                 };
             });
 

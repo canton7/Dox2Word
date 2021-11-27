@@ -10,6 +10,7 @@ namespace Dox2Word.Model
         Warning,
         Preformatted,
         Note,
+        BlockQuote,
     }
 
     public enum TextParagraphAlignment

@@ -32,6 +32,8 @@ namespace Dox2Word.Parser.Models
                 "parameterlist" => Do(() => this.ParameterLists.Add(Load<DocParamList>(reader))),
                 "xrefsect" => Load<DocXRefSect>(reader),
                 "copydoc" => Unsupported("copydoc"), // I don't know how to cause this. Doxygen's testing doesn't use it
+                "blockquote" => Load<DocBlockQuote>(reader),
+                "parblock" => Load<DocParBlock>(reader),
                 _ => base.ParseElement(reader),
             };
         }

@@ -27,14 +27,14 @@ namespace Dox2Word.Parser
             if (parts == null)
                 return paragraphs;
 
-            this.Parse(paragraphs, parts, default);
+            this.Parse(paragraphs, parts, default, TextParagraphAlignment.Default);
 
             TrimLast(paragraphs);
 
             return paragraphs;
         }
 
-        private void Parse(List<IParagraph> paragraphs, List<object>? parts, TextRunProperties properties, TextParagraphAlignment alignment = TextParagraphAlignment.Default)
+        private void Parse(List<IParagraph> paragraphs, List<object>? parts, TextRunProperties properties, TextParagraphAlignment alignment)
         {
             if (parts == null)
                 return;
@@ -44,47 +44,62 @@ namespace Dox2Word.Parser
                 switch (part)
                 {
                     case string s:
-                        AddTextRun(paragraphs, alignment, s, properties);
+                        AddTextRun(paragraphs, s, properties, alignment);
+                        break;
+                    case DocParBlock b:
+                        foreach (var para in b.Paras)
+                        {
+                            this.Parse(paragraphs, para.Parts, properties, alignment);
+                            Add(paragraphs, new TextParagraph());
+                        }
                         break;
                     case DocEmoji e:
                         // Doxgen doesn't correctly keep ZWJ's, see https://github.com/doxygen/doxygen/issues/8918
-                        AddTextRun(paragraphs, alignment, WebUtility.HtmlDecode(e.Unicode), properties); 
+                        AddTextRun(paragraphs, WebUtility.HtmlDecode(e.Unicode), properties, alignment); 
                         break;
                     case DocSimpleSect s when s.Kind == DoxSimpleSectKind.Warning:
                         Add(paragraphs, new TextParagraph(TextParagraphType.Warning));
-                        this.Parse(paragraphs, s.Para?.Parts, properties);
+                        this.Parse(paragraphs, s.Para?.Parts, properties, alignment);
                         Add(paragraphs, new TextParagraph());
                         break;
                     case DocSimpleSect s when s.Kind == DoxSimpleSectKind.Note:
                         Add(paragraphs, new TextParagraph(TextParagraphType.Note));
-                        this.Parse(paragraphs, s.Para?.Parts, properties);
+                        this.Parse(paragraphs, s.Para?.Parts, properties, alignment);
                         Add(paragraphs, new TextParagraph());
                         break;
                     case DocSimpleSect s when s.Kind == DoxSimpleSectKind.Par:
                         if (s.Title.Parts.Count > 0)
                         {
                             Add(paragraphs, new TitleParagraph());
-                            this.Parse(paragraphs, s.Title.Parts, default);
+                            this.Parse(paragraphs, s.Title.Parts, default, alignment);
                         }
                         Add(paragraphs, new TextParagraph());
-                        this.Parse(paragraphs, s.Para?.Parts, properties);
+                        this.Parse(paragraphs, s.Para?.Parts, properties, alignment);
                         Add(paragraphs, new TextParagraph());
                         break;
                     case DocSimpleSect s when s.Kind == DoxSimpleSectKind.Return:
                         break; // Ignore
                     case DocSimpleSect s:
                         Add(paragraphs, new TextParagraph());
-                        this.Parse(paragraphs, s.Para?.Parts, properties);
+                        this.Parse(paragraphs, s.Para?.Parts, properties, alignment);
                         break;
                     case DocList l:
-                        this.ParseList(paragraphs, l, l.Type, properties);
+                        this.ParseList(paragraphs, l, l.Type, properties, alignment);
+                        break;
+                    case DocBlockQuote b:
+                        foreach (var para in b.Paras)
+                        {
+                            Add(paragraphs, new TextParagraph(TextParagraphType.BlockQuote));
+                            this.Parse(paragraphs, para.Parts, properties, alignment);
+                        }
+                        Add(paragraphs, new TextParagraph());
                         break;
                     case DocXRefSect r:
                         if (r.Title.FirstOrDefault() is not ("Todo" or "Bug"))
                         {
                             foreach (var docPara in r.Description.Para)
                             {
-                                this.Parse(paragraphs, docPara.Parts, properties);
+                                this.Parse(paragraphs, docPara.Parts, properties, alignment);
                             }
                         }
                         break;
@@ -93,7 +108,7 @@ namespace Dox2Word.Parser
                         break;
                     case PreformattedDocMarkup m:
                         Add(paragraphs, new TextParagraph(TextParagraphType.Preformatted));
-                        this.Parse(paragraphs, m.Parts, properties);
+                        this.Parse(paragraphs, m.Parts, properties, alignment);
                         Add(paragraphs, new TextParagraph());
                         break;
                     case Dot d:
@@ -103,21 +118,21 @@ namespace Dox2Word.Parser
                         Add(paragraphs, new DotParagraph(File.ReadAllText(d.Name!)) { Caption = d.Contents });
                         break;
                     case DocUrlLink l:
-                        this.ParseUrlLink(paragraphs, alignment, l, properties);
+                        this.ParseUrlLink(paragraphs, l, properties, alignment);
                         break;
                     case DocMarkup m:
                         if (m.Center)
                         {
                             Add(paragraphs, new TextParagraph(TextParagraphAlignment.Center));
                         }
-                        this.Parse(paragraphs, m.Parts, properties.Combine(m.Properties));
+                        this.Parse(paragraphs, m.Parts, properties.Combine(m.Properties), alignment);
                         if (m.Center)
                         {
                             Add(paragraphs, new TextParagraph());
                         }
                         break;
                     case Ref r:
-                        AddTextRun(paragraphs, alignment, r.Name, properties.Combine(TextRunFormat.Monospace), this.index.ShouldReference(r.RefId) ? r.RefId : null);
+                        AddTextRun(paragraphs, r.Name, properties.Combine(TextRunFormat.Monospace), alignment, this.index.ShouldReference(r.RefId) ? r.RefId : null);
                         break;
                     case DocTable t:
                         this.ParseTable(paragraphs, t);
@@ -135,7 +150,7 @@ namespace Dox2Word.Parser
                         break;
                     case XmlElement e:
                         logger.Warning($"Unrecognised text part {e.Name}. Taking raw string content");
-                        AddTextRun(paragraphs, alignment, e.InnerText, properties);
+                        AddTextRun(paragraphs, e.InnerText, properties, alignment);
                         break;
                     default:
                         logger.Warning($"Unexpected text {part} ({part.GetType()}). Ignoring");
@@ -179,14 +194,14 @@ namespace Dox2Word.Parser
             paragraph.Add(element);
         }
 
-        private static void AddTextRun(List<IParagraph> paragraphs, TextParagraphAlignment alignment, string text, TextRunProperties properties, string? referenceId = null) =>
+        private static void AddTextRun(List<IParagraph> paragraphs, string text, TextRunProperties properties, TextParagraphAlignment alignment, string? referenceId = null) =>
             Add(paragraphs, alignment, new TextRun(text, properties, referenceId));
 
-        private void ParseUrlLink(List<IParagraph> paragraphs, TextParagraphAlignment alignment, DocUrlLink urlLink, TextRunProperties properties)
+        private void ParseUrlLink(List<IParagraph> paragraphs, DocUrlLink urlLink, TextRunProperties properties, TextParagraphAlignment alignment)
         {
             var link = new UrlLink(urlLink.Url);
             var children = new List<IParagraph>();
-            this.Parse(children, urlLink.Parts, properties);
+            this.Parse(children, urlLink.Parts, properties, alignment);
             // We should only get one child, and it should be a TextParagraph
             if (children.Count > 0 && children[0] is TextParagraph textParagraph)
             {
@@ -204,7 +219,7 @@ namespace Dox2Word.Parser
             }
         }
 
-        private void ParseList(List<IParagraph> paragraphs, DocList docList, ListParagraphType type, TextRunProperties properties)
+        private void ParseList(List<IParagraph> paragraphs, DocList docList, ListParagraphType type, TextRunProperties properties, TextParagraphAlignment alignment)
         {
             var list = Add(paragraphs, new ListParagraph(type));
             foreach (var item in docList.Items)
@@ -214,7 +229,7 @@ namespace Dox2Word.Parser
                 var paragraphList = new List<IParagraph>();
                 foreach (var para in item.Paras)
                 {
-                    this.Parse(paragraphList, para.Parts, properties);
+                    this.Parse(paragraphList, para.Parts, properties, alignment);
                 }
                 paragraphList.LastOrDefault()?.TrimTrailingWhitespace();
                 list.Items.AddRange(paragraphList);

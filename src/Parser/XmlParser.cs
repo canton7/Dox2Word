@@ -183,7 +183,7 @@ namespace Dox2Word.Parser
             {
                 // If they didn't document it, don't include it. Doxygen itself will warn if something should have been documented
                 // but wasn't.
-                if (member.BriefDescription?.Para.Count is 0 or null)
+                if (member.BriefDescription?.Para.Count is 0 or null && member.DetailedDescription?.Para.Count is 0 or null)
                     continue;
 
                 logger.Info($"Parsing member {member.Name}");
@@ -299,9 +299,9 @@ namespace Dox2Word.Parser
                 {
                     Name = name,
                     Type = this.LinkedTextToRuns(param.Type),
-                    Description = this.ParasToParagraph(paramDesc?.desc.Para),
                     Direction = direction,
                 };
+                functionParameter.Description.AddRange(this.ParasToParagraphs(paramDesc?.desc.Para));
 
                 yield return functionParameter;
             }
@@ -359,9 +359,9 @@ namespace Dox2Word.Parser
             return variable;
         }
 
-        private IParagraph ParseReturnDescription(MemberDef member)
+        private IEnumerable<IParagraph> ParseReturnDescription(MemberDef member)
         {
-            return this.ParaToParagraph(member.DetailedDescription?.Para.SelectMany(x => x.Parts)
+            return this.ParaToParagraphs(member.DetailedDescription?.Para.SelectMany(x => x.Parts)
                 .OfType<DocSimpleSect>()
                 .FirstOrDefault(x => x.Kind == DoxSimpleSectKind.Return)?.Para);
         }
@@ -376,20 +376,19 @@ namespace Dox2Word.Parser
 
             foreach (var item in items)
             {
-                yield return new ReturnValueDoc()
+                var doc = new ReturnValueDoc()
                 {
                     Name = DocParamNameToString(item.ParameterNameList[0].ParameterName) ?? "",
-                    Description = this.ParasToParagraph(item.ParameterDescription.Para),
                 };
+                doc.Description.AddRange(this.ParasToParagraphs(item.ParameterDescription.Para));
+                yield return doc;
             }
         }
 
         private ReturnDescriptions ParseReturnDescriptions(MemberDef member)
         {
-            var descriptions = new ReturnDescriptions()
-            {
-                Description = this.ParseReturnDescription(member),
-            };
+            var descriptions = new ReturnDescriptions();
+            descriptions.Description.AddRange(this.ParseReturnDescription(member));
             descriptions.Values.AddRange(this.ParseReturnValues(member));
             return descriptions;
         }
@@ -440,9 +439,9 @@ namespace Dox2Word.Parser
             return descriptions;
         }
 
-        private IParagraph ParaToParagraph(DocPara? para)
+        private IEnumerable<IParagraph> ParaToParagraphs(DocPara? para)
         {
-            return this.mixedModeParser.Parse(para?.Parts).FirstOrDefault() ?? new TextParagraph();
+            return this.mixedModeParser.Parse(para?.Parts).Where(x => !x.IsEmpty);
         }
 
         private IParagraph ParasToParagraph(IEnumerable<DocPara>? paras)

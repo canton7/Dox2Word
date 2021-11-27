@@ -4,7 +4,7 @@ namespace Dox2Word.Model
 {
     public class ReturnDescriptions
     {
-        public IParagraph Description { get; set; } = null!;
+        public List<IParagraph> Description { get; } = new();
         public List<ReturnValueDoc> Values { get; } = new();
     }
 }

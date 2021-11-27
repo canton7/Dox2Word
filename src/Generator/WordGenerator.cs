@@ -304,14 +304,14 @@ namespace Dox2Word.Generator
 
                 this.WriteDescriptions(macro.Descriptions);
 
-                if (macro.Parameters.Count > 0 && macro.Parameters.Any(x => !x.Description.IsEmpty))
+                if (macro.Parameters.Count > 0 && macro.Parameters.Any(x => x.Description.Count > 0))
                 {
                     this.WriteMiniHeading("Parameters");
 
                     var table = this.AppendChild(this.CreateTable(StyleManager.ParameterTableStyleId).AddColumns(2));
                     foreach (var parameter in macro.Parameters)
                     {
-                        table.AppendRow(parameter.Name, this.CreateParagraph(parameter.Description));
+                        table.AppendRow(parameter.Name, this.CreateParagraphs(parameter.Description));
                     }
                 }
 
@@ -356,7 +356,7 @@ namespace Dox2Word.Generator
 
                 this.WriteDescriptions(function.Descriptions);
 
-                if (function.Parameters.Count > 0 && function.Parameters.Any(x => !x.Description.IsEmpty))
+                if (function.Parameters.Count > 0 && function.Parameters.Any(x => x.Description.Count > 0))
                 {
                     this.WriteMiniHeading("Parameters");
 
@@ -373,7 +373,7 @@ namespace Dox2Word.Generator
                                 ParameterDirection.InOut => "in,out",
                             }
                             : null;
-                        table.AppendRow(parameter.Name, this.CreateParagraph(parameter.Description), inOut);
+                        table.AppendRow(parameter.Name, this.CreateParagraphs(parameter.Description), inOut);
                     }
                 }
 
@@ -401,10 +401,10 @@ namespace Dox2Word.Generator
 
         private void WriteReturnDescription(ReturnDescriptions returnDescriptions)
         {
-            if (!returnDescriptions.Description.IsEmpty)
+            if (returnDescriptions.Description.Any(x => !x.IsEmpty))
             {
                 this.WriteMiniHeading("Returns");
-                this.Append(this.CreateParagraph(returnDescriptions.Description));
+                this.Append(this.CreateParagraphs(returnDescriptions.Description));
             }
 
             if (returnDescriptions.Values.Count > 0)
@@ -413,7 +413,7 @@ namespace Dox2Word.Generator
                 var table = this.AppendChild(this.CreateTable(StyleManager.ParameterTableStyleId).AddColumns(2));
                 foreach (var returnValue in returnDescriptions.Values)
                 {
-                    table.AppendRow(returnValue.Name, this.CreateParagraph(returnValue.Description));
+                    table.AppendRow(returnValue.Name, this.CreateParagraphs(returnValue.Description));
                 }
             }
         }
@@ -463,7 +463,15 @@ namespace Dox2Word.Generator
             {
                 yield return p;
             }
-            foreach (var paragraph in descriptions.DetailedDescription)
+            foreach (var p in this.CreateParagraphs(descriptions.DetailedDescription))
+            {
+                yield return p;
+            }
+        }
+
+        private IEnumerable<OpenXmlElement> CreateParagraphs(IEnumerable<IParagraph> paragraphs)
+        {
+            foreach (var paragraph in paragraphs)
             {
                 foreach (var p in this.CreateParagraph(paragraph))
                 {
@@ -491,6 +499,9 @@ namespace Dox2Word.Generator
                         case TextParagraphType.Note:
                             paragraph.ApplyStyle(StyleManager.NoteStyleId);
                             break;
+                        case TextParagraphType.BlockQuote:
+                            paragraph.ApplyStyle(StyleManager.BlockQuoteStyleId);
+                            break;
                     }
                     if (textParagraph.HasHorizontalRuler)
                     {
@@ -510,7 +521,7 @@ namespace Dox2Word.Generator
                     break;
 
                 case TitleParagraph titleParagraph:
-                    yield return new Paragraph(this.TextRunsToRuns(titleParagraph)).ApplyStyle(StyleManager.MiniHeadingStyleId);
+                    yield return new Paragraph(this.TextRunsToRuns(titleParagraph)).ApplyStyle(StyleManager.ParHeadingStyleId);
                     break;
 
                 case ListParagraph listParagraph:

@@ -75,11 +75,11 @@ Supported Features
 
 Dox2Word currently supports the following Doxygen features:
 
- - Text formatting: bold, italic, monospace
+ - All text formatting
  - Tables, including merged cells
  - Lists (bulleted and numbered)
  - Code snippets (using `@code`/`@endcode`)
- - Warnings (using `@warning`)
+ - `@warning`, `@note`, block quotes
  - `@param`, `@returns`, `@retval`
  - Graphviz graphs (using `@dot` and `@dotfile`, provided that dot.exe is in your PATH)
  - C: Structs, unions, enums, typedefs, global variables, macros, functions
@@ -95,7 +95,11 @@ Make sure that Word actually adds them to the template: it has a habit of omitti
  - `Heading 1`, `Heading 2`, etc: these must exist in the document
  - `Hyperlink`: used for hyperlinks
  - `Dox Mini Heading`: used for sub-headings within a member documentation, for e.g. "Description" and "Parameters"
+ - `Dox Par Heading`: used for `@par <title>` headings
  - `Dox Table`: used for user-defined tables
  - `Dox Parameter Table`: used for tables containing parameters, return values, struct members, etc
- - `Dox Code`: used for words representing variable or type names, and code snippet paragraphs
+ - `Dox Code`: used for words representing variable or type names, and pre-formatted / verbatim paragraphs
+ - `Dox Code Listing`: used for `@code`
  - `Dox Warning`: used for `@warning` paragraphs
+ - `Dox Note`: Used for `@note` paragraphs
+ - `Dox Block Quote`: used for blockquotes

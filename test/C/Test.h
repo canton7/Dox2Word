@@ -79,7 +79,11 @@
  * @par
  * And this is the second paragraph.
  *
- * More normal text. 
+ * More normal text.
+ * 
+ * > Block quote para 1
+ * >
+ * > Block quote para 2
  * 
  * @{
  * @file
@@ -193,15 +197,25 @@ void VoidFunction(void);
 void VoidlessFunction();
 
 /**
- * A function with parameters.
+ * Brief description 
  * 
  * Detailed description.
  * 
- * @param[in] a Parameter a
+ * @param[in] a
+ * @parblock
+ * Parameter a
+ * 
+ * Second paragraph
+ * @endparblock
  * @param[out] b Parameter b
  * @param[in,out] c Parameter C
  * @param d Parameter d with @c typewriter text
- * @returns Return value
+ * @returns
+ * @parblock
+ * Returns para #1
+ * 
+ * Returns para #2
+ * @endparblock
  * @retval 1 Retval 1
  * @retval 2 Retval 2
  * 
