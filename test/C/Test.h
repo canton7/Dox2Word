@@ -13,7 +13,7 @@
  *
  * A numbered list:
  *  1. Item 1
- *    1. Item 1.1 @emoji :smile:
+ *    1. Item 1.1 @emoji :woman_firefighter:
  *  2. Item 2
  * 
  * A bulleted list:

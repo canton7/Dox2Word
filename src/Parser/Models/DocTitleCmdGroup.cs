@@ -10,7 +10,7 @@ namespace Dox2Word.Parser.Models
 {
     public abstract class DocTitleCmdGroup : IXmlSerializable
     {
-        private static Logger logger = Logger.Instance;
+        private static readonly Logger logger = Logger.Instance;
 
         public List<object> Parts { get; } = new();
 

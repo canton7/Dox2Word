@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Xml;
 using Dox2Word.Logging;
 using Dox2Word.Model;
@@ -47,8 +47,8 @@ namespace Dox2Word.Parser
                         AddTextRun(paragraphs, alignment, s, properties);
                         break;
                     case DocEmoji e:
-                        //AddTextRun(paragraphs, alignment, Regex.Unescape("\\x" + e.Unicode.Substring(3, e.Unicode.Length - 4)), properties); // Unicode is e.g. &#x1234;
-                        logger.Unsupported("Can't currently process emoji. Ignoring");
+                        // Doxgen doesn't correctly keep ZWJ's, see https://github.com/doxygen/doxygen/issues/8918
+                        AddTextRun(paragraphs, alignment, WebUtility.HtmlDecode(e.Unicode), properties); 
                         break;
                     case DocSimpleSect s when s.Kind == DoxSimpleSectKind.Warning:
                         Add(paragraphs, new TextParagraph(TextParagraphType.Warning));
