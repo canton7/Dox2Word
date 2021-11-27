@@ -10,6 +10,9 @@
  * <small>Small</small> Normal
  * 
  * @warning Warning with <strong>bold text</strong>
+ * 
+ * @note
+ * This should be noted.
  *
  * A numbered list:
  *  1. Item 1
@@ -34,6 +37,9 @@
  * With multiple lines
  * @endcode
  * 
+ *     Verbatim text
+ *        With   preserved   spaces
+ * 
  * @todo This is a TODO
  * 
  * Table with alignment:
@@ -43,6 +49,8 @@
  * | 10    | 10     | 10    |
  * | This is some long text | This is some long text   | This is some long text  |
  * | ^     | Merge  ||
+ * 
+ * <hr>
  * 
  * Dot diagram:
  * @dot
@@ -61,6 +69,17 @@
  * A newline with a link: https://www.google.com
  * 
  * \f$\sqrt{(x_2-x_1)^2+(y_2-y_1)^2}\f$.
+ * 
+ * @par User defined paragraph:
+ * Contents of the paragraph.
+ *
+ * @par
+ * New paragraph under the same heading.
+ *
+ * @par
+ * And this is the second paragraph.
+ *
+ * More normal text. 
  * 
  * @{
  * @file
@@ -126,10 +145,10 @@ typedef struct Struct_tag
  */
 typedef union Union_tag
 {
-    /// Union member 1
+    /// A union member
     uint8_t one;
 
-    /// Union member 2
+    /// @copydoc Union_t::one
     Enum_t two;
 } Union_t;
 

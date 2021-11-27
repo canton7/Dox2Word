@@ -8,6 +8,8 @@ namespace Dox2Word.Model
     {
         Normal,
         Warning,
+        Preformatted,
+        Note,
     }
 
     public enum TextParagraphAlignment
@@ -28,7 +30,9 @@ namespace Dox2Word.Model
 
         public TextParagraphAlignment Alignment { get; }
 
-        public bool IsEmpty => this.Count == 0;
+        public bool IsEmpty => this.Count == 0 && !this.HasHorizontalRuler;
+
+        public bool HasHorizontalRuler { get; set; }
 
         public TextParagraph(TextParagraphType type = TextParagraphType.Normal, TextParagraphAlignment alignment = TextParagraphAlignment.Default)
         {

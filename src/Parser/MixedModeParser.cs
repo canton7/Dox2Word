@@ -55,11 +55,32 @@ namespace Dox2Word.Parser
                         this.Parse(paragraphs, s.Para?.Parts, properties);
                         Add(paragraphs, new TextParagraph());
                         break;
+                    case DocSimpleSect s when s.Kind == DoxSimpleSectKind.Note:
+                        Add(paragraphs, new TextParagraph(TextParagraphType.Note));
+                        this.Parse(paragraphs, s.Para?.Parts, properties);
+                        Add(paragraphs, new TextParagraph());
+                        break;
+                    case DocSimpleSect s when s.Kind == DoxSimpleSectKind.Par:
+                        if (s.Title.Parts.Count > 0)
+                        {
+                            Add(paragraphs, new TitleParagraph());
+                            this.Parse(paragraphs, s.Title.Parts, default);
+                        }
+                        Add(paragraphs, new TextParagraph());
+                        this.Parse(paragraphs, s.Para?.Parts, properties);
+                        Add(paragraphs, new TextParagraph());
+                        break;
+                    case DocSimpleSect s when s.Kind == DoxSimpleSectKind.Return:
+                        break; // Ignore
+                    case DocSimpleSect s:
+                        Add(paragraphs, new TextParagraph());
+                        this.Parse(paragraphs, s.Para?.Parts, properties);
+                        break;
                     case DocList l:
                         this.ParseList(paragraphs, l, l.Type, properties);
                         break;
                     case DocXRefSect r:
-                        if (r.Title.FirstOrDefault() != "Todo")
+                        if (r.Title.FirstOrDefault() is not ("Todo" or "Bug"))
                         {
                             foreach (var docPara in r.Description.Para)
                             {
@@ -69,6 +90,11 @@ namespace Dox2Word.Parser
                         break;
                     case Listing l:
                         ParseListing(paragraphs, l);
+                        break;
+                    case PreformattedDocMarkup m:
+                        Add(paragraphs, new TextParagraph(TextParagraphType.Preformatted));
+                        this.Parse(paragraphs, m.Parts, properties);
+                        Add(paragraphs, new TextParagraph());
                         break;
                     case Dot d:
                         Add(paragraphs, new DotParagraph(d.Contents));
@@ -96,12 +122,21 @@ namespace Dox2Word.Parser
                     case DocTable t:
                         this.ParseTable(paragraphs, t);
                         break;
+                    case HorizontalRulerDocEmptyType:
+                        if (paragraphs.LastOrDefault() is TextParagraph p)
+                        {
+                            p.HasHorizontalRuler = true;
+                        }
+                        else
+                        {
+                            Add(paragraphs, new TextParagraph() { HasHorizontalRuler = true });
+                            Add(paragraphs, new TextParagraph());
+                        }
+                        break;
                     case XmlElement e:
                         logger.Warning($"Unrecognised text part {e.Name}. Taking raw string content");
                         AddTextRun(paragraphs, alignment, e.InnerText, properties);
                         break;
-                    case DocSimpleSect:
-                        break; // Ignore
                     default:
                         logger.Warning($"Unexpected text {part} ({part.GetType()}). Ignoring");
                         break;
@@ -132,7 +167,7 @@ namespace Dox2Word.Parser
 
         private static void Add(ICollection<IParagraph> paragraphs, TextParagraphAlignment alignment, IParagraphElement element)
         {
-            if (paragraphs.LastOrDefault() is not TextParagraph paragraph)
+            if (paragraphs.LastOrDefault() is not ICollection<IParagraphElement> paragraph)
             {
                 paragraph = Add(paragraphs, new TextParagraph(alignment: alignment));
             }

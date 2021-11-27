@@ -64,9 +64,9 @@ namespace Dox2Word.Parser.Models
                 if (reader.NodeType == XmlNodeType.Element)
                 {
                     // Whitespace is significant if it comes before a child (e.g. <bold>foo</bold> <bold>bar</bold>)
-                    if (whitespace != null)
+                    if (!string.IsNullOrEmpty(whitespace))
                     {
-                        this.ProcessPart(whitespace);
+                        this.ProcessPart(whitespace!);
                     }
                     reader.MoveToContent();
                     var subReader = reader.ReadSubtree();
@@ -88,7 +88,7 @@ namespace Dox2Word.Parser.Models
                 {
                     case XmlNodeType.Text:
                     case XmlNodeType.CDATA:
-                        this.ProcessPart(reader.Value.Trim(' ', '\n'));
+                        this.ProcessPart(reader.Value.TrimStart(' ', '\n').TrimEnd('\n'));
                         break;
 
                     case XmlNodeType.SignificantWhitespace: // Whitespace within xml:space="preserve"
@@ -96,7 +96,7 @@ namespace Dox2Word.Parser.Models
                         break;
 
                     case XmlNodeType.Whitespace:
-                        whitespace = reader.Value;
+                        whitespace = reader.Value.Substring(reader.Value.LastIndexOf('\n') + 1);
                         break;
 
                     case XmlNodeType.EntityReference:

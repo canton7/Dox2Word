@@ -247,10 +247,10 @@ namespace Dox2Word.Generator
                 this.WriteHeading("Typedef", typedef.Name, typedef.Id, headingLevel);
 
                 this.WriteMiniHeading("Definition");
-                var paragraph = this.AppendChild(new Paragraph().LeftAlign());
-                paragraph.AppendChild(new Run(new Text("typedef ").PreserveSpace()).ApplyStyle(StyleManager.CodeCharStyleId));
-                paragraph.Append(this.TextRunsToRuns(typedef.Type).ApplyRunStyle(StyleManager.CodeCharStyleId));
-                paragraph.AppendChild(new Run(new Text(" " + typedef.Name).PreserveSpace()).ApplyStyle(StyleManager.CodeCharStyleId));
+                var paragraph = this.AppendChild(new Paragraph().LeftAlign().ApplyStyle(StyleManager.CodeStyleId));
+                paragraph.AppendChild(new Run(new Text("typedef ").PreserveSpace()));
+                paragraph.Append(this.TextRunsToRuns(typedef.Type));
+                paragraph.AppendChild(new Run(new Text(" " + typedef.Name).PreserveSpace()));
 
                 this.WriteDescriptions(typedef.Descriptions);
             }
@@ -265,13 +265,13 @@ namespace Dox2Word.Generator
                 this.WriteHeading("Global variable", variable.Name!, variable.Id, headingLevel);
 
                 this.WriteMiniHeading("Definition");
-                var paragraph = this.AppendChild(new Paragraph().LeftAlign());
-                paragraph.Append(this.TextRunsToRuns(variable.Type).ApplyRunStyle(StyleManager.CodeCharStyleId));
-                paragraph.Append(new Run(new Text($" {variable.Name}").PreserveSpace()).ApplyStyle(StyleManager.CodeCharStyleId));
+                var paragraph = this.AppendChild(new Paragraph().LeftAlign().ApplyStyle(StyleManager.CodeStyleId));
+                paragraph.Append(this.TextRunsToRuns(variable.Type));
+                paragraph.Append(new Run(new Text($" {variable.Name}").PreserveSpace()));
                 if (variable.Initializer.Count > 0)
                 {
-                    paragraph.AppendChild(new Run(new Text(" ").PreserveSpace()).ApplyStyle(StyleManager.CodeCharStyleId));
-                    paragraph.Append(this.TextRunsToRuns(variable.Initializer).ApplyRunStyle(StyleManager.CodeCharStyleId));
+                    paragraph.AppendChild(new Run(new Text(" ").PreserveSpace()));
+                    paragraph.Append(this.TextRunsToRuns(variable.Initializer));
                 }
 
                 this.WriteDescriptions(variable.Descriptions);
@@ -292,7 +292,7 @@ namespace Dox2Word.Generator
                     ? "(" + string.Join(", ", macro.Parameters.Select(x => x.Name)) + ")"
                     : null;
                 var paragraph = this.AppendChild(new Paragraph(new Run(new Text($"#define {macro.Name}{paramsStr} ")
-                    .PreserveSpace()).ApplyStyle(StyleManager.CodeCharStyleId)).LeftAlign());
+                    .PreserveSpace())).ApplyStyle(StyleManager.CodeStyleId).LeftAlign());
 
                 // If it's a multi-line macro declaration, push it onto a new line and add \ to the first line
                 if (macro.Initializer.Count > 0 && macro.Initializer[0].Text.StartsWith(" ") &&
@@ -300,7 +300,7 @@ namespace Dox2Word.Generator
                 {
                     paragraph.AppendChild(new Run(new Text("\\"), new Break()));
                 }
-                paragraph.Append(this.TextRunsToRuns(macro.Initializer).ApplyRunStyle(StyleManager.CodeCharStyleId));
+                paragraph.Append(this.TextRunsToRuns(macro.Initializer));
 
                 this.WriteDescriptions(macro.Descriptions);
 
@@ -328,10 +328,10 @@ namespace Dox2Word.Generator
                 this.WriteHeading("Function", function.Name, function.Id, headingLevel);
 
                 this.WriteMiniHeading("Signature");
-                var signatureParagraph = this.AppendChild(new Paragraph().LeftAlign());
-                Run NewRun(OpenXmlElement e) => signatureParagraph.AppendChild(new Run(e).ApplyStyle(StyleManager.CodeCharStyleId));
+                var signatureParagraph = this.AppendChild(new Paragraph().LeftAlign().ApplyStyle(StyleManager.CodeStyleId));
+                Run NewRun(OpenXmlElement e) => signatureParagraph.AppendChild(new Run(e));
 
-                signatureParagraph.Append(this.TextRunsToRuns(function.ReturnType).ApplyRunStyle(StyleManager.CodeCharStyleId));
+                signatureParagraph.Append(this.TextRunsToRuns(function.ReturnType));
                 NewRun(new Text($" {function.Name}").PreserveSpace());
 
                 if (function.Parameters.Count > 0)
@@ -342,7 +342,7 @@ namespace Dox2Word.Generator
                         string comma = i == function.Parameters.Count - 1 ? "" : ",";
                         var run = NewRun(new Break());
                         run.AppendChild(new Text("    ").PreserveSpace());
-                        signatureParagraph.Append(this.TextRunsToRuns(function.Parameters[i].Type).ApplyRunStyle(StyleManager.CodeCharStyleId));
+                        signatureParagraph.Append(this.TextRunsToRuns(function.Parameters[i].Type));
                         string space = signatureParagraph.InnerText.EndsWith(" *") ? "" : " ";
                         NewRun(new Text($"{space}{function.Parameters[i].Name}{comma}").PreserveSpace());
                     }
@@ -478,11 +478,39 @@ namespace Dox2Word.Generator
             {
                 case TextParagraph textParagraph:
                     var paragraph = this.CreateTextParagraph(textParagraph);
-                    if (textParagraph.Type == TextParagraphType.Warning)
+                    switch (textParagraph.Type)
                     {
-                        paragraph.ApplyStyle(StyleManager.WarningStyleId);
+                        case TextParagraphType.Normal:
+                            break;
+                        case TextParagraphType.Warning:
+                            paragraph.ApplyStyle(StyleManager.WarningStyleId);
+                            break;
+                        case TextParagraphType.Preformatted:
+                            paragraph.ApplyStyle(StyleManager.CodeStyleId);
+                            break;
+                        case TextParagraphType.Note:
+                            paragraph.ApplyStyle(StyleManager.NoteStyleId);
+                            break;
+                    }
+                    if (textParagraph.HasHorizontalRuler)
+                    {
+                        paragraph.WithProperties(x =>
+                        {
+                            x.ParagraphBorders ??= new ParagraphBorders();
+                            x.ParagraphBorders.BottomBorder = new BottomBorder()
+                            {
+                                Val = BorderValues.Single,
+                                Color = "auto",
+                                Space = 1,
+                                Size = 6,
+                            };
+                        });
                     }
                     yield return paragraph;
+                    break;
+
+                case TitleParagraph titleParagraph:
+                    yield return new Paragraph(this.TextRunsToRuns(titleParagraph)).ApplyStyle(StyleManager.MiniHeadingStyleId);
                     break;
 
                 case ListParagraph listParagraph:
@@ -647,7 +675,7 @@ namespace Dox2Word.Generator
 
         private Paragraph CreateCodeParagraph(CodeParagraph codeParagraph)
         {
-            var paragraph = new Paragraph().ApplyStyle(StyleManager.CodeStyleId).LeftAlign();
+            var paragraph = new Paragraph().ApplyStyle(StyleManager.CodeListingStyleId).LeftAlign();
 
             var run = paragraph.AppendChild(new Run());
             for (int i = 0; i < codeParagraph.Lines.Count; i++)

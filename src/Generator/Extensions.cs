@@ -142,16 +142,16 @@ namespace Dox2Word.Generator
             if (inOut != null)
             {
                 var inOutCell = row.AppendChild(new TableCell());
-                var inOutParagraph = inOutCell.AppendChild(new Paragraph());
-                var inOutRun = inOutParagraph.AppendChild(new Run(new Text(inOut)).ApplyStyle(StyleManager.CodeCharStyleId));
+                var inOutParagraph = inOutCell.AppendChild(new Paragraph().ApplyStyle(StyleManager.CodeStyleId));
+                var inOutRun = inOutParagraph.AppendChild(new Run(new Text(inOut)));
                 inOutRun.WithProperties(x => x.Italic = new Italic());
                 inOutParagraph.FormatTableCellElement(after: true);
             }
 
             var nameCell = row.AppendChild(new TableCell());
-            var nameParagraph = nameCell.AppendChild(new Paragraph());
+            var nameParagraph = nameCell.AppendChild(new Paragraph().ApplyStyle(StyleManager.CodeStyleId));
             nameParagraph.FormatTableCellElement(after: true);
-            nameParagraph.Append(name.ApplyRunStyle(StyleManager.CodeCharStyleId));
+            nameParagraph.Append(name);
 
             var valueCell = row.AppendChild(new TableCell());
             var valueList = value.ToList();

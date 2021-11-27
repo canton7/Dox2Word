@@ -11,9 +11,11 @@ namespace Dox2Word.Generator
         public const string TableStyleId = "DoxTable";
         public const string ParameterTableStyleId = "DoxParameterTable";
         public const string MiniHeadingStyleId = "DoxMiniHeading";
+        public const string CodeListingStyleId = "DoxCodeListing";
         public const string CodeStyleId = "DoxCode";
         public const string CodeCharStyleId = "DoxCodeChar";
         public const string WarningStyleId = "DoxWarning";
+        public const string NoteStyleId = "DoxNote";
         public const string HyperlinkStyleId = "Hyperlink";
         public const string ListParagraphStyleId = "ListParagraph";
 
@@ -92,13 +94,6 @@ namespace Dox2Word.Generator
                 {
                     KeepNext = new KeepNext(),
                     KeepLines = new KeepLines(),
-                    ParagraphBorders = new ParagraphBorders()
-                    {
-                        TopBorder = new TopBorder() { Val = BorderValues.Single },
-                        LeftBorder = new LeftBorder() { Val = BorderValues.Single },
-                        BottomBorder = new BottomBorder() { Val = BorderValues.Single },
-                        RightBorder = new RightBorder() { Val = BorderValues.Single },
-                    },
                     SpacingBetweenLines = new SpacingBetweenLines()
                     {
                         Line = "240",
@@ -110,6 +105,23 @@ namespace Dox2Word.Generator
                 {
                     FontSize = new FontSize() { Val = (this.DefaultFontSize - 2).ToString() },
                     RunFonts = new RunFonts() { Ascii = "Consolas" },
+                };
+            });
+
+            this.AddIfNotExists(CodeListingStyleId, StyleValues.Paragraph, "Dox Code Listing", style =>
+            {
+                style.BasedOn = new BasedOn() { Val = CodeStyleId };
+                style.LinkedStyle = new LinkedStyle() { Val = CodeCharStyleId };
+                style.PrimaryStyle = new PrimaryStyle();
+                style.StyleParagraphProperties = new StyleParagraphProperties()
+                {
+                    ParagraphBorders = new ParagraphBorders()
+                    {
+                        TopBorder = new TopBorder() { Val = BorderValues.Single },
+                        LeftBorder = new LeftBorder() { Val = BorderValues.Single },
+                        BottomBorder = new BottomBorder() { Val = BorderValues.Single },
+                        RightBorder = new RightBorder() { Val = BorderValues.Single },
+                    },
                 };
             });
 
@@ -125,6 +137,22 @@ namespace Dox2Word.Generator
                         Space = 4,
                         Size = 18,
                         Color = "FFC000",
+                    }),
+                };
+            });
+
+            this.AddIfNotExists(NoteStyleId, StyleValues.Paragraph, "Dox Note", style =>
+            {
+                style.BasedOn = new BasedOn() { Val = "Normal" };
+                style.PrimaryStyle = new PrimaryStyle();
+                style.StyleParagraphProperties = new StyleParagraphProperties()
+                {
+                    ParagraphBorders = new ParagraphBorders(new LeftBorder()
+                    {
+                        Val = BorderValues.Single,
+                        Space = 4,
+                        Size = 18,
+                        Color = "D0C000",
                     }),
                 };
             });
