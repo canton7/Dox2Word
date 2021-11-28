@@ -19,7 +19,7 @@ namespace Dox2Word.Generator
                 return null;
             }
 
-            logger.Info("Rendering dot diagram");
+            logger.Debug("Rendering dot diagram");
 
             try
             {

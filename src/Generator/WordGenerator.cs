@@ -121,7 +121,7 @@ namespace Dox2Word.Generator
 
         private void WriteGroup(Group group, int headingLevel)
         {
-            logger.Info($"Writing group {group.Name}");
+            logger.Debug($"Writing group {group.Name}");
             this.WriteHeading(null, group.Name, group.Id, headingLevel);
 
             this.WriteDescriptions(group.Descriptions);
@@ -170,7 +170,7 @@ namespace Dox2Word.Generator
         {
             foreach (var cls in classes)
             {
-                logger.Info($"Writing {cls.Type} {cls.Name}");
+                logger.Debug($"Writing {cls.Type} {cls.Name}");
 
                 string title = cls.Type switch
                 {
@@ -213,7 +213,7 @@ namespace Dox2Word.Generator
         {
             foreach (var @enum in enums)
             {
-                logger.Info($"Writing Enum {@enum.Name}");
+                logger.Debug($"Writing Enum {@enum.Name}");
 
                 this.WriteHeading("Enum", @enum.Name, @enum.Id, headingLevel);
 
@@ -242,7 +242,7 @@ namespace Dox2Word.Generator
         {
             foreach (var typedef in typedefs)
             {
-                logger.Info($"Writing typedef {typedef.Name}");
+                logger.Debug($"Writing typedef {typedef.Name}");
 
                 this.WriteHeading("Typedef", typedef.Name, typedef.Id, headingLevel);
 
@@ -260,7 +260,7 @@ namespace Dox2Word.Generator
         {
             foreach (var variable in variables)
             {
-                logger.Info($"Writing variable {variable.Name}");
+                logger.Debug($"Writing variable {variable.Name}");
 
                 this.WriteHeading("Global variable", variable.Name!, variable.Id, headingLevel);
 
@@ -282,7 +282,7 @@ namespace Dox2Word.Generator
         {
             foreach (var macro in macros)
             {
-                logger.Info($"Writing macro {macro.Name}");
+                logger.Debug($"Writing macro {macro.Name}");
 
                 this.WriteHeading("Macro", macro.Name, macro.Id, headingLevel);
 
@@ -323,7 +323,7 @@ namespace Dox2Word.Generator
         {
             foreach (var function in functions)
             {
-                logger.Info($"Writing function {function.Name}");
+                logger.Debug($"Writing function {function.Name}");
 
                 this.WriteHeading("Function", function.Name, function.Id, headingLevel);
 

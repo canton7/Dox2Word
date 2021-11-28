@@ -18,7 +18,7 @@ namespace Dox2Word.Generator
             {
                 if (substitutions.TryGetValue(placeholder, out string? replacement))
                 {
-                    logger.Info($"Replacing placeholder '{placeholder}' with '{replacement}'");
+                    logger.Debug($"Replacing placeholder '{placeholder}' with '{replacement}'");
                 }
                 return (replacement, false);
             });

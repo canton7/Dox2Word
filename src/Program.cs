@@ -12,6 +12,7 @@ namespace Dox2Word
     public class Options
     {
         public Dictionary<string, string> Placeholders { get; } = new();
+        public bool Verbose { get; set; }
     }
 
     public class Program
@@ -36,6 +37,7 @@ namespace Dox2Word
                     throw new OptionException("Missing name for placeholder", "-D");
                 options.Placeholders[k] = v;
             });
+            optionSet.Add("verbose|v", "Print more output", x => options.Verbose = x != null);
 
             try
             {
@@ -56,15 +58,22 @@ namespace Dox2Word
                 return 254;
             }
 
+            Logger.Instance.Verbose = options.Verbose;
+
             try
             {
+                Logger.Instance.Info("Parsing Doxygen output");
                 var project = XmlParser.Parse(xmlFolder!);
 
                 Logger.Instance.Info("Loading template");
                 File.Delete(outputPath);
                 File.Copy(templatePath, outputPath);
+
+                Logger.Instance.Info("Generating output");
                 using var output = File.Open(outputPath, FileMode.Open);
                 WordGenerator.Generate(output, project, options);
+
+                Logger.Instance.Info("Done");
             }
             catch (Exception e)
             {

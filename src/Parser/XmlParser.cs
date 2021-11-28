@@ -62,7 +62,7 @@ namespace Dox2Word.Parser
                 this.project.AllGroups = allGroupCompoundDefs.Values.ToDictionary(x => x.Id, x => this.ParseGroup(x));
 
                 // Wire up the group->inner group relationships
-                logger.Info("Creating group to inner group relationships");
+                logger.Debug("Creating group to inner group relationships");
                 var rootGroups = this.project.AllGroups.Values.ToHashSet();
                 foreach (var group in this.project.AllGroups.Values)
                 {
@@ -73,7 +73,7 @@ namespace Dox2Word.Parser
                 this.project.RootGroups.AddRange(rootGroups.OrderBy(x => x.Name));
 
                 // Wire up group -> referenced group relationships
-                logger.Info("Creating group to referenced group relationships");
+                logger.Debug("Creating group to referenced group relationships");
                 var fileIdToOwningGroup = this.project.AllGroups.Values
                     .SelectMany(g => g.Files.Select(f => (file: f, group: g)))
                     .ToDictionary(x => x.file.Id, x => x.group);
@@ -103,7 +103,7 @@ namespace Dox2Word.Parser
                 }
 
                 // Wire up function -> function references
-                logger.Info("Creating function to function references");
+                logger.Debug("Creating function to function references");
                 foreach (var groupDef in allGroupCompoundDefs.Values)
                 {
                     foreach (var function in groupDef.Sections.SelectMany(x => x.Members).Where(x => x.Kind == DoxMemberKind.Function))
@@ -167,7 +167,7 @@ namespace Dox2Word.Parser
 
         private Group ParseGroup(CompoundDef compoundDef)
         {
-            logger.Info($"Parsing compound {compoundDef.CompoundName}");
+            logger.Debug($"Parsing compound {compoundDef.CompoundName}");
 
             var group = new Group()
             {
@@ -186,7 +186,7 @@ namespace Dox2Word.Parser
                 if (member.BriefDescription?.Para.Count is 0 or null && member.DetailedDescription?.Para.Count is 0 or null)
                     continue;
 
-                logger.Info($"Parsing member {member.Name}");
+                logger.Debug($"Parsing member {member.Name}");
                 switch (member.Kind)
                 {
                     case DoxMemberKind.Function:
@@ -310,7 +310,7 @@ namespace Dox2Word.Parser
         private ClassDoc? ParseInnerClass(string refId)
         {
             var compoundDef = this.ParseCompoundDef(refId);
-            logger.Info($"Parsing class {compoundDef.CompoundName}");
+            logger.Debug($"Parsing class {compoundDef.CompoundName}");
 
             if (compoundDef.Kind is not (CompoundKind.Struct or CompoundKind.Union))
             {
