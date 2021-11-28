@@ -159,7 +159,7 @@ namespace Dox2Word.Generator
                         Val = BorderValues.Single,
                         Space = 4,
                         Size = 18,
-                        Color = "FFC000",
+                        Color = "FF0000",
                     }),
                 };
             });
