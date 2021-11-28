@@ -612,13 +612,19 @@ namespace Dox2Word.Generator
                             run.WithProperties(x => x.FontSize = new FontSize() { Val = fontSize.ToString() });
                         }
 
-                        if (textRun.ReferenceId == null)
+                        OpenXmlElement result = textRun.ReferenceId == null
+                            ? run
+                            : this.bookmarkManager.CreateLink(textRun.ReferenceId, run);
+                        if (textRun.AnchorId == null)
                         {
-                            yield return run;
+                            yield return result;
                         }
                         else
                         {
-                            yield return this.bookmarkManager.CreateLink(textRun.ReferenceId, run);
+                            var bookmark = this.bookmarkManager.CreateBookmark(textRun.AnchorId);
+                            yield return bookmark.start;
+                            yield return result;
+                            yield return bookmark.end;
                         }
                     }
                     break;

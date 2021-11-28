@@ -26,13 +26,18 @@ namespace Dox2Word.Model
 
         public string Text { get; set; }
 
+        // This is a link somewhere else
         public string? ReferenceId { get; }
 
-        public TextRun(string text, TextRunProperties properties = default, string? referenceId = null)
+        // This can be linked to
+        public string? AnchorId { get; }
+
+        public TextRun(string text, TextRunProperties properties = default, string? referenceId = null, string? anchorId = null)
         {
             this.Text = text;
             this.Properties = properties;
             this.ReferenceId = referenceId;
+            this.AnchorId = anchorId;
         }
     }
 

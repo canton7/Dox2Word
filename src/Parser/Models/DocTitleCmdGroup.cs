@@ -42,7 +42,7 @@ namespace Dox2Word.Parser.Models
                 "dot" => Load<Dot>(reader),
                 "msc" => Unsupported("msc"),
                 "plantuml" => Unsupported("plantuml"), // TODO: plantuml
-                "anchor" => Unsupported("anchor"), // TODO: Not sure how well we can support this in Word
+                "anchor" => Load<DocAnchor>(reader),
                 "formula" => reader.ReadElementContentAsString().Trim(' ', '\n'), // TODO: HTML doesn't handle these well, but maybe we can use plantuml here?
                 "ref" => Load<Ref>(reader),
                 "emoji" => Load<DocEmoji>(reader),

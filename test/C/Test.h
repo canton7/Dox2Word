@@ -65,6 +65,8 @@
  * Dot from external file:
  * @dotfile Test.dot "Dot from external file"
  * 
+ * @anchor anchor
+ * 
  * Some symbols: © -- ±<br>
  * A newline with a link: https://www.google.com
  * 
@@ -72,6 +74,8 @@
  * 
  * @par User defined paragraph:
  * Contents of the paragraph.
+ * 
+ * @ref anchor "Reference to anchor"
  *
  * @par
  * New paragraph under the same heading.

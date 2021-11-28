@@ -46,6 +46,9 @@ namespace Dox2Word.Parser
                     case string s:
                         AddTextRun(paragraphs, s, properties, alignment);
                         break;
+                    case DocAnchor a:
+                        Add(paragraphs, alignment, new TextRun("", anchorId: a.Id));
+                        break;
                     case DocParBlock b:
                         foreach (var para in b.Paras)
                         {
