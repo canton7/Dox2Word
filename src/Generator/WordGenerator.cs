@@ -618,10 +618,7 @@ namespace Dox2Word.Generator
                         }
                         else
                         {
-                            foreach (var x in this.bookmarkManager.CreateLink(textRun.ReferenceId, run))
-                            {
-                                yield return x;
-                            }
+                            yield return this.bookmarkManager.CreateLink(textRun.ReferenceId, run);
                         }
                     }
                     break;

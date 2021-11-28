@@ -32,40 +32,19 @@ namespace Dox2Word.Generator
             return result;
         }
 
-        public Run[] CreateLink(string name, Run text)
+        public Hyperlink CreateLink(string name, Run text)
         {
             if (!this.names.ContainsKey(name))
             {
                 this.referencedButNotCreated.Add(name);
             }
 
-            var runs = new[]
+            var hyperlink = new Hyperlink(text)
             {
-                new Run(new FieldChar()
-                {
-                    FieldCharType = FieldCharValues.Begin,
-                }),
-                new Run(new FieldCode()
-                {
-                    Text = $" REF {this.TransformName(name)} \\h ",
-                    Space = SpaceProcessingModeValues.Preserve,
-                }),
-                new Run(new FieldCode()
-                {
-                    Text = "\\* MERGEFORMAT ",
-                    Space = SpaceProcessingModeValues.Preserve,
-                }),
-                new Run(new FieldChar()
-                {
-                    FieldCharType = FieldCharValues.Separate,
-                }),
-                text,
-                new Run(new FieldChar()
-                {
-                    FieldCharType = FieldCharValues.End,
-                })
+                Anchor = this.TransformName(name),
+                History = true,
             };
-            return runs;
+            return hyperlink;
         }
 
         public void Validate()
