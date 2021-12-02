@@ -19,6 +19,7 @@ namespace Dox2Word.Generator
         public const string NoteStyleId = "DoxNote";
         public const string BlockQuoteStyleId = "DoxBlockQuote";
         public const string HyperlinkStyleId = "Hyperlink";
+        public const string CaptionStyleId = "Caption";
         public const string ListParagraphStyleId = "ListParagraph";
 
         private readonly StyleDefinitionsPart stylesPart;
@@ -198,6 +199,31 @@ namespace Dox2Word.Generator
                 {
                     Color = new Color() { ThemeColor = ThemeColorValues.Hyperlink, Val = "0563C1" },
                     Underline = new Underline() {  Val = UnderlineValues.Single },
+                };
+            });
+
+            this.AddIfNotExists(CaptionStyleId, StyleValues.Paragraph, "Caption", style =>
+            {
+                style.BasedOn = new BasedOn() { Val = "Normal" };
+                style.NextParagraphStyle = new NextParagraphStyle() { Val = "Normal" };
+                style.UnhideWhenUsed = new UnhideWhenUsed();
+                style.PrimaryStyle = new PrimaryStyle();
+                style.StyleParagraphProperties = new StyleParagraphProperties()
+                {
+                    SpacingBetweenLines = new SpacingBetweenLines()
+                    { 
+                        LineRule = LineSpacingRuleValues.Auto,
+                        Line = "240",
+                        After = "200",
+                    },
+                };
+                style.StyleRunProperties = new StyleRunProperties()
+                {
+                    Italic = new Italic(),
+                    ItalicComplexScript = new ItalicComplexScript(),
+                    Color = new Color() { Val = "44546A", ThemeColor = ThemeColorValues.Text2 },
+                    FontSize = new FontSize() { Val = "18" },
+                    FontSizeComplexScript = new FontSizeComplexScript() { Val = "18" },
                 };
             });
 

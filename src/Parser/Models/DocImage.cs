@@ -7,6 +7,9 @@ namespace Dox2Word.Parser.Models
         [XmlAttribute("name")]
         public string? Name { get; set; }
 
+        [XmlAttribute("caption")]
+        public string? Caption { get; set; }
+
         [XmlText]
         public string Contents { get; set; } = null!;
     }

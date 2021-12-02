@@ -536,15 +536,17 @@ namespace Dox2Word.Generator
                     break;
 
                 case DotParagraph dotParagraph:
-                    var para = this.CreateDotParagraph(dotParagraph);
-                    if (para != null)
+                    foreach (var p in this.CreateDotParagraph(dotParagraph))
                     {
-                        yield return para;
+                        yield return p;
                     }
                     break;
 
                 case TableDoc table:
-                    yield return this.CreateTable(table);
+                    foreach (var p in this.CreateTable(table))
+                    {
+                        yield return p;
+                    }
                     break;
 
                 default:
@@ -704,17 +706,30 @@ namespace Dox2Word.Generator
             return paragraph;
         }
 
-        private OpenXmlElement? CreateDotParagraph(DotParagraph dotParagraph)
+        private IEnumerable<OpenXmlElement> CreateDotParagraph(DotParagraph dotParagraph)
         {
             byte[]? output = this.dotRenderer.TryRender(dotParagraph.Contents);
             if (output != null)
             {
-                return new Paragraph(new Run(this.imageManager.CreateImage(output, ImagePartType.Png)));
+                yield return new Paragraph(new Run(this.imageManager.CreateImage(output, ImagePartType.Png)));
+
+                if (dotParagraph.Caption != null)
+                {
+                    var paragraph = new Paragraph().ApplyStyle(StyleManager.CaptionStyleId);
+                    paragraph.AppendChild(new Run(new Text("Figure ").PreserveSpace()));
+                    paragraph.AppendChild(new SimpleField()
+                    {
+                        Instruction = " SEQ Figure \\* ARABIC ",
+                        Dirty = true,
+                    });
+                    paragraph.AppendChild(new Run(new Text(" ").PreserveSpace()));
+                    paragraph.AppendChild(new Run(StringToElements(dotParagraph.Caption)));
+                    yield return paragraph;
+                }
             }
-            return null;
         }
 
-        private OpenXmlElement CreateTable(TableDoc tableDoc)
+        private IEnumerable<OpenXmlElement> CreateTable(TableDoc tableDoc)
         {
             var table = new Table();
             table.WithProperties(x =>
@@ -774,7 +789,29 @@ namespace Dox2Word.Generator
                 }
             }
 
-            return table;
+            yield return table;
+
+            if (tableDoc.Caption != null)
+            {
+                var paragraph = this.CreateTextParagraph(tableDoc.Caption);
+                paragraph.ApplyStyle(StyleManager.CaptionStyleId);
+                var newChildren = new OpenXmlElement[]
+                {
+                    new Run(new Text("Table ").PreserveSpace()),
+                    new SimpleField()
+                    {
+                        Instruction = " SEQ TABLE \\* ARABIC ",
+                        Dirty = true,
+                    },
+                    new Run(new Text(" ").PreserveSpace()),
+                };
+                for (int i = 0; i < newChildren.Length; i++)
+                {
+                    paragraph.InsertAt(newChildren[i], i + 1); // After the ParagraphProperties
+                }
+
+                yield return paragraph;
+            }
         }
 
         private static IEnumerable<OpenXmlElement> StringToElements(string? input)

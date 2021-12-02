@@ -94,6 +94,7 @@ Make sure that Word actually adds them to the template: it has a habit of omitti
 
  - `Heading 1`, `Heading 2`, etc: these must exist in the document
  - `Hyperlink`: used for hyperlinks
+ - `Caption`: used for table/image captions
  - `Dox Mini Heading`: used for sub-headings within a member documentation, for e.g. "Description" and "Parameters"
  - `Dox Par Heading`: used for `@par <title>` headings
  - `Dox Table`: used for user-defined tables

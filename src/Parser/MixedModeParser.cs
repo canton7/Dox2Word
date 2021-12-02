@@ -115,7 +115,7 @@ namespace Dox2Word.Parser
                         Add(paragraphs, new TextParagraph());
                         break;
                     case Dot d:
-                        Add(paragraphs, new DotParagraph(d.Contents));
+                        Add(paragraphs, new DotParagraph(d.Contents) { Caption = d.Caption });
                         break;
                     case DotFile d:
                         Add(paragraphs, new DotParagraph(File.ReadAllText(d.Name!)) { Caption = d.Contents });
@@ -275,6 +275,7 @@ namespace Dox2Word.Parser
             var tableDoc = new TableDoc()
             {
                 NumColumns = table.NumCols,
+                Caption = table.Caption == null ? null : this.Parse(table.Caption.Parts)?.FirstOrDefault() as TextParagraph,
             };
             foreach (var row in table.Rows)
             {

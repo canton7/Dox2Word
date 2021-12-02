@@ -9,6 +9,8 @@ namespace Dox2Word.Model
         public bool FirstRowHeader { get; set; }
         public bool FirstColumnHeader { get; set; }
 
+        public TextParagraph? Caption { get; set; }
+
         public List<TableRowDoc> Rows { get; } = new();
 
         public bool IsEmpty => this.Rows.Count == 0;

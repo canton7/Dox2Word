@@ -50,10 +50,19 @@
  * | This is some long text | This is some long text   | This is some long text  |
  * | ^     | Merge  ||
  * 
+ * Another table:
+ * 
+ * <table>
+ * <caption>Table Caption</caption>
+ * <tr>
+ *  <td>Cell 1</td><td>Cell 2</td>
+ * </tr>
+ * </table>
+ * 
  * <hr>
  * 
  * Dot diagram:
- * @dot
+ * @dot "Embedded Dot"
  * digraph example {
  *     node [shape=record, fontname=Helvetica, fontsize=10];
  *     b [ label="class B" ];
