@@ -274,6 +274,7 @@ namespace Dox2Word.Parser
         {
             var tableDoc = new TableDoc()
             {
+                Id = table.Caption?.Id,
                 NumColumns = table.NumCols,
                 Caption = table.Caption == null ? null : this.Parse(table.Caption.Parts)?.FirstOrDefault() as TextParagraph,
             };

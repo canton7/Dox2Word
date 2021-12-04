@@ -795,7 +795,7 @@ namespace Dox2Word.Generator
             {
                 var paragraph = this.CreateTextParagraph(tableDoc.Caption);
                 paragraph.ApplyStyle(StyleManager.CaptionStyleId);
-                var newChildren = new OpenXmlElement[]
+                var newChildren = new List<OpenXmlElement>()
                 {
                     new Run(new Text("Table ").PreserveSpace()),
                     new SimpleField()
@@ -805,7 +805,13 @@ namespace Dox2Word.Generator
                     },
                     new Run(new Text(" ").PreserveSpace()),
                 };
-                for (int i = 0; i < newChildren.Length; i++)
+                if (tableDoc.Id != null)
+                {
+                    var bookmark = this.bookmarkManager.CreateBookmark(tableDoc.Id);
+                    newChildren.Add(bookmark.start);
+                    paragraph.AppendChild(bookmark.end);
+                }
+                for (int i = 0; i < newChildren.Count; i++)
                 {
                     paragraph.InsertAt(newChildren[i], i + 1); // After the ParagraphProperties
                 }

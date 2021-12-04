@@ -4,6 +4,7 @@ namespace Dox2Word.Model
 {
     public class TableDoc : IParagraph
     {
+        public string? Id { get; set; }
         public int NumColumns { get; set; }
 
         public bool FirstRowHeader { get; set; }
