@@ -140,6 +140,9 @@ namespace Dox2Word.Parser
                     case DocTable t:
                         this.ParseTable(paragraphs, t);
                         break;
+                    case DocVariableList l:
+                        this.ParseVariableList(paragraphs, l);
+                        break;
                     case HorizontalRulerDocEmptyType:
                         if (paragraphs.LastOrDefault() is TextParagraph p)
                         {
@@ -203,22 +206,11 @@ namespace Dox2Word.Parser
         private void ParseUrlLink(List<IParagraph> paragraphs, DocUrlLink urlLink, TextRunProperties properties, TextParagraphAlignment alignment)
         {
             var link = new UrlLink(urlLink.Url);
-            var children = new List<IParagraph>();
-            this.Parse(children, urlLink.Parts, properties, alignment);
-            // We should only get one child, and it should be a TextParagraph
-            if (children.Count > 0 && children[0] is TextParagraph textParagraph)
-            {
-                if (children.Count > 1)
-                {
-                    logger.Warning($"Unexpected number of children for DocUrlLink with URL {link.Url}");
-                }
-
+            var textParagraph = this.ParseSingleParagraph(urlLink, properties, alignment);
+            if (textParagraph != null)
+            { 
                 link.AddRange(textParagraph.OfType<TextRun>());
                 Add(paragraphs, alignment, link);
-            }
-            else
-            {
-                logger.Warning($"Unexpected content for DocUrlLink with URL {link.Url}");
             }
         }
 
@@ -313,6 +305,71 @@ namespace Dox2Word.Parser
             tableDoc.FirstColumnHeader = table.Rows.All(x => x.Entries.FirstOrDefault()?.IsTableHead != DoxBool.No);
 
             Add(paragraphs, tableDoc);
+        }
+
+        private void ParseVariableList(List<IParagraph> paragraphs, DocVariableList list)
+        {
+            var listParagraph = new DefinitionListParagraph();
+
+            // We expect a sequence of DocVarListEntry, DocListItem pairs (although this isn't enforced by the parser)
+            for (int i = 0; i < list.Parts.Count;)
+            {
+                object entryObj = list.Parts[i];
+                i++;
+
+                if (entryObj is not DocVarListEntry entry)
+                {
+                    logger.Warning("Malformed variablelist: varlistentry not at expected location");
+                    continue;
+                }
+
+                if (i >= list.Parts.Count)
+                {
+                    logger.Warning("Malformed variablelist: missing final listitem");
+                    break;
+                }
+
+                object itemObj = list.Parts[i];
+                if (itemObj is not DocListItem item)
+                {
+                    logger.Warning("Malformed variablelist: listitem not at expected location");
+                    // Go around the loop again, where we'll try parsing it as a DocVarListEntry
+                    continue;
+                }
+
+                i++;
+
+                var termParagraph = this.ParseSingleParagraph(entry.Term, default, TextParagraphAlignment.Default) ?? new TextParagraph();
+                var definitionListEntry = new DefinitionListEntry()
+                {
+                    Term = termParagraph,
+                };
+                foreach (var para in item.Paras)
+                {
+                    this.Parse(definitionListEntry.Description, para.Parts, default, TextParagraphAlignment.Default);
+                }
+                listParagraph.Entries.Add(definitionListEntry);
+            }
+
+            Add(paragraphs, listParagraph);
+        }
+
+        private TextParagraph? ParseSingleParagraph(DocTitleCmdGroup title, TextRunProperties properties, TextParagraphAlignment alignment)
+        {
+            var children = new List<IParagraph>();
+            this.Parse(children, title.Parts, properties, alignment);
+            if (children.Count > 0 && children[0] is TextParagraph textParagraph)
+            {
+                if (children.Count > 1)
+                {
+                    logger.Warning("Unexpected number of children for DocTitleCmdGroup");
+                }
+
+                return textParagraph;
+            }
+
+            logger.Warning("Unexpected content for DocTitleCmdGroup");
+            return null;
         }
     }
 }

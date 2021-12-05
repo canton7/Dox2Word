@@ -19,8 +19,9 @@ namespace Dox2Word.Generator
         private readonly NumberingDefinitionsPart numberingPart;
         private readonly StyleManager styleManager;
 
-        private const string BulletStyleId = "DoxBulletList";
-        private const string NumberedStyleId = "DoxNumberedList";
+        public const string BulletStyleId = "DoxBulletList";
+        public const string NumberedStyleId = "DoxNumberedList";
+        public const string DefinitionListStyleId = "DoxDefinitionList";
 
         public ListManager(NumberingDefinitionsPart numberingPart, StyleManager styleManager)
         {
@@ -32,6 +33,7 @@ namespace Dox2Word.Generator
         {
             this.CreateNumberingStyle(BulletStyleId, "Dox Bullet List", "BulletStyle.xml");
             this.CreateNumberingStyle(NumberedStyleId, "Dox Numbered List", "NumberedStyle.xml");
+            this.CreateNumberingStyle(DefinitionListStyleId, "Dox Definition List", "DefinitionListStyle.xml");
         }
 
         private void CreateNumberingStyle(string styleId, string styleName, string filename)

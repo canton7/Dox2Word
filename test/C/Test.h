@@ -98,6 +98,17 @@
  * >
  * > Block quote para 2
  * 
+ * <dl>
+ *   <dt>Term</dt>
+ *   <dd>
+ *     <p>Definition</p>
+ *     <dl>
+ *       <dt>Embedded DL term</dt>
+ *       <dd>Embedded DL Definition
+ *     </dl>
+ *   </dd>
+ * </dl>
+ * 
  * @{
  * @file
  */

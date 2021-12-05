@@ -532,6 +532,13 @@ namespace Dox2Word.Generator
                     }
                     break;
 
+                case DefinitionListParagraph definitionListParagraph:
+                    foreach (var p in this.CreateDefinitionListParagraph(definitionListParagraph))
+                    {
+                        yield return p;
+                    }
+                    break;
+
                 case CodeParagraph codeParagraph:
                     yield return this.CreateCodeParagraph(codeParagraph);
                     break;
@@ -686,6 +693,61 @@ namespace Dox2Word.Generator
                             yield return p;
                         }
                         break;
+                }
+            }
+        }
+
+        private IEnumerable<OpenXmlElement> CreateDefinitionListParagraph(DefinitionListParagraph listParagraph, int level = 0)
+        {
+            int numberId = this.listManager.CreateList(ListManager.DefinitionListStyleId);
+
+            foreach (var entry in listParagraph.Entries)
+            {
+                var termParagraph = this.CreateTextParagraph(entry.Term);
+                termParagraph.ParagraphProperties = new ParagraphProperties()
+                {
+                    ParagraphStyleId = new ParagraphStyleId() { Val = StyleManager.DefinitionTermStyleId },
+                    NumberingProperties = new NumberingProperties()
+                    {
+                        NumberingLevelReference = new NumberingLevelReference() { Val = level },
+                        NumberingId = new NumberingId() { Val = numberId },
+                    },
+                };
+                yield return termParagraph;
+
+                foreach (var descriptionItem in entry.Description)
+                {
+                    // This is probably a TextParagraph, or another DefinitionListParagraph
+
+                    switch (descriptionItem)
+                    {
+                        case TextParagraph textParagraph:
+                            var paragraph = this.CreateTextParagraph(textParagraph);
+                            paragraph.ParagraphProperties = new ParagraphProperties()
+                            {
+                                NumberingProperties = new NumberingProperties()
+                                {
+                                    NumberingLevelReference = new NumberingLevelReference() { Val = level + 1 },
+                                    NumberingId = new NumberingId() { Val = numberId },
+                                },
+                            };
+                            yield return paragraph;
+                            break;
+
+                        case DefinitionListParagraph definitionList:
+                            foreach (var p in this.CreateDefinitionListParagraph(definitionList, level + 1))
+                            {
+                                yield return p;
+                            }
+                            break;
+
+                        default:
+                            foreach (var p in this.CreateParagraph(descriptionItem))
+                            {
+                                yield return p;
+                            }
+                            break;
+                    }
                 }
             }
         }

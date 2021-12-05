@@ -18,6 +18,7 @@ namespace Dox2Word.Generator
         public const string WarningStyleId = "DoxWarning";
         public const string NoteStyleId = "DoxNote";
         public const string BlockQuoteStyleId = "DoxBlockQuote";
+        public const string DefinitionTermStyleId = "DoxDefinitionTerm";
         public const string HyperlinkStyleId = "Hyperlink";
         public const string CaptionStyleId = "Caption";
         public const string ListParagraphStyleId = "ListParagraph";
@@ -188,6 +189,16 @@ namespace Dox2Word.Generator
                 style.StyleParagraphProperties = new StyleParagraphProperties()
                 {
                     Indentation = new Indentation() { Left = "567" },
+                };
+            });
+
+            this.AddIfNotExists(DefinitionTermStyleId, StyleValues.Paragraph, "Dox Definition Term", style =>
+            {
+                style.BasedOn = new BasedOn() { Val = "Normal" };
+                style.PrimaryStyle = new PrimaryStyle();
+                style.StyleRunProperties = new StyleRunProperties()
+                {
+                    Bold = new Bold(),
                 };
             });
 

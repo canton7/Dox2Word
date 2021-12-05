@@ -6,6 +6,7 @@ namespace Dox2Word.Model
     public class UrlLink : Collection<TextRun>, IParagraphElement
     {
         public string Url { get; }
+
         public UrlLink(string url)
         {
             this.Url = url;

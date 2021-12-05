@@ -21,7 +21,7 @@ namespace Dox2Word.Parser.Models
                 "itemizedlist" => Load<DocList>(reader, x => x.Type = ListParagraphType.Bullet),
                 "simplesect" => Load<DocSimpleSect>(reader),
                 "title" => Unsupported("title"), // Used as part of pages
-                "variablelist" => Unsupported("variablelist"), // These seem to only occur in 'bug' simplesects
+                "variablelist" => Load<DocVariableList>(reader),
                 "table" => Load<DocTable>(reader),
                 "heading" => Unsupported("heading"), // Used as part of pages
                 "dotfile" => Load<DotFile>(reader),
