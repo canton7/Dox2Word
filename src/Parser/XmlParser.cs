@@ -22,7 +22,7 @@ namespace Dox2Word.Parser
         {
             this.basePath = basePath;
             this.index = new Index(doxygenIndex);
-            this.mixedModeParser = new MixedModeParser(this.index);
+            this.mixedModeParser = new MixedModeParser(this.basePath, this.index);
 
             this.project = new Project();
         }

@@ -13,10 +13,12 @@ namespace Dox2Word.Parser
     internal class MixedModeParser
     {
         private static readonly Logger logger = Logger.Instance;
+        private readonly string basePath;
         private readonly Index index;
 
-        public MixedModeParser(Index index)
+        public MixedModeParser(string basePath, Index index)
         {
+            this.basePath = basePath;
             this.index = index;
         }
 
@@ -113,6 +115,11 @@ namespace Dox2Word.Parser
                         Add(paragraphs, new TextParagraph(TextParagraphType.Preformatted));
                         this.Parse(paragraphs, m.Parts, properties, alignment);
                         Add(paragraphs, new TextParagraph());
+                        break;
+                    case Image i when i.Type == "html":
+                        Add(paragraphs, new ImageParagraph(Path.Combine(this.basePath, i.Name), i.Contents, i.Inline == DoxBool.Yes));
+                        break;
+                    case Image:
                         break;
                     case Dot d:
                         Add(paragraphs, new DotParagraph(d.Contents) { Caption = d.Caption });

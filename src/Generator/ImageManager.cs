@@ -100,8 +100,7 @@ namespace Dox2Word.Generator
                                              Embed = relationshipId,
                                              CompressionState = A.BlipCompressionValues.Print
                                          },
-                                         new A.Stretch(
-                                             new A.FillRectangle())),
+                                         new A.Stretch(new A.FillRectangle())),
                                      new PIC.ShapeProperties(
                                          new A.Transform2D(
                                              new A.Offset() { X = 0L, Y = 0L },

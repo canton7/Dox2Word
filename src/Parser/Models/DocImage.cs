@@ -10,10 +10,17 @@ namespace Dox2Word.Parser.Models
         [XmlAttribute("caption")]
         public string? Caption { get; set; }
 
+        [XmlAttribute("type")]
+        public string? Type { get; set; }
+
+        [XmlAttribute]
+        public DoxBool Inline { get; set; }
+
         [XmlText]
         public string Contents { get; set; } = null!;
     }
 
     public class Dot : DocImage { }
     public class DotFile : DocImage { }
+    public class Image : DocImage { }
 }

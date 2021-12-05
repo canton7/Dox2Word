@@ -109,6 +109,12 @@
  *   </dd>
  * </dl>
  * 
+ * @image html image.png "A test image"
+ * 
+ * This image:
+ * @image{inline} html image.png
+ * is inline
+ * 
  * @{
  * @file
  */

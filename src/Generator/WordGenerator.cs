@@ -556,6 +556,13 @@ namespace Dox2Word.Generator
                     yield return this.CreateCodeParagraph(codeParagraph);
                     break;
 
+                case ImageParagraph imageParagraph:
+                    foreach (var p in this.CreateImageParagraph(imageParagraph))
+                    {
+                        yield return p;
+                    }
+                    break;
+
                 case DotParagraph dotParagraph:
                     foreach (var p in this.CreateDotParagraph(dotParagraph))
                     {
@@ -782,26 +789,53 @@ namespace Dox2Word.Generator
             return paragraph;
         }
 
+        private IEnumerable<OpenXmlElement> CreateImageParagraph(ImageParagraph imageParagraph)
+        {
+            ImagePartType? type = Path.GetExtension(imageParagraph.FilePath) switch
+            {
+                ".png" => ImagePartType.Png,
+                ".jpg" or ".jpeg" => ImagePartType.Jpeg,
+                ".gif" => ImagePartType.Gif,
+                ".tiff" => ImagePartType.Tiff,
+                ".ico" => ImagePartType.Icon,
+                ".pcx" => ImagePartType.Pcx,
+                ".emf" => ImagePartType.Emf,
+                ".wmf" => ImagePartType.Wmf,
+                _ => null,
+            };
+            if (type == null)
+            {
+                logger.Warning($"Unknown image extension for '{imageParagraph.FilePath}'. Ignoring");
+                return Enumerable.Empty<OpenXmlElement>();
+            }
+
+            return this.InsertImage(File.ReadAllBytes(imageParagraph.FilePath), type.Value, imageParagraph.Caption);
+        }
+
         private IEnumerable<OpenXmlElement> CreateDotParagraph(DotParagraph dotParagraph)
         {
             byte[]? output = this.dotRenderer.TryRender(dotParagraph.Contents);
-            if (output != null)
-            {
-                yield return new Paragraph(new Run(this.imageManager.CreateImage(output, ImagePartType.Png)));
+            return output != null
+                ? this.InsertImage(output, ImagePartType.Png, dotParagraph.Caption)
+                : Enumerable.Empty<OpenXmlElement>();
+        }
 
-                if (dotParagraph.Caption != null)
+        private IEnumerable<OpenXmlElement> InsertImage(byte[] contents, ImagePartType type, string? caption)
+        {
+            yield return new Paragraph(new Run(this.imageManager.CreateImage(contents, type)));
+
+            if (!string.IsNullOrEmpty(caption))
+            {
+                var paragraph = new Paragraph().ApplyStyle(StyleManager.CaptionStyleId);
+                paragraph.AppendChild(new Run(new Text("Figure ").PreserveSpace()));
+                paragraph.AppendChild(new SimpleField()
                 {
-                    var paragraph = new Paragraph().ApplyStyle(StyleManager.CaptionStyleId);
-                    paragraph.AppendChild(new Run(new Text("Figure ").PreserveSpace()));
-                    paragraph.AppendChild(new SimpleField()
-                    {
-                        Instruction = " SEQ Figure \\* ARABIC ",
-                        Dirty = true,
-                    });
-                    paragraph.AppendChild(new Run(new Text(" ").PreserveSpace()));
-                    paragraph.AppendChild(new Run(StringToElements(dotParagraph.Caption)));
-                    yield return paragraph;
-                }
+                    Instruction = " SEQ Figure \\* ARABIC ",
+                    Dirty = true,
+                });
+                paragraph.AppendChild(new Run(new Text(" ").PreserveSpace()));
+                paragraph.AppendChild(new Run(StringToElements(caption)));
+                yield return paragraph;
             }
         }
 

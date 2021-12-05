@@ -38,7 +38,7 @@ namespace Dox2Word.Parser.Models
                 "htmlonly" or "manonly" => null,
                 "xmlonly" => reader.ReadElementContentAsString().Trim(' ', '\n'), // We don't actually get these...
                 "rtfonly" or "latexonly" or "docbookonly" => null,
-                "image" => Unsupported("image"), // TODO: image
+                "image" => Load<Image>(reader),
                 "dot" => Load<Dot>(reader),
                 "msc" => Unsupported("msc"),
                 "plantuml" => Unsupported("plantuml"), // TODO: plantuml
