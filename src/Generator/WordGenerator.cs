@@ -50,11 +50,12 @@ namespace Dox2Word.Generator
                 new Styles().Save(stylesPart);
             }
 
-            this.listManager = new ListManager(numberingPart);
             this.imageManager = new ImageManager(doc.MainDocumentPart);
             this.bookmarkManager = new BookmarkManager(doc.MainDocumentPart.Document.Body!);
             this.styleManager = new StyleManager(stylesPart);
             this.styleManager.EnsureStyles();
+            this.listManager = new ListManager(numberingPart, this.styleManager);
+            this.listManager.EnsureNumbers();
         }
 
         public void Generate(Project project)

@@ -92,6 +92,8 @@ Dox2Word makes extensive use of Styles to format the resulting Word document.
 The following styles will be inserted if they do not already exist, but you can customise Dox2Word's output by defining them yourself in the template Word file.
 Make sure that Word actually adds them to the template: it has a habit of omitting them if they're unused!
 
+### Text Styles
+
  - `Heading 1`, `Heading 2`, etc: these must exist in the document
  - `Hyperlink`: used for hyperlinks
  - `Caption`: used for table/image captions
@@ -104,3 +106,8 @@ Make sure that Word actually adds them to the template: it has a habit of omitti
  - `Dox Warning`: used for `@warning` paragraphs
  - `Dox Note`: Used for `@note` paragraphs
  - `Dox Block Quote`: used for blockquotes
+
+### List Styles
+
+ - `Dox Bullet List`: bullet lists
+ - `Dox Numbered List`: numbered lists

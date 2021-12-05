@@ -242,14 +242,41 @@ namespace Dox2Word.Generator
             });
         }
 
+        public bool HasStyleWithId(string styleId)
+        {
+            return this.stylesPart.Styles!.Elements<Style>().Any(x => x.StyleId == styleId);
+        }
+
+        public void AddListStyle(string styleId, string styleName, int numId)
+        {
+            if (!this.HasStyleWithId(styleId))
+            {
+                this.stylesPart.Styles!.AppendChild(new Style()
+                {
+                    StyleId = styleId,
+                    StyleName = new StyleName() {  Val = styleName },
+                    Type = StyleValues.Numbering,
+                    CustomStyle = true,
+                    StyleParagraphProperties = new StyleParagraphProperties()
+                    { 
+                        NumberingProperties = new NumberingProperties()
+                        {
+                            NumberingId = new NumberingId() { Val = numId },
+                        },
+                    },
+                });
+            }
+        }
+
         private void AddIfNotExists(string styleId, StyleValues styleType, string filename)
         {
-            if (!this.stylesPart.Styles!.Elements<Style>().Any(x => x.StyleId == styleId))
+            if (!this.HasStyleWithId(styleId))
             {
-                var style = this.stylesPart.Styles.AppendChild(new Style()
+                var style = this.stylesPart.Styles!.AppendChild(new Style()
                 {
                     StyleId = styleId,
                     Type = styleType,
+                    CustomStyle = true,
                 });
                 using var sr = new StreamReader(typeof(StyleManager).Assembly.GetManifestResourceStream($"Dox2Word.Generator.{filename}"));
                 style.InnerXml = sr.ReadToEnd();
@@ -258,13 +285,14 @@ namespace Dox2Word.Generator
 
         private void AddIfNotExists(string styleId, StyleValues styleType, string styleName, Action<Style> configurer)
         {
-            if (!this.stylesPart.Styles!.Elements<Style>().Any(x => x.StyleId == styleId))
+            if (!this.HasStyleWithId(styleId))
             {
-                var style = this.stylesPart.Styles.AppendChild(new Style()
+                var style = this.stylesPart.Styles!.AppendChild(new Style()
                 {
                     StyleId = styleId,
                     StyleName = new StyleName() { Val = styleName },
                     Type = styleType,
+                    CustomStyle = true,
                 });
                 configurer(style);
             }
