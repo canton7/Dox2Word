@@ -173,13 +173,13 @@ namespace Dox2Word.Generator
             {
                 logger.Debug($"Writing {cls.Type} {cls.Name}");
 
-                string title = cls.Type switch
+                var (title, anonymousName) = cls.Type switch
                 {
-                    ClassType.Struct => "Struct",
-                    ClassType.Union => "Union",
+                    ClassType.Struct => ("Struct", "Anonymous Struct"),
+                    ClassType.Union => ("Union", "Anonymous Union"),
                 };
 
-                this.WriteHeading(title, cls.Name, cls.Id, headingLevel);
+                this.WritePotentiallyAnonymousHeading(title, cls.Name, anonymousName, cls.Id, headingLevel);
 
                 this.WriteDescriptions(cls.Descriptions);
 
@@ -216,7 +216,7 @@ namespace Dox2Word.Generator
             {
                 logger.Debug($"Writing Enum {@enum.Name}");
 
-                this.WriteHeading("Enum", @enum.Name, @enum.Id, headingLevel);
+                this.WritePotentiallyAnonymousHeading("Enum", @enum.Name, "Anonymous Enum", @enum.Id, headingLevel);
 
                 this.WriteDescriptions(@enum.Descriptions);
 
@@ -419,16 +419,29 @@ namespace Dox2Word.Generator
             }
         }
 
+        private void WritePotentiallyAnonymousHeading(string? prefix, string text, string anonymousText, string id, int headingLevel)
+        {
+            if (text.StartsWith("@"))
+            {
+                this.WriteHeading(null, anonymousText, id, headingLevel);
+            }
+            else
+            {
+                this.WriteHeading(prefix, text, id, headingLevel);
+            }
+        }
+
         private void WriteHeading(string? prefix, string text, string id, int headingLevel)
         {
             var paragraph = this.AppendChild(new Paragraph());
 
             if (prefix != null)
             {
-                paragraph.Append(new Run(new Text(prefix + " ").PreserveSpace()));
+                paragraph.Append(RemoveCaps(new Run(new Text(prefix + " ").PreserveSpace())));
             }
 
             var run = new Run(new Text(text));
+            RemoveCaps(run);
             var (bookmarkStart, bookmarkEnd) = this.bookmarkManager.CreateBookmark(id);
             paragraph.Append(bookmarkStart, run, bookmarkEnd);
 
@@ -437,7 +450,7 @@ namespace Dox2Word.Generator
                 .WithProperties(x => x.SpacingBetweenLines = new SpacingBetweenLines() { Before = $"{8 * 20}" });
 
             // If the style specifies all-caps or small-caps, undo this
-            run.WithProperties(x =>
+            static Run RemoveCaps(Run run) => run.WithProperties(x =>
             {
                 x.SmallCaps = new SmallCaps() { Val = false };
                 x.Caps = new Caps() { Val = false };
