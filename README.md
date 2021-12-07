@@ -85,6 +85,13 @@ Dox2Word currently supports the following Doxygen features:
  - C: Structs, unions, enums, typedefs, global variables, macros, functions
  - Function to function references, if `REFERENCED_BY_RELATION` and/or `REFERENCES_RELATION` is set to `YES`.
 
+The following Doxygen features are currently not supported:
+ 
+- Indexes with `@addindex`, `@secreflist`, etc
+- Stand-alone pages (including `@toclist`, `@heading`, etc)
+- `@image`, `@msc`, `@mscfile`, `@diafile`, `@plantuml`
+
+
 Word Styles
 -----------
 
@@ -106,8 +113,10 @@ Make sure that Word actually adds them to the template: it has a habit of omitti
  - `Dox Warning`: used for `@warning` paragraphs
  - `Dox Note`: Used for `@note` paragraphs
  - `Dox Block Quote`: used for blockquotes
+ - `Dox Definition Term`, used for the 'term' in `<dd>` lists
 
 ### List Styles
 
  - `Dox Bullet List`: bullet lists
  - `Dox Numbered List`: numbered lists
+ - `Dox Definition List`: `<dd>` lists
