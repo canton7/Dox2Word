@@ -11,6 +11,8 @@ namespace Dox2Word.Generator
 {
     public class ImageManager
     {
+        private const double MaxWidthCm = 17;
+
         private readonly MainDocumentPart mainPart;
 
         private uint id = 1;
@@ -34,8 +36,6 @@ namespace Dox2Word.Generator
         {
             // https://stackoverflow.com/a/8083390/1086121
 
-            const float maxWidthCm = 14.5f;
-
             using var img = new Bitmap(new MemoryStream(data));
             int widthPx = img.Width;
             int heightPx = img.Height;
@@ -43,9 +43,9 @@ namespace Dox2Word.Generator
             float vertRezDpi = img.VerticalResolution;
             const int emusPerInch = 914400;
             const int emusPerCm = 360000;
-            long widthEmus = (long)(widthPx / horzRezDpi * emusPerInch);
-            long heightEmus = (long)(heightPx / vertRezDpi * emusPerInch);
-            long maxWidthEmus = (long)(maxWidthCm * emusPerCm);
+            long widthEmus = (long)((double)widthPx / horzRezDpi * emusPerInch);
+            long heightEmus = (long)((double)heightPx / vertRezDpi * emusPerInch);
+            long maxWidthEmus = (long)(MaxWidthCm * emusPerCm);
             if (widthEmus > maxWidthEmus)
             {
                 decimal ratio = (heightEmus * 1.0m) / widthEmus;
@@ -95,14 +95,13 @@ namespace Dox2Word.Generator
                                                  {
                                                      Uri = "{28A0092B-C50C-407E-A947-70E740481C1C}"
                                                  })
-)
+                                             )
                                          {
                                              Embed = relationshipId,
                                              CompressionState = A.BlipCompressionValues.Print
-                                         }
-                                         //new A.Stretch(
-                                         //    new A.FillRectangle())),
-                                         ),
+                                         },
+                                         new A.Stretch(
+                                             new A.FillRectangle())),
                                      new PIC.ShapeProperties(
                                          new A.Transform2D(
                                              new A.Offset() { X = 0L, Y = 0L },
