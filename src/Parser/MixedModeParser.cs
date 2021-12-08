@@ -117,7 +117,15 @@ namespace Dox2Word.Parser
                         Add(paragraphs, new TextParagraph());
                         break;
                     case Image i when i.Type == "html":
-                        Add(paragraphs, new ImageParagraph(Path.Combine(this.basePath, i.Name), i.Contents, i.Inline == DoxBool.Yes));
+                        if (i.Inline != DoxBool.Yes)
+                        {
+                            Add(paragraphs, new TextParagraph());
+                        }
+                        Add(paragraphs, alignment, new ImageElement(Path.Combine(this.basePath, i.Name), i.Caption));
+                        if (i.Inline != DoxBool.Yes)
+                        {
+                            Add(paragraphs, new TextParagraph());
+                        }
                         break;
                     case Image:
                         break;
