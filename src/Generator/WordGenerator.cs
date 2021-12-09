@@ -194,7 +194,7 @@ namespace Dox2Word.Generator
                             : $" :{variable.Bitfield}";
 
                         var bookmark = this.bookmarkManager.CreateBookmark(variable.Id);
-                        var name = this.TextRunsToRuns(variable.Type).ToList();
+                        var name = this.ParagraphElementsToRuns(variable.Type).ToList();
                         name.Add(new Run(new Text(" ").PreserveSpace()));
                         name.Add(bookmark.start);
                         name.Add(new Run(new Text(variable.Name ?? "")));
@@ -250,7 +250,7 @@ namespace Dox2Word.Generator
                 this.WriteMiniHeading("Definition");
                 var paragraph = this.AppendChild(new Paragraph().LeftAlign().ApplyStyle(StyleManager.CodeStyleId));
                 paragraph.AppendChild(new Run(new Text("typedef ").PreserveSpace()));
-                paragraph.Append(this.TextRunsToRuns(typedef.Type));
+                paragraph.Append(this.ParagraphElementsToRuns(typedef.Type));
                 paragraph.AppendChild(new Run(new Text(" " + typedef.Name).PreserveSpace()));
 
                 this.WriteDescriptions(typedef.Descriptions);
@@ -267,12 +267,12 @@ namespace Dox2Word.Generator
 
                 this.WriteMiniHeading("Definition");
                 var paragraph = this.AppendChild(new Paragraph().LeftAlign().ApplyStyle(StyleManager.CodeStyleId));
-                paragraph.Append(this.TextRunsToRuns(variable.Type));
+                paragraph.Append(this.ParagraphElementsToRuns(variable.Type));
                 paragraph.Append(new Run(new Text($" {variable.Name}").PreserveSpace()));
                 if (variable.Initializer.Count > 0)
                 {
                     paragraph.AppendChild(new Run(new Text(" ").PreserveSpace()));
-                    paragraph.Append(this.TextRunsToRuns(variable.Initializer));
+                    paragraph.Append(this.ParagraphElementsToRuns(variable.Initializer));
                 }
 
                 this.WriteDescriptions(variable.Descriptions);
@@ -301,7 +301,7 @@ namespace Dox2Word.Generator
                 {
                     paragraph.AppendChild(new Run(new Text("\\"), new Break()));
                 }
-                paragraph.Append(this.TextRunsToRuns(macro.Initializer));
+                paragraph.Append(this.ParagraphElementsToRuns(macro.Initializer));
 
                 this.WriteDescriptions(macro.Descriptions);
 
@@ -332,7 +332,7 @@ namespace Dox2Word.Generator
                 var signatureParagraph = this.AppendChild(new Paragraph().LeftAlign().ApplyStyle(StyleManager.CodeStyleId));
                 Run NewRun(OpenXmlElement e) => signatureParagraph.AppendChild(new Run(e));
 
-                signatureParagraph.Append(this.TextRunsToRuns(function.ReturnType));
+                signatureParagraph.Append(this.ParagraphElementsToRuns(function.ReturnType));
                 NewRun(new Text($" {function.Name}").PreserveSpace());
 
                 if (function.Parameters.Count > 0)
@@ -343,7 +343,7 @@ namespace Dox2Word.Generator
                         string comma = i == function.Parameters.Count - 1 ? "" : ",";
                         var run = NewRun(new Break());
                         run.AppendChild(new Text("    ").PreserveSpace());
-                        signatureParagraph.Append(this.TextRunsToRuns(function.Parameters[i].Type));
+                        signatureParagraph.Append(this.ParagraphElementsToRuns(function.Parameters[i].Type));
                         string space = signatureParagraph.InnerText.EndsWith(" *") ? "" : " ";
                         NewRun(new Text($"{space}{function.Parameters[i].Name}{comma}").PreserveSpace());
                     }
@@ -535,7 +535,7 @@ namespace Dox2Word.Generator
                     break;
 
                 case TitleParagraph titleParagraph:
-                    yield return new Paragraph(this.TextRunsToRuns(titleParagraph)).ApplyStyle(StyleManager.ParHeadingStyleId);
+                    yield return new Paragraph(this.ParagraphElementsToRuns(titleParagraph)).ApplyStyle(StyleManager.ParHeadingStyleId);
                     break;
 
                 case ListParagraph listParagraph:
@@ -558,6 +558,13 @@ namespace Dox2Word.Generator
 
                 case DotParagraph dotParagraph:
                     foreach (var p in this.CreateDotParagraph(dotParagraph))
+                    {
+                        yield return p;
+                    }
+                    break;
+
+                case ImageElement imageElement:
+                    foreach (var p in this.CreateImageParagraph(this.imageManager.CreateImage(imageElement.FilePath), imageElement.Caption))
                     {
                         yield return p;
                     }
@@ -591,79 +598,95 @@ namespace Dox2Word.Generator
                 paragraph.WithProperties(x => x.Justification = new Justification() { Val = justification });
             }
 
-            paragraph.Append(this.TextRunsToRuns(textParagraph));
+            paragraph.Append(this.ParagraphElementsToRuns(textParagraph));
             
             return paragraph;
         }
 
-        private IEnumerable<OpenXmlElement> TextRunsToRuns(IEnumerable<IParagraphElement> paragraphElement)
+        private IEnumerable<OpenXmlElement> ParagraphElementsToRuns(IEnumerable<IParagraphElement> paragraphElement)
         {
             foreach (var element in paragraphElement)
             {
                 switch (element)
                 {
                     case TextRun textRun:
-                    {
-                        var run = new Run(StringToElements(textRun.Text));
-
-                        int fontSize = this.styleManager.DefaultFontSize;
-                        run.WithProperties(x =>
+                        foreach (var p in this.ProcessTextRun(textRun))
                         {
-                            x.Bold = textRun.Properties.Format.HasFlag(TextRunFormat.Bold) ? new Bold() : null;
-                            x.Italic = textRun.Properties.Format.HasFlag(TextRunFormat.Italic) ? new Italic() : null;
-                            x.Strike = textRun.Properties.Format.HasFlag(TextRunFormat.Strikethrough) ? new Strike() : null;
-                            x.Underline = textRun.Properties.Format.HasFlag(TextRunFormat.Underline) ? new Underline() { Val = UnderlineValues.Single } : null;
-                            x.VerticalTextAlignment = textRun.Properties.VerticalPosition switch
-                            {
-                                TextRunVerticalPosition.Baseline => null,
-                                TextRunVerticalPosition.Superscript => new VerticalTextAlignment() {  Val = VerticalPositionValues.Superscript },
-                                TextRunVerticalPosition.Subscript => new VerticalTextAlignment() {  Val = VerticalPositionValues.Subscript },
-                            };
-                        });
-                        if (textRun.Properties.Format.HasFlag(TextRunFormat.Monospace))
-                        {
-                            fontSize -= 2;
-                            run.WithProperties(x => x.RunFonts = new RunFonts() { Ascii = "Consolas" });
+                            yield return p;
                         }
-                        if (textRun.Properties.IsSmall)
-                        {
-                            fontSize -= 2;
-                        }
-
-                        if (fontSize != this.styleManager.DefaultFontSize)
-                        {
-                            run.WithProperties(x => x.FontSize = new FontSize() { Val = fontSize.ToString() });
-                        }
-
-                        OpenXmlElement result = textRun.ReferenceId == null
-                            ? run
-                            : this.bookmarkManager.CreateLink(textRun.ReferenceId, run);
-                        if (textRun.AnchorId == null)
-                        {
-                            yield return result;
-                        }
-                        else
-                        {
-                            var bookmark = this.bookmarkManager.CreateBookmark(textRun.AnchorId);
-                            yield return bookmark.start;
-                            yield return result;
-                            yield return bookmark.end;
-                        }
-                    }
                     break;
 
                     case UrlLink link:
                     {
                         var rel = this.doc.MainDocumentPart!.AddHyperlinkRelationship(new Uri(link.Url), isExternal: true);
                         var hyperlink = new Hyperlink() { Id = rel.Id };
-                        hyperlink.Append(this.TextRunsToRuns(link).ApplyRunStyle(StyleManager.HyperlinkStyleId));
+                        hyperlink.Append(this.ParagraphElementsToRuns(link).ApplyRunStyle(StyleManager.HyperlinkStyleId));
                         yield return hyperlink;
+                    }
+                    break;
+
+                    case ImageElement imageElement:
+                    {
+                        var image = this.imageManager.CreateImage(imageElement.FilePath);
+                        if (image != null)
+                        {
+                            yield return new Run(image);
+                        }
                     }
                     break;
 
                     default:
                         throw new GeneratorException($"Unexpected IParagraphElement type {element} ({element.GetType()})");
                 }
+            }
+        }
+
+        private IEnumerable<OpenXmlElement> ProcessTextRun(TextRun textRun)
+        {
+            var run = new Run(StringToElements(textRun.Text));
+
+            int fontSize = this.styleManager.DefaultFontSize;
+            run.WithProperties(x =>
+            {
+                x.Bold = textRun.Properties.Format.HasFlag(TextRunFormat.Bold) ? new Bold() : null;
+                x.Italic = textRun.Properties.Format.HasFlag(TextRunFormat.Italic) ? new Italic() : null;
+                x.Strike = textRun.Properties.Format.HasFlag(TextRunFormat.Strikethrough) ? new Strike() : null;
+                x.Underline = textRun.Properties.Format.HasFlag(TextRunFormat.Underline) ? new Underline() { Val = UnderlineValues.Single } : null;
+                x.VerticalTextAlignment = textRun.Properties.VerticalPosition switch
+                {
+                    TextRunVerticalPosition.Baseline => null,
+                    TextRunVerticalPosition.Superscript => new VerticalTextAlignment() { Val = VerticalPositionValues.Superscript },
+                    TextRunVerticalPosition.Subscript => new VerticalTextAlignment() { Val = VerticalPositionValues.Subscript },
+                };
+            });
+            if (textRun.Properties.Format.HasFlag(TextRunFormat.Monospace))
+            {
+                fontSize -= 2;
+                run.WithProperties(x => x.RunFonts = new RunFonts() { Ascii = "Consolas" });
+            }
+            if (textRun.Properties.IsSmall)
+            {
+                fontSize -= 2;
+            }
+
+            if (fontSize != this.styleManager.DefaultFontSize)
+            {
+                run.WithProperties(x => x.FontSize = new FontSize() { Val = fontSize.ToString() });
+            }
+
+            OpenXmlElement result = textRun.ReferenceId == null
+                ? run
+                : this.bookmarkManager.CreateLink(textRun.ReferenceId, run);
+            if (textRun.AnchorId == null)
+            {
+                yield return result;
+            }
+            else
+            {
+                var bookmark = this.bookmarkManager.CreateBookmark(textRun.AnchorId);
+                yield return bookmark.start;
+                yield return result;
+                yield return bookmark.end;
             }
         }
 
@@ -781,27 +804,36 @@ namespace Dox2Word.Generator
 
             return paragraph;
         }
-
+        
         private IEnumerable<OpenXmlElement> CreateDotParagraph(DotParagraph dotParagraph)
         {
             byte[]? output = this.dotRenderer.TryRender(dotParagraph.Contents);
-            if (output != null)
-            {
-                yield return new Paragraph(new Run(this.imageManager.CreateImage(output, ImagePartType.Png)));
+            return output != null
+                ? this.CreateImageParagraph(this.imageManager.CreateImage(output, ImagePartType.Png), dotParagraph.Caption)
+                : Enumerable.Empty<OpenXmlElement>();
+        }
 
-                if (dotParagraph.Caption != null)
+        private IEnumerable<OpenXmlElement> CreateImageParagraph(OpenXmlElement? image, string? caption)
+        {
+            if (image == null)
+            {
+                yield break;
+            }
+
+            yield return new Paragraph(new Run(image));
+
+            if (!string.IsNullOrEmpty(caption))
+            {
+                var paragraph = new Paragraph().ApplyStyle(StyleManager.CaptionStyleId);
+                paragraph.AppendChild(new Run(new Text("Figure ").PreserveSpace()));
+                paragraph.AppendChild(new SimpleField()
                 {
-                    var paragraph = new Paragraph().ApplyStyle(StyleManager.CaptionStyleId);
-                    paragraph.AppendChild(new Run(new Text("Figure ").PreserveSpace()));
-                    paragraph.AppendChild(new SimpleField()
-                    {
-                        Instruction = " SEQ Figure \\* ARABIC ",
-                        Dirty = true,
-                    });
-                    paragraph.AppendChild(new Run(new Text(" ").PreserveSpace()));
-                    paragraph.AppendChild(new Run(StringToElements(dotParagraph.Caption)));
-                    yield return paragraph;
-                }
+                    Instruction = " SEQ Figure \\* ARABIC ",
+                    Dirty = true,
+                });
+                paragraph.AppendChild(new Run(new Text(" ").PreserveSpace()));
+                paragraph.AppendChild(new Run(StringToElements(caption)));
+                yield return paragraph;
             }
         }
 

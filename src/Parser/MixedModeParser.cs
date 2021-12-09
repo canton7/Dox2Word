@@ -13,10 +13,12 @@ namespace Dox2Word.Parser
     internal class MixedModeParser
     {
         private static readonly Logger logger = Logger.Instance;
+        private readonly string basePath;
         private readonly Index index;
 
-        public MixedModeParser(Index index)
+        public MixedModeParser(string basePath, Index index)
         {
+            this.basePath = basePath;
             this.index = index;
         }
 
@@ -53,7 +55,7 @@ namespace Dox2Word.Parser
                         foreach (var para in b.Paras)
                         {
                             this.Parse(paragraphs, para.Parts, properties, alignment);
-                            Add(paragraphs, new TextParagraph());
+                            AddParagraph(paragraphs, new TextParagraph());
                         }
                         break;
                     case DocEmoji e:
@@ -61,29 +63,29 @@ namespace Dox2Word.Parser
                         AddTextRun(paragraphs, WebUtility.HtmlDecode(e.Unicode), properties, alignment); 
                         break;
                     case DocSimpleSect s when s.Kind == DoxSimpleSectKind.Warning:
-                        Add(paragraphs, new TextParagraph(TextParagraphType.Warning));
+                        AddParagraph(paragraphs, new TextParagraph(TextParagraphType.Warning));
                         this.Parse(paragraphs, s.Para?.Parts, properties, alignment);
-                        Add(paragraphs, new TextParagraph());
+                        AddParagraph(paragraphs, new TextParagraph());
                         break;
                     case DocSimpleSect s when s.Kind == DoxSimpleSectKind.Note:
-                        Add(paragraphs, new TextParagraph(TextParagraphType.Note));
+                        AddParagraph(paragraphs, new TextParagraph(TextParagraphType.Note));
                         this.Parse(paragraphs, s.Para?.Parts, properties, alignment);
-                        Add(paragraphs, new TextParagraph());
+                        AddParagraph(paragraphs, new TextParagraph());
                         break;
                     case DocSimpleSect s when s.Kind == DoxSimpleSectKind.Par:
                         if (s.Title.Parts.Count > 0)
                         {
-                            Add(paragraphs, new TitleParagraph());
+                            AddParagraph(paragraphs, new TitleParagraph());
                             this.Parse(paragraphs, s.Title.Parts, default, alignment);
                         }
-                        Add(paragraphs, new TextParagraph());
+                        AddParagraph(paragraphs, new TextParagraph());
                         this.Parse(paragraphs, s.Para?.Parts, properties, alignment);
-                        Add(paragraphs, new TextParagraph());
+                        AddParagraph(paragraphs, new TextParagraph());
                         break;
                     case DocSimpleSect s when s.Kind == DoxSimpleSectKind.Return:
                         break; // Ignore
                     case DocSimpleSect s:
-                        Add(paragraphs, new TextParagraph());
+                        AddParagraph(paragraphs, new TextParagraph());
                         this.Parse(paragraphs, s.Para?.Parts, properties, alignment);
                         break;
                     case DocList l:
@@ -92,10 +94,10 @@ namespace Dox2Word.Parser
                     case DocBlockQuote b:
                         foreach (var para in b.Paras)
                         {
-                            Add(paragraphs, new TextParagraph(TextParagraphType.BlockQuote));
+                            AddParagraph(paragraphs, new TextParagraph(TextParagraphType.BlockQuote));
                             this.Parse(paragraphs, para.Parts, properties, alignment);
                         }
-                        Add(paragraphs, new TextParagraph());
+                        AddParagraph(paragraphs, new TextParagraph());
                         break;
                     case DocXRefSect r:
                         if (r.Title.FirstOrDefault() is not ("Todo" or "Bug"))
@@ -110,15 +112,30 @@ namespace Dox2Word.Parser
                         ParseListing(paragraphs, l);
                         break;
                     case PreformattedDocMarkup m:
-                        Add(paragraphs, new TextParagraph(TextParagraphType.Preformatted));
+                        AddParagraph(paragraphs, new TextParagraph(TextParagraphType.Preformatted));
                         this.Parse(paragraphs, m.Parts, properties, alignment);
-                        Add(paragraphs, new TextParagraph());
+                        AddParagraph(paragraphs, new TextParagraph());
+                        break;
+                    case Image i when i.Type == "html":
+                    {
+                        var image = new ImageElement(Path.Combine(this.basePath, i.Name), i.Contents);
+                        if (i.Inline == DoxBool.Yes)
+                        {
+                            Add(paragraphs, alignment, image);
+                        }
+                        else
+                        {
+                            AddParagraph(paragraphs, image);
+                        }
+                    }
+                    break;
+                    case Image:
                         break;
                     case Dot d:
-                        Add(paragraphs, new DotParagraph(d.Contents) { Caption = d.Caption });
+                        AddParagraph(paragraphs, new DotParagraph(d.Contents) { Caption = d.Caption });
                         break;
                     case DotFile d:
-                        Add(paragraphs, new DotParagraph(File.ReadAllText(d.Name!)) { Caption = d.Contents });
+                        AddParagraph(paragraphs, new DotParagraph(File.ReadAllText(d.Name!)) { Caption = d.Contents });
                         break;
                     case DocUrlLink l:
                         this.ParseUrlLink(paragraphs, l, properties, alignment);
@@ -126,12 +143,12 @@ namespace Dox2Word.Parser
                     case DocMarkup m:
                         if (m.Center)
                         {
-                            Add(paragraphs, new TextParagraph(TextParagraphAlignment.Center));
+                            AddParagraph(paragraphs, new TextParagraph(TextParagraphAlignment.Center));
                         }
                         this.Parse(paragraphs, m.Parts, properties.Combine(m.Properties), alignment);
                         if (m.Center)
                         {
-                            Add(paragraphs, new TextParagraph());
+                            AddParagraph(paragraphs, new TextParagraph());
                         }
                         break;
                     case Ref r:
@@ -150,8 +167,8 @@ namespace Dox2Word.Parser
                         }
                         else
                         {
-                            Add(paragraphs, new TextParagraph() { HasHorizontalRuler = true });
-                            Add(paragraphs, new TextParagraph());
+                            AddParagraph(paragraphs, new TextParagraph() { HasHorizontalRuler = true });
+                            AddParagraph(paragraphs, new TextParagraph());
                         }
                         break;
                     case XmlElement e:
@@ -165,7 +182,7 @@ namespace Dox2Word.Parser
             }
         }
 
-        private static T Add<T>(ICollection<IParagraph> paragraphs, T paragraph) where T : IParagraph
+        private static T AddParagraph<T>(ICollection<IParagraph> paragraphs, T paragraph) where T : IParagraph
         {
             TrimLast(paragraphs);
 
@@ -190,7 +207,7 @@ namespace Dox2Word.Parser
         {
             if (paragraphs.LastOrDefault() is not ICollection<IParagraphElement> paragraph)
             {
-                paragraph = Add(paragraphs, new TextParagraph(alignment: alignment));
+                paragraph = AddParagraph(paragraphs, new TextParagraph(alignment: alignment));
             }
             // If we're inserting text straight after a stand-alone line break (from newline), trim the leading space -- Doxygen seems to insert it for some reason
             if (element is TextRun textRun && paragraph.LastOrDefault() is TextRun previousTextRun && previousTextRun.Text == "\n")
@@ -216,7 +233,7 @@ namespace Dox2Word.Parser
 
         private void ParseList(List<IParagraph> paragraphs, DocList docList, ListParagraphType type, TextRunProperties properties, TextParagraphAlignment alignment)
         {
-            var list = Add(paragraphs, new ListParagraph(type));
+            var list = AddParagraph(paragraphs, new ListParagraph(type));
             foreach (var item in docList.Items)
             {
                 // It could be that the para contains a warning or something which will add
@@ -233,7 +250,7 @@ namespace Dox2Word.Parser
 
         private static void ParseListing(List<IParagraph> paragraphs, Listing listing)
         {
-            var codeParagraph = Add(paragraphs, new CodeParagraph());
+            var codeParagraph = AddParagraph(paragraphs, new CodeParagraph());
             foreach (var codeline in listing.Codelines)
             {
                 var sb = new StringBuilder();
@@ -304,7 +321,7 @@ namespace Dox2Word.Parser
             tableDoc.FirstRowHeader = table.Rows.FirstOrDefault()?.Entries.All(x => x.IsTableHead == DoxBool.Yes) ?? false;
             tableDoc.FirstColumnHeader = table.Rows.All(x => x.Entries.FirstOrDefault()?.IsTableHead != DoxBool.No);
 
-            Add(paragraphs, tableDoc);
+            AddParagraph(paragraphs, tableDoc);
         }
 
         private void ParseVariableList(List<IParagraph> paragraphs, DocVariableList list)
@@ -351,7 +368,7 @@ namespace Dox2Word.Parser
                 listParagraph.Entries.Add(definitionListEntry);
             }
 
-            Add(paragraphs, listParagraph);
+            AddParagraph(paragraphs, listParagraph);
         }
 
         private TextParagraph? ParseSingleParagraph(DocTitleCmdGroup title, TextRunProperties properties, TextParagraphAlignment alignment)

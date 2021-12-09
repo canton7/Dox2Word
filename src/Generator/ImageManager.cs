@@ -3,6 +3,7 @@ using System.IO;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
+using Dox2Word.Logging;
 using A = DocumentFormat.OpenXml.Drawing;
 using DW = DocumentFormat.OpenXml.Drawing.Wordprocessing;
 using PIC = DocumentFormat.OpenXml.Drawing.Pictures;
@@ -12,6 +13,7 @@ namespace Dox2Word.Generator
     public class ImageManager
     {
         private const double MaxWidthCm = 17;
+        private static readonly Logger logger = Logger.Instance;
 
         private readonly MainDocumentPart mainPart;
 
@@ -30,6 +32,29 @@ namespace Dox2Word.Generator
             var (widthEmus, heightEmus) = this.CalculateExtents(data);
 
             return this.CreateImageElement(this.mainPart.GetIdOfPart(imagePart), widthEmus, heightEmus);
+        }
+
+        public OpenXmlElement? CreateImage(string path)
+        {
+            ImagePartType? type = Path.GetExtension(path) switch
+            {
+                ".png" => ImagePartType.Png,
+                ".jpg" or ".jpeg" => ImagePartType.Jpeg,
+                ".gif" => ImagePartType.Gif,
+                ".tiff" => ImagePartType.Tiff,
+                ".ico" => ImagePartType.Icon,
+                ".pcx" => ImagePartType.Pcx,
+                ".emf" => ImagePartType.Emf,
+                ".wmf" => ImagePartType.Wmf,
+                _ => null,
+            };
+            if (type == null)
+            {
+                logger.Warning($"Unknown image extension for '{path}'. Ignoring");
+                return null;
+            }
+
+            return this.CreateImage(File.ReadAllBytes(path), type.Value);
         }
 
         private (long width, long height) CalculateExtents(byte[] data)
@@ -100,8 +125,7 @@ namespace Dox2Word.Generator
                                              Embed = relationshipId,
                                              CompressionState = A.BlipCompressionValues.Print
                                          },
-                                         new A.Stretch(
-                                             new A.FillRectangle())),
+                                         new A.Stretch(new A.FillRectangle())),
                                      new PIC.ShapeProperties(
                                          new A.Transform2D(
                                              new A.Offset() { X = 0L, Y = 0L },
