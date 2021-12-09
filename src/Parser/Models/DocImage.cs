@@ -16,6 +16,12 @@ namespace Dox2Word.Parser.Models
         [XmlAttribute("inline")]
         public DoxBool Inline { get; set; }
 
+        [XmlAttribute("width")]
+        public string? Width { get; set; }
+
+        [XmlAttribute("height")]
+        public string? Height { get; set; }
+
         [XmlText]
         public string Contents { get; set; } = null!;
     }

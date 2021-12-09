@@ -1,8 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml;
 using Dox2Word.Logging;
 using Dox2Word.Model;
@@ -13,6 +15,8 @@ namespace Dox2Word.Parser
     internal class MixedModeParser
     {
         private static readonly Logger logger = Logger.Instance;
+        private static readonly Regex DimensionRegex = new Regex(@"^(?<value>\d+(\.?\d+)?)(?<unit>cm|in|px|%)$");
+
         private readonly string basePath;
         private readonly Index index;
 
@@ -118,7 +122,7 @@ namespace Dox2Word.Parser
                         break;
                     case Image i when i.Type == "html":
                     {
-                        var image = new ImageElement(Path.Combine(this.basePath, i.Name), i.Contents);
+                        var image = new ImageElement(Path.Combine(this.basePath, i.Name), i.Contents, ParseImageDimensions(i.Width, i.Height));
                         if (i.Inline == DoxBool.Yes)
                         {
                             Add(paragraphs, alignment, image);
@@ -132,10 +136,10 @@ namespace Dox2Word.Parser
                     case Image:
                         break;
                     case Dot d:
-                        AddParagraph(paragraphs, new DotParagraph(d.Contents) { Caption = d.Caption });
+                        AddParagraph(paragraphs, new DotParagraph(d.Contents, d.Caption, ParseImageDimensions(d.Width, d.Height)));
                         break;
                     case DotFile d:
-                        AddParagraph(paragraphs, new DotParagraph(File.ReadAllText(d.Name!)) { Caption = d.Contents });
+                        AddParagraph(paragraphs, new DotParagraph(File.ReadAllText(d.Name!), d.Contents, ParseImageDimensions(d.Width, d.Height)));
                         break;
                     case DocUrlLink l:
                         this.ParseUrlLink(paragraphs, l, properties, alignment);
@@ -387,6 +391,37 @@ namespace Dox2Word.Parser
 
             logger.Warning("Unexpected content for DocTitleCmdGroup");
             return null;
+        }
+
+        private static ImageDimensions ParseImageDimensions(string? width, string? height)
+        {
+            return new ImageDimensions(Parse(width), Parse(height));
+
+            static ImageDimension? Parse(string? input)
+            {
+                if (input == null)
+                {
+                    return null;
+                }
+                var match = DimensionRegex.Match(input);
+                if (!match.Success)
+                {
+                    logger.Warning($"Unable to parse image dimension '{input}'. Ignoring");
+                    return null;
+                }
+
+                double value = double.Parse(match.Groups["value"].Value);
+                var unit = match.Groups["unit"].Value switch
+                {
+                    "cm" => ImageDimensionUnit.Cm,
+                    "in" => ImageDimensionUnit.Inch,
+                    "px" => ImageDimensionUnit.Px,
+                    "%" => ImageDimensionUnit.Percent,
+                    _ => throw new Exception("Impossible"), // Regex forbids this
+                };
+
+                return new ImageDimension(value, unit);
+            }
         }
     }
 }

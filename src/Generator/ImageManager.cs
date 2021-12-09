@@ -7,6 +7,7 @@ using Dox2Word.Logging;
 using DocumentFormat.OpenXml.Drawing;
 using DW = DocumentFormat.OpenXml.Drawing.Wordprocessing;
 using PIC = DocumentFormat.OpenXml.Drawing.Pictures;
+using Dox2Word.Model;
 
 namespace Dox2Word.Generator
 {
@@ -24,17 +25,17 @@ namespace Dox2Word.Generator
             this.mainPart = mainPart;
         }
 
-        public OpenXmlElement CreateImage(byte[] data, ImagePartType imageType)
+        public OpenXmlElement CreateImage(byte[] data, ImagePartType imageType, ImageDimensions dimensions)
         {
             var imagePart = this.mainPart.AddImagePart(imageType);
             imagePart.FeedData(new MemoryStream(data));
 
-            var (widthEmus, heightEmus) = this.CalculateExtents(data);
+            var (widthEmus, heightEmus) = this.CalculateExtents(data, dimensions);
 
             return this.CreateImageElement(this.mainPart.GetIdOfPart(imagePart), widthEmus, heightEmus);
         }
 
-        public OpenXmlElement? CreateImage(string path)
+        public OpenXmlElement? CreateImage(string path, ImageDimensions dimensions)
         {
             ImagePartType? type = System.IO.Path.GetExtension(path) switch
             {
@@ -54,29 +55,67 @@ namespace Dox2Word.Generator
                 return null;
             }
 
-            return this.CreateImage(File.ReadAllBytes(path), type.Value);
+            return this.CreateImage(File.ReadAllBytes(path), type.Value, dimensions);
         }
 
-        private (long width, long height) CalculateExtents(byte[] data)
+        private (long width, long height) CalculateExtents(byte[] data, ImageDimensions dimensions)
         {
             // https://stackoverflow.com/a/8083390/1086121
 
             using var img = new Bitmap(new MemoryStream(data));
-            int widthPx = img.Width;
-            int heightPx = img.Height;
-            float horzRezDpi = img.HorizontalResolution;
-            float vertRezDpi = img.VerticalResolution;
+
+            long originalWidthEmus = DimensionToEmus(img.Width, img.HorizontalResolution, default);
+            long originalHeightEmus = DimensionToEmus(img.Height, img.VerticalResolution, default);
+
+            long widthEmus;
+            long heightEmus;
+            if (dimensions.Width == null && dimensions.Height == null)
+            {
+                (widthEmus, heightEmus) = (originalWidthEmus, originalHeightEmus);
+            }
+            else if (dimensions.Width != null && dimensions.Height == null)
+            {
+                widthEmus = DimensionToEmus(img.Width, img.HorizontalResolution, dimensions.Width);
+                heightEmus = (long)(originalHeightEmus * ((double)widthEmus / originalWidthEmus));
+            }
+            else if (dimensions.Width == null && dimensions.Height != null)
+            {
+                heightEmus = DimensionToEmus(img.Height, img.VerticalResolution, dimensions.Height);
+                widthEmus = (long)(originalWidthEmus * ((double)heightEmus / originalHeightEmus));
+            }
+            else
+            {
+                widthEmus = DimensionToEmus(img.Width, img.HorizontalResolution, dimensions.Width);
+                heightEmus = DimensionToEmus(img.Height, img.VerticalResolution, dimensions.Height);
+            }
+
             const int emusPerInch = 914400;
             const int emusPerCm = 360000;
-            long widthEmus = (long)((double)widthPx / horzRezDpi * emusPerInch);
-            long heightEmus = (long)((double)heightPx / vertRezDpi * emusPerInch);
             long maxWidthEmus = (long)(MaxWidthCm * emusPerCm);
             if (widthEmus > maxWidthEmus)
             {
-                decimal ratio = (heightEmus * 1.0m) / widthEmus;
+                double ratio = (double)heightEmus / widthEmus;
                 widthEmus = maxWidthEmus;
                 heightEmus = (long)(widthEmus * ratio);
             }
+
+            long DimensionToEmus(int sizePx, float resolutionDpi, ImageDimension? dimension)
+            {
+                return dimension is { } d
+                    ? d.Unit switch
+                    {
+                        ImageDimensionUnit.Px => PxToEmus((int)d.Value, resolutionDpi),
+                        ImageDimensionUnit.Cm => CmToEmus(d.Value),
+                        ImageDimensionUnit.Inch => InchToEmus(d.Value),
+                        ImageDimensionUnit.Percent => (long)(PxToEmus(sizePx, resolutionDpi) * (double)d.Value / 100.0),
+                    }
+                    : PxToEmus(sizePx, resolutionDpi);
+            }
+
+            static long PxToEmus(int sizePx, float resolutionDpi) =>
+                (long)((double)sizePx / resolutionDpi * emusPerInch);
+            static long CmToEmus(double sizeCm) => (long)(sizeCm * emusPerCm);
+            static long InchToEmus(double sizeInch) => (long)(sizeInch * emusPerInch);
 
             return (widthEmus, heightEmus);
         }

@@ -109,7 +109,7 @@
  *   </dd>
  * </dl>
  * 
- * @image html image.png "A test image"
+ * @image html image.png "A test image" width=1.2cm
  * 
  * This image:
  * @image{inline} html image.png

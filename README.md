@@ -78,7 +78,7 @@ Dox2Word currently supports the following Doxygen features:
  - All text formatting
  - Tables, including merged cells
  - Lists (bulleted and numbered)
- - Images (inline and captioned). Use `html`, e.g. `@image html ...`.
+ - Images (inline and captioned). Use `html`, e.g. `@image html ...`. Width/height can be given in `px`, `cm`, `in` or `%`.
  - Code snippets (using `@code`/`@endcode`)
  - `@warning`, `@note`, block quotes
  - `@param`, `@returns`, `@retval`

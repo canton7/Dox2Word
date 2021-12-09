@@ -564,7 +564,7 @@ namespace Dox2Word.Generator
                     break;
 
                 case ImageElement imageElement:
-                    foreach (var p in this.CreateImageParagraph(this.imageManager.CreateImage(imageElement.FilePath), imageElement.Caption))
+                    foreach (var p in this.CreateImageParagraph(this.imageManager.CreateImage(imageElement.FilePath, imageElement.Dimensions), imageElement.Caption))
                     {
                         yield return p;
                     }
@@ -627,7 +627,7 @@ namespace Dox2Word.Generator
 
                     case ImageElement imageElement:
                     {
-                        var image = this.imageManager.CreateImage(imageElement.FilePath);
+                        var image = this.imageManager.CreateImage(imageElement.FilePath, imageElement.Dimensions);
                         if (image != null)
                         {
                             yield return new Run(image);
@@ -809,7 +809,7 @@ namespace Dox2Word.Generator
         {
             byte[]? output = this.dotRenderer.TryRender(dotParagraph.Contents);
             return output != null
-                ? this.CreateImageParagraph(this.imageManager.CreateImage(output, ImagePartType.Png), dotParagraph.Caption)
+                ? this.CreateImageParagraph(this.imageManager.CreateImage(output, ImagePartType.Png, dotParagraph.Dimensions), dotParagraph.Caption)
                 : Enumerable.Empty<OpenXmlElement>();
         }
 
