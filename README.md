@@ -78,6 +78,7 @@ Dox2Word currently supports the following Doxygen features:
  - All text formatting
  - Tables, including merged cells
  - Lists (bulleted and numbered)
+ - Images (inline and captioned). Use `html`, e.g. `@image html ...`.
  - Code snippets (using `@code`/`@endcode`)
  - `@warning`, `@note`, block quotes
  - `@param`, `@returns`, `@retval`
@@ -89,7 +90,7 @@ The following Doxygen features are currently not supported:
  
 - Indexes with `@addindex`, `@secreflist`, etc
 - Stand-alone pages (including `@toclist`, `@heading`, etc)
-- `@image`, `@msc`, `@mscfile`, `@diafile`, `@plantuml`
+- `@msc`, `@mscfile`, `@diafile`, `@plantuml`
 
 
 Word Styles
