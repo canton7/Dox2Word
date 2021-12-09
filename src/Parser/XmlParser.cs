@@ -51,7 +51,10 @@ namespace Dox2Word.Parser
                 if (File.Exists(doxyfileFile))
                 {
                     var doxyfile = Parse<DoxygenFile>(doxyfileFile);
-                    this.project.Options.AddRange(this.ParseOptions(doxyfile));
+                    foreach (var option in this.ParseOptions(doxyfile))
+                    {
+                        this.project.Options[option.Id] = option;
+                    }
                 }
 
                 var allFileCompoundDefs = this.index.Compounds.Values.Where(x => x.Kind == CompoundKind.File)

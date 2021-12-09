@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using Dox2Word.Logging;
+using Dox2Word.Model;
 
 namespace Dox2Word.Generator
 {
@@ -10,7 +12,22 @@ namespace Dox2Word.Generator
     {
         private static readonly Logger logger = Logger.Instance;
 
+        private readonly string dotPath = "dot.exe";
         private bool haveDot = true;
+
+        public DotRenderer(Dictionary<string, ProjectOption> projectOptions)
+        {
+            if (projectOptions.TryGetValue("HAVE_DOT", out var haveDot) && Equals(haveDot.TypedValue, false))
+            {
+                this.haveDot = false;
+            }
+            if (projectOptions.TryGetValue("DOT_PATH", out var dotPathOption)
+                && dotPathOption.TypedValue is string dotPath
+                && !string.IsNullOrWhiteSpace(dotPath))
+            {
+                this.dotPath = dotPath;
+            }
+        }
 
         public byte[]? TryRender(string input)
         {
@@ -27,7 +44,7 @@ namespace Dox2Word.Generator
                 {
                     StartInfo = new ProcessStartInfo()
                     {
-                        FileName = "dot.exe",
+                        FileName = this.dotPath,
                         Arguments = "-Tpng",
                         UseShellExecute = false,
                         RedirectStandardInput = true,
@@ -56,7 +73,7 @@ namespace Dox2Word.Generator
             }
             catch (Win32Exception e) when (e.HResult == -2147467259)
             {
-                logger.Warning("Could not find dot.exe in PATH. Make sure Graphviz is installed and added to your PATH");
+                logger.Warning("Could not find dot.exe. Make sure Graphviz is installed. If you have set DOT_PATH, make sure that it is correct; if not, make sure that dot.exe is in your PATH");
                 this.haveDot = false;
                 return null;
             }

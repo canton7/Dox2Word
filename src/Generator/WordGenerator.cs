@@ -17,6 +17,7 @@ namespace Dox2Word.Generator
         private static readonly Logger logger = Logger.Instance;
 
         private readonly WordprocessingDocument doc;
+        private readonly Project project;
         private readonly Options options;
         private readonly List<OpenXmlElement> bodyElements = new();
 
@@ -24,17 +25,18 @@ namespace Dox2Word.Generator
         private readonly ImageManager imageManager;
         private readonly BookmarkManager bookmarkManager;
         private readonly StyleManager styleManager;
-        private readonly DotRenderer dotRenderer = new();
+        private readonly DotRenderer dotRenderer;
 
         public static void Generate(Stream stream, Project project, Options options)
         {
             using var doc = WordprocessingDocument.Open(stream, isEditable: true);
-            new WordGenerator(doc, options).Generate(project);
+            new WordGenerator(doc, project, options).Generate();
         }
 
-        private WordGenerator(WordprocessingDocument doc, Options options)
+        private WordGenerator(WordprocessingDocument doc, Project project, Options options)
         {
             this.doc = doc;
+            this.project = project;
             this.options = options;
 
             var numberingPart = doc.MainDocumentPart!.NumberingDefinitionsPart!;
@@ -56,9 +58,10 @@ namespace Dox2Word.Generator
             this.styleManager.EnsureStyles();
             this.listManager = new ListManager(numberingPart, this.styleManager);
             this.listManager.EnsureNumbers();
+            this.dotRenderer = new DotRenderer(project.Options);
         }
 
-        public void Generate(Project project)
+        public void Generate()
         {
             try
             {
@@ -78,7 +81,7 @@ namespace Dox2Word.Generator
                     }
                 }
 
-                foreach (var group in project.RootGroups)
+                foreach (var group in this.project.RootGroups)
                 {
                     this.WriteGroup(group, headingLevel);
                 }
@@ -90,7 +93,7 @@ namespace Dox2Word.Generator
 
                 body.RemoveChild(markerParagraph);
 
-                this.SubstitutePlaceholders(body, project);
+                this.SubstitutePlaceholders(body, this.project);
 
                 this.Validate();
             }
@@ -102,7 +105,7 @@ namespace Dox2Word.Generator
 
         private void SubstitutePlaceholders(Body body, Project project)
         {
-            var placeholders = project.Options.ToDictionary(x => $"DOXYFILE_{x.Id}", x => string.Join(", ", x.Values));
+            var placeholders = project.Options.Values.ToDictionary(x => $"DOXYFILE_{x.Id}", x => string.Join(", ", x.Values));
             foreach (var kvp in this.options.Placeholders)
             {
                 placeholders[kvp.Key] = kvp.Value;
