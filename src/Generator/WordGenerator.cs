@@ -134,7 +134,7 @@ namespace Dox2Word.Generator
             {
                 this.WriteMiniHeading("Files");
                 var filesList = new ListParagraph(ListParagraphType.Bullet);
-                filesList.Items.AddRange(group.Files.Select(x => new TextParagraph() { new TextRun(x.Name) }));
+                filesList.Items.AddRange(group.Files.Select(x => new TextParagraph() { new TextRun(x.Name) { NoProof = true } }));
                 this.Append(this.CreateParagraph(filesList));
 
                 if (group.IncludedGroups.Count > 0 || group.IncludingGroups.Count > 0)
@@ -144,14 +144,20 @@ namespace Dox2Word.Generator
                     {
                         this.AppendChild(StringToParagraph("This unit references the following units:"));
                         var groupsList = new ListParagraph(ListParagraphType.Bullet);
-                        groupsList.Items.AddRange(group.IncludedGroups.Select(x => new TextParagraph() { new TextRun(x.Name, new(TextRunFormat.Monospace), x.Id) }));
+                        groupsList.Items.AddRange(group.IncludedGroups.Select(x => new TextParagraph()
+                        {
+                            new TextRun(x.Name, new(TextRunFormat.Monospace), x.Id) { NoProof = true }
+                        }));
                         this.Append(this.CreateParagraph(groupsList));
                     }
                     if (group.IncludingGroups.Count > 0)
                     {
                         this.AppendChild(StringToParagraph("This unit is referenced by the following units:"));
                         var groupsList = new ListParagraph(ListParagraphType.Bullet);
-                        groupsList.Items.AddRange(group.IncludingGroups.Select(x => new TextParagraph() { new TextRun(x.Name, new(TextRunFormat.Monospace), x.Id) }));
+                        groupsList.Items.AddRange(group.IncludingGroups.Select(x => new TextParagraph()
+                        {
+                            new TextRun(x.Name, new(TextRunFormat.Monospace), x.Id) { NoProof = true }
+                        }));
                         this.Append(this.CreateParagraph(groupsList));
                     }
                 }
@@ -255,6 +261,7 @@ namespace Dox2Word.Generator
                 paragraph.AppendChild(new Run(new Text("typedef ").PreserveSpace()));
                 paragraph.Append(this.ParagraphElementsToRuns(typedef.Type));
                 paragraph.AppendChild(new Run(new Text(" " + typedef.Name).PreserveSpace()));
+                paragraph.NoProofChildren();
 
                 this.WriteDescriptions(typedef.Descriptions);
             }
@@ -277,6 +284,7 @@ namespace Dox2Word.Generator
                     paragraph.AppendChild(new Run(new Text(" ").PreserveSpace()));
                     paragraph.Append(this.ParagraphElementsToRuns(variable.Initializer));
                 }
+                paragraph.NoProofChildren();
 
                 this.WriteDescriptions(variable.Descriptions);
             }
@@ -305,6 +313,7 @@ namespace Dox2Word.Generator
                     paragraph.AppendChild(new Run(new Text("\\"), new Break()));
                 }
                 paragraph.Append(this.ParagraphElementsToRuns(macro.Initializer));
+                paragraph.NoProofChildren();
 
                 this.WriteDescriptions(macro.Descriptions);
 
@@ -357,6 +366,7 @@ namespace Dox2Word.Generator
                 {
                     NewRun(new Text(function.ArgsString));
                 }
+                signatureParagraph.NoProofChildren();
 
                 this.WriteDescriptions(function.Descriptions);
 
@@ -443,7 +453,7 @@ namespace Dox2Word.Generator
                 paragraph.Append(RemoveCaps(new Run(new Text(prefix + " ").PreserveSpace())));
             }
 
-            var run = new Run(new Text(text));
+            var run = new Run(new Text(text)).NoProof();
             RemoveCaps(run);
             var (bookmarkStart, bookmarkEnd) = this.bookmarkManager.CreateBookmark(id);
             paragraph.Append(bookmarkStart, run, bookmarkEnd);
@@ -671,6 +681,10 @@ namespace Dox2Word.Generator
             {
                 fontSize -= 2;
             }
+            if (textRun.NoProof)
+            {
+                run.NoProof();
+            }
 
             if (fontSize != this.styleManager.DefaultFontSize)
             {
@@ -804,6 +818,7 @@ namespace Dox2Word.Generator
                 }
                 run.AppendChild(new Text(codeParagraph.Lines[i]).PreserveSpace());
             }
+            paragraph.NoProofChildren();
 
             return paragraph;
         }

@@ -32,6 +32,8 @@ namespace Dox2Word.Model
         // This can be linked to
         public string? AnchorId { get; }
 
+        public bool NoProof { get; set; }
+        
         public TextRun(string text, TextRunProperties properties = default, string? referenceId = null, string? anchorId = null)
         {
             this.Text = text;

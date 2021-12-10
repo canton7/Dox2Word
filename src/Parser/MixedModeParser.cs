@@ -156,7 +156,7 @@ namespace Dox2Word.Parser
                         }
                         break;
                     case Ref r:
-                        AddTextRun(paragraphs, r.Name, properties.Combine(TextRunFormat.Monospace), alignment, this.index.ShouldReference(r.RefId) ? r.RefId : null);
+                        Add(paragraphs, alignment, new TextRun(r.Name, properties.Combine(TextRunFormat.Monospace), this.index.ShouldReference(r.RefId) ? r.RefId : null) { NoProof = true });
                         break;
                     case DocTable t:
                         this.ParseTable(paragraphs, t);
