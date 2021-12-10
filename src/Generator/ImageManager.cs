@@ -64,8 +64,8 @@ namespace Dox2Word.Generator
 
             using var img = new Bitmap(new MemoryStream(data));
 
-            long originalWidthEmus = DimensionToEmus(img.Width, img.HorizontalResolution, default);
-            long originalHeightEmus = DimensionToEmus(img.Height, img.VerticalResolution, default);
+            long originalWidthEmus = PxToEmus(img.Width, img.HorizontalResolution);
+            long originalHeightEmus = PxToEmus(img.Height, img.VerticalResolution);
 
             long widthEmus;
             long heightEmus;
@@ -94,9 +94,8 @@ namespace Dox2Word.Generator
             long maxWidthEmus = (long)(MaxWidthCm * emusPerCm);
             if (widthEmus > maxWidthEmus)
             {
-                double ratio = (double)heightEmus / widthEmus;
+                heightEmus = (long)(heightEmus * ((double)maxWidthEmus / widthEmus));
                 widthEmus = maxWidthEmus;
-                heightEmus = (long)(widthEmus * ratio);
             }
 
             long DimensionToEmus(int sizePx, float resolutionDpi, ImageDimension? dimension)
@@ -112,8 +111,7 @@ namespace Dox2Word.Generator
                     : PxToEmus(sizePx, resolutionDpi);
             }
 
-            static long PxToEmus(int sizePx, float resolutionDpi) =>
-                (long)((double)sizePx / resolutionDpi * emusPerInch);
+            static long PxToEmus(int sizePx, float resolutionDpi) => (long)((double)sizePx / resolutionDpi * emusPerInch);
             static long CmToEmus(double sizeCm) => (long)(sizeCm * emusPerCm);
             static long InchToEmus(double sizeInch) => (long)(sizeInch * emusPerInch);
 
