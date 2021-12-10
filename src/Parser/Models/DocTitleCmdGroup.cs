@@ -88,7 +88,7 @@ namespace Dox2Word.Parser.Models
                 {
                     case XmlNodeType.Text:
                     case XmlNodeType.CDATA:
-                        this.ProcessPart(reader.Value.TrimStart(' ', '\n').TrimEnd('\n'));
+                        this.ProcessPart(reader.Value.TrimStart('\n').TrimEnd('\n'));
                         break;
 
                     case XmlNodeType.SignificantWhitespace: // Whitespace within xml:space="preserve"

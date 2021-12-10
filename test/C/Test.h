@@ -6,7 +6,7 @@
  * 
  * Detailed description.
  * 
- * <strong>Bold<sup>2<b>b</b></sup></strong> <s>strike<sub>3</sub></s> <em>italic @c typewriter text</em> <u>underline</u> <center>Centered 1</center> <center>Centered 2</center>
+ * <strong>Bold<sup>2<b>b</b></sup></strong> x <s>strike<sub>3</sub></s> x <em>italic @c typewriter text</em> x <u>underline</u> <center>Centered 1</center> <center>Centered 2</center>
  * <small>Small</small> Normal
  * 
  * @warning Warning with <strong>bold text</strong>
