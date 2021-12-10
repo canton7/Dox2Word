@@ -75,15 +75,23 @@ Supported Features
 
 Dox2Word currently supports the following Doxygen features:
 
- - Text formatting: bold, italic, monospace
+ - All text formatting
  - Tables, including merged cells
  - Lists (bulleted and numbered)
+ - Images (inline and captioned). Use `html`, e.g. `@image html ...`. Width/height can be given in `px`, `cm`, `in` or `%`.
  - Code snippets (using `@code`/`@endcode`)
- - Warnings (using `@warning`)
+ - `@warning`, `@note`, block quotes
  - `@param`, `@returns`, `@retval`
- - Graphviz graphs (using `@dot` and `@dotfile`, provided that dot.exe is in your PATH)
+ - Graphviz graphs (using `@dot` and `@dotfile`, provided that `HAVE_DOT` is `YES` and dot.exe is in your PATH or set with `DOT_PATH`)
  - C: Structs, unions, enums, typedefs, global variables, macros, functions
  - Function to function references, if `REFERENCED_BY_RELATION` and/or `REFERENCES_RELATION` is set to `YES`.
+
+The following Doxygen features are currently not supported:
+ 
+- Indexes with `@addindex`, `@secreflist`, etc
+- Stand-alone pages (including `@toclist`, `@heading`, etc)
+- `@msc`, `@mscfile`, `@diafile`, `@plantuml`
+
 
 Word Styles
 -----------
@@ -92,10 +100,24 @@ Dox2Word makes extensive use of Styles to format the resulting Word document.
 The following styles will be inserted if they do not already exist, but you can customise Dox2Word's output by defining them yourself in the template Word file.
 Make sure that Word actually adds them to the template: it has a habit of omitting them if they're unused!
 
+### Text Styles
+
  - `Heading 1`, `Heading 2`, etc: these must exist in the document
  - `Hyperlink`: used for hyperlinks
+ - `Caption`: used for table/image captions
  - `Dox Mini Heading`: used for sub-headings within a member documentation, for e.g. "Description" and "Parameters"
+ - `Dox Par Heading`: used for `@par <title>` headings
  - `Dox Table`: used for user-defined tables
  - `Dox Parameter Table`: used for tables containing parameters, return values, struct members, etc
- - `Dox Code`: used for words representing variable or type names, and code snippet paragraphs
+ - `Dox Code`: used for words representing variable or type names, and pre-formatted / verbatim paragraphs
+ - `Dox Code Listing`: used for `@code`
  - `Dox Warning`: used for `@warning` paragraphs
+ - `Dox Note`: Used for `@note` paragraphs
+ - `Dox Block Quote`: used for blockquotes
+ - `Dox Definition Term`, used for the 'term' in `<dd>` lists
+
+### List Styles
+
+ - `Dox Bullet List`: bullet lists
+ - `Dox Numbered List`: numbered lists
+ - `Dox Definition List`: `<dd>` lists

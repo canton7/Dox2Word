@@ -11,9 +11,20 @@ namespace Dox2Word.Logging
         public bool HasErrors { get; private set; }
         public bool HasWarnings { get; private set; }
 
+        public bool Verbose { get; set; }
+
+        public void Debug(string text)
+        {
+            if (!this.Verbose)
+                return;
+
+            WriteLevel(null, "DEBUG");
+            Console.WriteLine(text);
+        }
+
         public void Info(string text)
         {
-            WriteLevel(null, "INFO");
+            WriteLevel(ConsoleColor.Green, "INFO");
             Console.WriteLine(text);
         }
 
@@ -22,6 +33,12 @@ namespace Dox2Word.Logging
             this.HasWarnings = true;
 
             WriteLevel(ConsoleColor.Yellow, "WARNING");
+            Console.WriteLine(text);
+        }
+
+        public void Unsupported(string text)
+        {
+            WriteLevel(ConsoleColor.Cyan, "UNSUPPORTED");
             Console.WriteLine(text);
         }
 

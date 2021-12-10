@@ -1,5 +1,4 @@
-﻿using Dox2Word.Parser.Models;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Dox2Word.Model
 {

@@ -22,7 +22,7 @@ CreateTask("test").Run((string configurationOpt) =>
 	Directory.SetCurrentDirectory(cTestDir);
 	Command.Run("doxygen");
 	Command.Run($"{Path.Combine("../../bin", configurationOpt ?? "Release", "Dox2Word.exe")}",
-		$"-i xml -t Template.docx -o Output.docx");
+		$"-i xml -t Template.docx -o Output.docx -v");
 });
 
 return InvokeTask(Args);

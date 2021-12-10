@@ -17,23 +17,26 @@ namespace Dox2Word.Generator
         private static readonly Logger logger = Logger.Instance;
 
         private readonly WordprocessingDocument doc;
+        private readonly Project project;
         private readonly Options options;
         private readonly List<OpenXmlElement> bodyElements = new();
 
         private readonly ListManager listManager;
         private readonly ImageManager imageManager;
         private readonly BookmarkManager bookmarkManager;
-        private readonly DotRenderer dotRenderer = new();
+        private readonly StyleManager styleManager;
+        private readonly DotRenderer dotRenderer;
 
         public static void Generate(Stream stream, Project project, Options options)
         {
             using var doc = WordprocessingDocument.Open(stream, isEditable: true);
-            new WordGenerator(doc, options).Generate(project);
+            new WordGenerator(doc, project, options).Generate();
         }
 
-        private WordGenerator(WordprocessingDocument doc, Options options)
+        private WordGenerator(WordprocessingDocument doc, Project project, Options options)
         {
             this.doc = doc;
+            this.project = project;
             this.options = options;
 
             var numberingPart = doc.MainDocumentPart!.NumberingDefinitionsPart!;
@@ -49,13 +52,16 @@ namespace Dox2Word.Generator
                 new Styles().Save(stylesPart);
             }
 
-            this.listManager = new ListManager(numberingPart);
             this.imageManager = new ImageManager(doc.MainDocumentPart);
             this.bookmarkManager = new BookmarkManager(doc.MainDocumentPart.Document.Body!);
-            StyleManager.EnsureStyles(stylesPart);
+            this.styleManager = new StyleManager(stylesPart);
+            this.styleManager.EnsureStyles();
+            this.listManager = new ListManager(numberingPart, this.styleManager);
+            this.listManager.EnsureNumbers();
+            this.dotRenderer = new DotRenderer(project.Options);
         }
 
-        public void Generate(Project project)
+        public void Generate()
         {
             try
             {
@@ -75,7 +81,7 @@ namespace Dox2Word.Generator
                     }
                 }
 
-                foreach (var group in project.RootGroups)
+                foreach (var group in this.project.RootGroups)
                 {
                     this.WriteGroup(group, headingLevel);
                 }
@@ -87,7 +93,7 @@ namespace Dox2Word.Generator
 
                 body.RemoveChild(markerParagraph);
 
-                this.SubstitutePlaceholders(body, project);
+                this.SubstitutePlaceholders(body, this.project);
 
                 this.Validate();
             }
@@ -99,7 +105,7 @@ namespace Dox2Word.Generator
 
         private void SubstitutePlaceholders(Body body, Project project)
         {
-            var placeholders = project.Options.ToDictionary(x => $"DOXYFILE_{x.Id}", x => string.Join(", ", x.Values));
+            var placeholders = project.Options.Values.ToDictionary(x => $"DOXYFILE_{x.Id}", x => string.Join(", ", x.Values));
             foreach (var kvp in this.options.Placeholders)
             {
                 placeholders[kvp.Key] = kvp.Value;
@@ -119,7 +125,7 @@ namespace Dox2Word.Generator
 
         private void WriteGroup(Group group, int headingLevel)
         {
-            logger.Info($"Writing group {group.Name}");
+            logger.Debug($"Writing group {group.Name}");
             this.WriteHeading(null, group.Name, group.Id, headingLevel);
 
             this.WriteDescriptions(group.Descriptions);
@@ -128,7 +134,7 @@ namespace Dox2Word.Generator
             {
                 this.WriteMiniHeading("Files");
                 var filesList = new ListParagraph(ListParagraphType.Bullet);
-                filesList.Items.AddRange(group.Files.Select(x => new TextParagraph() { new TextRun(x.Name) }));
+                filesList.Items.AddRange(group.Files.Select(x => new TextParagraph() { new TextRun(x.Name) { NoProof = true } }));
                 this.Append(this.CreateParagraph(filesList));
 
                 if (group.IncludedGroups.Count > 0 || group.IncludingGroups.Count > 0)
@@ -138,14 +144,20 @@ namespace Dox2Word.Generator
                     {
                         this.AppendChild(StringToParagraph("This unit references the following units:"));
                         var groupsList = new ListParagraph(ListParagraphType.Bullet);
-                        groupsList.Items.AddRange(group.IncludedGroups.Select(x => new TextParagraph() { new TextRun(x.Name, TextRunFormat.Monospace, x.Id) }));
+                        groupsList.Items.AddRange(group.IncludedGroups.Select(x => new TextParagraph()
+                        {
+                            new TextRun(x.Name, new(TextRunFormat.Monospace), x.Id) { NoProof = true }
+                        }));
                         this.Append(this.CreateParagraph(groupsList));
                     }
                     if (group.IncludingGroups.Count > 0)
                     {
                         this.AppendChild(StringToParagraph("This unit is referenced by the following units:"));
                         var groupsList = new ListParagraph(ListParagraphType.Bullet);
-                        groupsList.Items.AddRange(group.IncludingGroups.Select(x => new TextParagraph() { new TextRun(x.Name, TextRunFormat.Monospace, x.Id) }));
+                        groupsList.Items.AddRange(group.IncludingGroups.Select(x => new TextParagraph()
+                        {
+                            new TextRun(x.Name, new(TextRunFormat.Monospace), x.Id) { NoProof = true }
+                        }));
                         this.Append(this.CreateParagraph(groupsList));
                     }
                 }
@@ -168,15 +180,15 @@ namespace Dox2Word.Generator
         {
             foreach (var cls in classes)
             {
-                logger.Info($"Writing {cls.Type} {cls.Name}");
+                logger.Debug($"Writing {cls.Type} {cls.Name}");
 
-                string title = cls.Type switch
+                var (title, anonymousName) = cls.Type switch
                 {
-                    ClassType.Struct => "Struct",
-                    ClassType.Union => "Union",
+                    ClassType.Struct => ("Struct", "Anonymous Struct"),
+                    ClassType.Union => ("Union", "Anonymous Union"),
                 };
 
-                this.WriteHeading(title, cls.Name, cls.Id, headingLevel);
+                this.WritePotentiallyAnonymousHeading(title, cls.Name, anonymousName, cls.Id, headingLevel);
 
                 this.WriteDescriptions(cls.Descriptions);
 
@@ -191,7 +203,7 @@ namespace Dox2Word.Generator
                             : $" :{variable.Bitfield}";
 
                         var bookmark = this.bookmarkManager.CreateBookmark(variable.Id);
-                        var name = this.TextRunsToRuns(variable.Type).ToList();
+                        var name = this.ParagraphElementsToRuns(variable.Type).ToList();
                         name.Add(new Run(new Text(" ").PreserveSpace()));
                         name.Add(bookmark.start);
                         name.Add(new Run(new Text(variable.Name ?? "")));
@@ -211,9 +223,9 @@ namespace Dox2Word.Generator
         {
             foreach (var @enum in enums)
             {
-                logger.Info($"Writing Enum {@enum.Name}");
+                logger.Debug($"Writing Enum {@enum.Name}");
 
-                this.WriteHeading("Enum", @enum.Name, @enum.Id, headingLevel);
+                this.WritePotentiallyAnonymousHeading("Enum", @enum.Name, "Anonymous Enum", @enum.Id, headingLevel);
 
                 this.WriteDescriptions(@enum.Descriptions);
 
@@ -240,15 +252,16 @@ namespace Dox2Word.Generator
         {
             foreach (var typedef in typedefs)
             {
-                logger.Info($"Writing typedef {typedef.Name}");
+                logger.Debug($"Writing typedef {typedef.Name}");
 
                 this.WriteHeading("Typedef", typedef.Name, typedef.Id, headingLevel);
 
                 this.WriteMiniHeading("Definition");
-                var paragraph = this.AppendChild(new Paragraph().LeftAlign());
-                paragraph.AppendChild(new Run(new Text("typedef ").PreserveSpace()).ApplyStyle(StyleManager.CodeCharStyleId));
-                paragraph.Append(this.TextRunsToRuns(typedef.Type).ApplyRunStyle(StyleManager.CodeCharStyleId));
-                paragraph.AppendChild(new Run(new Text(" " + typedef.Name).PreserveSpace()).ApplyStyle(StyleManager.CodeCharStyleId));
+                var paragraph = this.AppendChild(new Paragraph().LeftAlign().ApplyStyle(StyleManager.CodeStyleId));
+                paragraph.AppendChild(new Run(new Text("typedef ").PreserveSpace()));
+                paragraph.Append(this.ParagraphElementsToRuns(typedef.Type));
+                paragraph.AppendChild(new Run(new Text(" " + typedef.Name).PreserveSpace()));
+                paragraph.NoProofChildren();
 
                 this.WriteDescriptions(typedef.Descriptions);
             }
@@ -258,19 +271,20 @@ namespace Dox2Word.Generator
         {
             foreach (var variable in variables)
             {
-                logger.Info($"Writing variable {variable.Name}");
+                logger.Debug($"Writing variable {variable.Name}");
 
                 this.WriteHeading("Global variable", variable.Name!, variable.Id, headingLevel);
 
                 this.WriteMiniHeading("Definition");
-                var paragraph = this.AppendChild(new Paragraph().LeftAlign());
-                paragraph.Append(this.TextRunsToRuns(variable.Type).ApplyRunStyle(StyleManager.CodeCharStyleId));
-                paragraph.Append(new Run(new Text($" {variable.Name}").PreserveSpace()).ApplyStyle(StyleManager.CodeCharStyleId));
+                var paragraph = this.AppendChild(new Paragraph().LeftAlign().ApplyStyle(StyleManager.CodeStyleId));
+                paragraph.Append(this.ParagraphElementsToRuns(variable.Type));
+                paragraph.Append(new Run(new Text($" {variable.Name}").PreserveSpace()));
                 if (variable.Initializer.Count > 0)
                 {
-                    paragraph.AppendChild(new Run(new Text(" ").PreserveSpace()).ApplyStyle(StyleManager.CodeCharStyleId));
-                    paragraph.Append(this.TextRunsToRuns(variable.Initializer).ApplyRunStyle(StyleManager.CodeCharStyleId));
+                    paragraph.AppendChild(new Run(new Text(" ").PreserveSpace()));
+                    paragraph.Append(this.ParagraphElementsToRuns(variable.Initializer));
                 }
+                paragraph.NoProofChildren();
 
                 this.WriteDescriptions(variable.Descriptions);
             }
@@ -280,7 +294,7 @@ namespace Dox2Word.Generator
         {
             foreach (var macro in macros)
             {
-                logger.Info($"Writing macro {macro.Name}");
+                logger.Debug($"Writing macro {macro.Name}");
 
                 this.WriteHeading("Macro", macro.Name, macro.Id, headingLevel);
 
@@ -290,7 +304,7 @@ namespace Dox2Word.Generator
                     ? "(" + string.Join(", ", macro.Parameters.Select(x => x.Name)) + ")"
                     : null;
                 var paragraph = this.AppendChild(new Paragraph(new Run(new Text($"#define {macro.Name}{paramsStr} ")
-                    .PreserveSpace()).ApplyStyle(StyleManager.CodeCharStyleId)).LeftAlign());
+                    .PreserveSpace())).ApplyStyle(StyleManager.CodeStyleId).LeftAlign());
 
                 // If it's a multi-line macro declaration, push it onto a new line and add \ to the first line
                 if (macro.Initializer.Count > 0 && macro.Initializer[0].Text.StartsWith(" ") &&
@@ -298,18 +312,19 @@ namespace Dox2Word.Generator
                 {
                     paragraph.AppendChild(new Run(new Text("\\"), new Break()));
                 }
-                paragraph.Append(this.TextRunsToRuns(macro.Initializer).ApplyRunStyle(StyleManager.CodeCharStyleId));
+                paragraph.Append(this.ParagraphElementsToRuns(macro.Initializer));
+                paragraph.NoProofChildren();
 
                 this.WriteDescriptions(macro.Descriptions);
 
-                if (macro.Parameters.Count > 0 && macro.Parameters.Any(x => !x.Description.IsEmpty))
+                if (macro.Parameters.Count > 0 && macro.Parameters.Any(x => x.Description.Count > 0))
                 {
                     this.WriteMiniHeading("Parameters");
 
                     var table = this.AppendChild(this.CreateTable(StyleManager.ParameterTableStyleId).AddColumns(2));
                     foreach (var parameter in macro.Parameters)
                     {
-                        table.AppendRow(parameter.Name, this.CreateParagraph(parameter.Description));
+                        table.AppendRow(parameter.Name, this.CreateParagraphs(parameter.Description));
                     }
                 }
 
@@ -321,15 +336,15 @@ namespace Dox2Word.Generator
         {
             foreach (var function in functions)
             {
-                logger.Info($"Writing function {function.Name}");
+                logger.Debug($"Writing function {function.Name}");
 
                 this.WriteHeading("Function", function.Name, function.Id, headingLevel);
 
                 this.WriteMiniHeading("Signature");
-                var signatureParagraph = this.AppendChild(new Paragraph().LeftAlign());
-                Run NewRun(OpenXmlElement e) => signatureParagraph.AppendChild(new Run(e).ApplyStyle(StyleManager.CodeCharStyleId));
+                var signatureParagraph = this.AppendChild(new Paragraph().LeftAlign().ApplyStyle(StyleManager.CodeStyleId));
+                Run NewRun(OpenXmlElement e) => signatureParagraph.AppendChild(new Run(e));
 
-                signatureParagraph.Append(this.TextRunsToRuns(function.ReturnType).ApplyRunStyle(StyleManager.CodeCharStyleId));
+                signatureParagraph.Append(this.ParagraphElementsToRuns(function.ReturnType));
                 NewRun(new Text($" {function.Name}").PreserveSpace());
 
                 if (function.Parameters.Count > 0)
@@ -340,7 +355,7 @@ namespace Dox2Word.Generator
                         string comma = i == function.Parameters.Count - 1 ? "" : ",";
                         var run = NewRun(new Break());
                         run.AppendChild(new Text("    ").PreserveSpace());
-                        signatureParagraph.Append(this.TextRunsToRuns(function.Parameters[i].Type).ApplyRunStyle(StyleManager.CodeCharStyleId));
+                        signatureParagraph.Append(this.ParagraphElementsToRuns(function.Parameters[i].Type));
                         string space = signatureParagraph.InnerText.EndsWith(" *") ? "" : " ";
                         NewRun(new Text($"{space}{function.Parameters[i].Name}{comma}").PreserveSpace());
                     }
@@ -351,10 +366,11 @@ namespace Dox2Word.Generator
                 {
                     NewRun(new Text(function.ArgsString));
                 }
+                signatureParagraph.NoProofChildren();
 
                 this.WriteDescriptions(function.Descriptions);
 
-                if (function.Parameters.Count > 0 && function.Parameters.Any(x => !x.Description.IsEmpty))
+                if (function.Parameters.Count > 0 && function.Parameters.Any(x => x.Description.Count > 0))
                 {
                     this.WriteMiniHeading("Parameters");
 
@@ -371,7 +387,7 @@ namespace Dox2Word.Generator
                                 ParameterDirection.InOut => "in,out",
                             }
                             : null;
-                        table.AppendRow(parameter.Name, this.CreateParagraph(parameter.Description), inOut);
+                        table.AppendRow(parameter.Name, this.CreateParagraphs(parameter.Description), inOut);
                     }
                 }
 
@@ -383,7 +399,7 @@ namespace Dox2Word.Generator
                     {
                         this.AppendChild(new Paragraph(new Run(new Text(blurb))));
                         var list = new ListParagraph(ListParagraphType.Bullet);
-                        list.Items.AddRange(references.Select(x => new TextParagraph() { new TextRun(x.Name, TextRunFormat.Monospace, x.Id) }));
+                        list.Items.AddRange(references.Select(x => new TextParagraph() { new TextRun(x.Name, new(TextRunFormat.Monospace), x.Id) }));
                         this.Append(this.CreateParagraph(list));
                     }
                 }
@@ -399,10 +415,10 @@ namespace Dox2Word.Generator
 
         private void WriteReturnDescription(ReturnDescriptions returnDescriptions)
         {
-            if (!returnDescriptions.Description.IsEmpty)
+            if (returnDescriptions.Description.Any(x => !x.IsEmpty))
             {
                 this.WriteMiniHeading("Returns");
-                this.Append(this.CreateParagraph(returnDescriptions.Description));
+                this.Append(this.CreateParagraphs(returnDescriptions.Description));
             }
 
             if (returnDescriptions.Values.Count > 0)
@@ -411,8 +427,20 @@ namespace Dox2Word.Generator
                 var table = this.AppendChild(this.CreateTable(StyleManager.ParameterTableStyleId).AddColumns(2));
                 foreach (var returnValue in returnDescriptions.Values)
                 {
-                    table.AppendRow(returnValue.Name, this.CreateParagraph(returnValue.Description));
+                    table.AppendRow(returnValue.Name, this.CreateParagraphs(returnValue.Description));
                 }
+            }
+        }
+
+        private void WritePotentiallyAnonymousHeading(string? prefix, string text, string anonymousText, string id, int headingLevel)
+        {
+            if (text.StartsWith("@"))
+            {
+                this.WriteHeading(null, anonymousText, id, headingLevel);
+            }
+            else
+            {
+                this.WriteHeading(prefix, text, id, headingLevel);
             }
         }
 
@@ -422,10 +450,11 @@ namespace Dox2Word.Generator
 
             if (prefix != null)
             {
-                paragraph.Append(new Run(new Text(prefix + " ").PreserveSpace()));
+                paragraph.Append(RemoveCaps(new Run(new Text(prefix + " ").PreserveSpace())));
             }
 
-            var run = new Run(new Text(text));
+            var run = new Run(new Text(text)).NoProof();
+            RemoveCaps(run);
             var (bookmarkStart, bookmarkEnd) = this.bookmarkManager.CreateBookmark(id);
             paragraph.Append(bookmarkStart, run, bookmarkEnd);
 
@@ -434,7 +463,7 @@ namespace Dox2Word.Generator
                 .WithProperties(x => x.SpacingBetweenLines = new SpacingBetweenLines() { Before = $"{8 * 20}" });
 
             // If the style specifies all-caps or small-caps, undo this
-            run.WithProperties(x =>
+            static Run RemoveCaps(Run run) => run.WithProperties(x =>
             {
                 x.SmallCaps = new SmallCaps() { Val = false };
                 x.Caps = new Caps() { Val = false };
@@ -461,7 +490,15 @@ namespace Dox2Word.Generator
             {
                 yield return p;
             }
-            foreach (var paragraph in descriptions.DetailedDescription)
+            foreach (var p in this.CreateParagraphs(descriptions.DetailedDescription))
+            {
+                yield return p;
+            }
+        }
+
+        private IEnumerable<OpenXmlElement> CreateParagraphs(IEnumerable<IParagraph> paragraphs)
+        {
+            foreach (var paragraph in paragraphs)
             {
                 foreach (var p in this.CreateParagraph(paragraph))
                 {
@@ -476,15 +513,53 @@ namespace Dox2Word.Generator
             {
                 case TextParagraph textParagraph:
                     var paragraph = this.CreateTextParagraph(textParagraph);
-                    if (textParagraph.Type == TextParagraphType.Warning)
+                    switch (textParagraph.Type)
                     {
-                        paragraph.ApplyStyle(StyleManager.WarningStyleId);
+                        case TextParagraphType.Normal:
+                            break;
+                        case TextParagraphType.Warning:
+                            paragraph.ApplyStyle(StyleManager.WarningStyleId);
+                            break;
+                        case TextParagraphType.Preformatted:
+                            paragraph.ApplyStyle(StyleManager.CodeStyleId);
+                            break;
+                        case TextParagraphType.Note:
+                            paragraph.ApplyStyle(StyleManager.NoteStyleId);
+                            break;
+                        case TextParagraphType.BlockQuote:
+                            paragraph.ApplyStyle(StyleManager.BlockQuoteStyleId);
+                            break;
+                    }
+                    if (textParagraph.HasHorizontalRuler)
+                    {
+                        paragraph.WithProperties(x =>
+                        {
+                            x.ParagraphBorders ??= new ParagraphBorders();
+                            x.ParagraphBorders.BottomBorder = new BottomBorder()
+                            {
+                                Val = BorderValues.Single,
+                                Color = "auto",
+                                Space = 1,
+                                Size = 6,
+                            };
+                        });
                     }
                     yield return paragraph;
                     break;
 
+                case TitleParagraph titleParagraph:
+                    yield return new Paragraph(this.ParagraphElementsToRuns(titleParagraph)).ApplyStyle(StyleManager.ParHeadingStyleId);
+                    break;
+
                 case ListParagraph listParagraph:
                     foreach (var p in this.CreateListParagraph(listParagraph))
+                    {
+                        yield return p;
+                    }
+                    break;
+
+                case DefinitionListParagraph definitionListParagraph:
+                    foreach (var p in this.CreateDefinitionListParagraph(definitionListParagraph))
                     {
                         yield return p;
                     }
@@ -495,15 +570,24 @@ namespace Dox2Word.Generator
                     break;
 
                 case DotParagraph dotParagraph:
-                    var para = this.CreateDotParagraph(dotParagraph);
-                    if (para != null)
+                    foreach (var p in this.CreateDotParagraph(dotParagraph))
                     {
-                        yield return para;
+                        yield return p;
+                    }
+                    break;
+
+                case ImageElement imageElement:
+                    foreach (var p in this.CreateImageParagraph(this.imageManager.CreateImage(imageElement.FilePath, imageElement.Dimensions), imageElement.Caption))
+                    {
+                        yield return p;
                     }
                     break;
 
                 case TableDoc table:
-                    yield return this.CreateTable(table);
+                    foreach (var p in this.CreateTable(table))
+                    {
+                        yield return p;
+                    }
                     break;
 
                 default:
@@ -527,61 +611,99 @@ namespace Dox2Word.Generator
                 paragraph.WithProperties(x => x.Justification = new Justification() { Val = justification });
             }
 
-            paragraph.Append(this.TextRunsToRuns(textParagraph));
+            paragraph.Append(this.ParagraphElementsToRuns(textParagraph));
             
             return paragraph;
         }
 
-        private IEnumerable<OpenXmlElement> TextRunsToRuns(IEnumerable<IParagraphElement> paragraphElement)
+        private IEnumerable<OpenXmlElement> ParagraphElementsToRuns(IEnumerable<IParagraphElement> paragraphElement)
         {
             foreach (var element in paragraphElement)
             {
                 switch (element)
                 {
                     case TextRun textRun:
-                    {
-                        var run = new Run(StringToElements(textRun.Text));
-
-                        run.WithProperties(x =>
+                        foreach (var p in this.ProcessTextRun(textRun))
                         {
-                            x.Bold = textRun.Format.HasFlag(TextRunFormat.Bold) ? new Bold() : null;
-                            x.Italic = textRun.Format.HasFlag(TextRunFormat.Italic) ? new Italic() : null;
-                        });
-                        if (textRun.Format.HasFlag(TextRunFormat.Monospace))
-                        {
-                            run.WithProperties(x =>
-                            {
-                                x.FontSize = new FontSize() { Val = "20" };
-                                x.RunFonts = new RunFonts() { Ascii = "Consolas" };
-                            });
+                            yield return p;
                         }
-
-                        if (textRun.ReferenceId == null)
-                        {
-                            yield return run;
-                        }
-                        else
-                        {
-                            foreach (var x in this.bookmarkManager.CreateLink(textRun.ReferenceId, run))
-                            {
-                                yield return x;
-                            }
-                        }
-                    }
                     break;
 
                     case UrlLink link:
                     {
                         var rel = this.doc.MainDocumentPart!.AddHyperlinkRelationship(new Uri(link.Url), isExternal: true);
                         var hyperlink = new Hyperlink() { Id = rel.Id };
-                        hyperlink.Append(this.TextRunsToRuns(link).ApplyRunStyle(StyleManager.HyperlinkStyleId));
+                        hyperlink.Append(this.ParagraphElementsToRuns(link).ApplyRunStyle(StyleManager.HyperlinkStyleId));
                         yield return hyperlink;
+                    }
+                    break;
+
+                    case ImageElement imageElement:
+                    {
+                        var image = this.imageManager.CreateImage(imageElement.FilePath, imageElement.Dimensions);
+                        if (image != null)
+                        {
+                            yield return new Run(image);
+                        }
                     }
                     break;
 
                     default:
                         throw new GeneratorException($"Unexpected IParagraphElement type {element} ({element.GetType()})");
                 }
+            }
+        }
+
+        private IEnumerable<OpenXmlElement> ProcessTextRun(TextRun textRun)
+        {
+            var run = new Run(StringToElements(textRun.Text));
+
+            int fontSize = this.styleManager.DefaultFontSize;
+            run.WithProperties(x =>
+            {
+                x.Bold = textRun.Properties.Format.HasFlag(TextRunFormat.Bold) ? new Bold() : null;
+                x.Italic = textRun.Properties.Format.HasFlag(TextRunFormat.Italic) ? new Italic() : null;
+                x.Strike = textRun.Properties.Format.HasFlag(TextRunFormat.Strikethrough) ? new Strike() : null;
+                x.Underline = textRun.Properties.Format.HasFlag(TextRunFormat.Underline) ? new Underline() { Val = UnderlineValues.Single } : null;
+                x.VerticalTextAlignment = textRun.Properties.VerticalPosition switch
+                {
+                    TextRunVerticalPosition.Baseline => null,
+                    TextRunVerticalPosition.Superscript => new VerticalTextAlignment() { Val = VerticalPositionValues.Superscript },
+                    TextRunVerticalPosition.Subscript => new VerticalTextAlignment() { Val = VerticalPositionValues.Subscript },
+                };
+            });
+            if (textRun.Properties.Format.HasFlag(TextRunFormat.Monospace))
+            {
+                fontSize -= 2;
+                run.WithProperties(x => x.RunFonts = new RunFonts() { Ascii = "Consolas" });
+            }
+            if (textRun.Properties.IsSmall)
+            {
+                fontSize -= 2;
+            }
+            if (textRun.NoProof)
+            {
+                run.NoProof();
+            }
+
+            if (fontSize != this.styleManager.DefaultFontSize)
+            {
+                run.WithProperties(x => x.FontSize = new FontSize() { Val = fontSize.ToString() });
+            }
+
+            OpenXmlElement result = textRun.ReferenceId == null
+                ? run
+                : this.bookmarkManager.CreateLink(textRun.ReferenceId, run);
+            if (textRun.AnchorId == null)
+            {
+                yield return result;
+            }
+            else
+            {
+                var bookmark = this.bookmarkManager.CreateBookmark(textRun.AnchorId);
+                yield return bookmark.start;
+                yield return result;
+                yield return bookmark.end;
             }
         }
 
@@ -628,9 +750,64 @@ namespace Dox2Word.Generator
             }
         }
 
+        private IEnumerable<OpenXmlElement> CreateDefinitionListParagraph(DefinitionListParagraph listParagraph, int level = 0)
+        {
+            int numberId = this.listManager.CreateList(ListManager.DefinitionListStyleId);
+
+            foreach (var entry in listParagraph.Entries)
+            {
+                var termParagraph = this.CreateTextParagraph(entry.Term);
+                termParagraph.ParagraphProperties = new ParagraphProperties()
+                {
+                    ParagraphStyleId = new ParagraphStyleId() { Val = StyleManager.DefinitionTermStyleId },
+                    NumberingProperties = new NumberingProperties()
+                    {
+                        NumberingLevelReference = new NumberingLevelReference() { Val = level },
+                        NumberingId = new NumberingId() { Val = numberId },
+                    },
+                };
+                yield return termParagraph;
+
+                foreach (var descriptionItem in entry.Description)
+                {
+                    // This is probably a TextParagraph, or another DefinitionListParagraph
+
+                    switch (descriptionItem)
+                    {
+                        case TextParagraph textParagraph:
+                            var paragraph = this.CreateTextParagraph(textParagraph);
+                            paragraph.ParagraphProperties = new ParagraphProperties()
+                            {
+                                NumberingProperties = new NumberingProperties()
+                                {
+                                    NumberingLevelReference = new NumberingLevelReference() { Val = level + 1 },
+                                    NumberingId = new NumberingId() { Val = numberId },
+                                },
+                            };
+                            yield return paragraph;
+                            break;
+
+                        case DefinitionListParagraph definitionList:
+                            foreach (var p in this.CreateDefinitionListParagraph(definitionList, level + 1))
+                            {
+                                yield return p;
+                            }
+                            break;
+
+                        default:
+                            foreach (var p in this.CreateParagraph(descriptionItem))
+                            {
+                                yield return p;
+                            }
+                            break;
+                    }
+                }
+            }
+        }
+
         private Paragraph CreateCodeParagraph(CodeParagraph codeParagraph)
         {
-            var paragraph = new Paragraph().ApplyStyle(StyleManager.CodeStyleId).LeftAlign();
+            var paragraph = new Paragraph().ApplyStyle(StyleManager.CodeListingStyleId).LeftAlign();
 
             var run = paragraph.AppendChild(new Run());
             for (int i = 0; i < codeParagraph.Lines.Count; i++)
@@ -641,21 +818,44 @@ namespace Dox2Word.Generator
                 }
                 run.AppendChild(new Text(codeParagraph.Lines[i]).PreserveSpace());
             }
+            paragraph.NoProofChildren();
 
             return paragraph;
         }
-
-        private OpenXmlElement? CreateDotParagraph(DotParagraph dotParagraph)
+        
+        private IEnumerable<OpenXmlElement> CreateDotParagraph(DotParagraph dotParagraph)
         {
             byte[]? output = this.dotRenderer.TryRender(dotParagraph.Contents);
-            if (output != null)
-            {
-                return new Paragraph(new Run(this.imageManager.CreateImage(output, ImagePartType.Png)));
-            }
-            return null;
+            return output != null
+                ? this.CreateImageParagraph(this.imageManager.CreateImage(output, ImagePartType.Png, dotParagraph.Dimensions), dotParagraph.Caption)
+                : Enumerable.Empty<OpenXmlElement>();
         }
 
-        private OpenXmlElement CreateTable(TableDoc tableDoc)
+        private IEnumerable<OpenXmlElement> CreateImageParagraph(OpenXmlElement? image, string? caption)
+        {
+            if (image == null)
+            {
+                yield break;
+            }
+
+            yield return new Paragraph(new Run(image));
+
+            if (!string.IsNullOrEmpty(caption))
+            {
+                var paragraph = new Paragraph().ApplyStyle(StyleManager.CaptionStyleId);
+                paragraph.AppendChild(new Run(new Text("Figure ").PreserveSpace()));
+                paragraph.AppendChild(new SimpleField()
+                {
+                    Instruction = " SEQ Figure \\* ARABIC ",
+                    Dirty = true,
+                });
+                paragraph.AppendChild(new Run(new Text(" ").PreserveSpace()));
+                paragraph.AppendChild(new Run(StringToElements(caption)));
+                yield return paragraph;
+            }
+        }
+
+        private IEnumerable<OpenXmlElement> CreateTable(TableDoc tableDoc)
         {
             var table = new Table();
             table.WithProperties(x =>
@@ -715,7 +915,35 @@ namespace Dox2Word.Generator
                 }
             }
 
-            return table;
+            yield return table;
+
+            if (tableDoc.Caption != null)
+            {
+                var paragraph = this.CreateTextParagraph(tableDoc.Caption);
+                paragraph.ApplyStyle(StyleManager.CaptionStyleId);
+                var newChildren = new List<OpenXmlElement>()
+                {
+                    new Run(new Text("Table ").PreserveSpace()),
+                    new SimpleField()
+                    {
+                        Instruction = " SEQ TABLE \\* ARABIC ",
+                        Dirty = true,
+                    },
+                    new Run(new Text(" ").PreserveSpace()),
+                };
+                if (tableDoc.Id != null)
+                {
+                    var bookmark = this.bookmarkManager.CreateBookmark(tableDoc.Id);
+                    newChildren.Add(bookmark.start);
+                    paragraph.AppendChild(bookmark.end);
+                }
+                for (int i = 0; i < newChildren.Count; i++)
+                {
+                    paragraph.InsertAt(newChildren[i], i + 1); // After the ParagraphProperties
+                }
+
+                yield return paragraph;
+            }
         }
 
         private static IEnumerable<OpenXmlElement> StringToElements(string? input)

@@ -122,6 +122,20 @@ namespace Dox2Word.Generator
             return paragraph.WithProperties(x => x.Justification = new Justification() { Val = JustificationValues.Left });
         }
 
+        public static Run NoProof(this Run run)
+        {
+            return run.WithProperties(x => x.NoProof = new NoProof());
+        }
+
+        public static T NoProofChildren<T>(this T element) where T : OpenXmlCompositeElement
+        {
+            foreach (var run in element.Descendants<Run>())
+            {
+                run.NoProof();
+            }
+            return element;
+        }
+
         public static Table AddColumns(this Table table, int numColumns)
         {
             var tableGrid = table.AppendChild(new TableGrid());
@@ -142,20 +156,22 @@ namespace Dox2Word.Generator
             if (inOut != null)
             {
                 var inOutCell = row.AppendChild(new TableCell());
-                var inOutParagraph = inOutCell.AppendChild(new Paragraph());
-                var inOutRun = inOutParagraph.AppendChild(new Run(new Text(inOut)).ApplyStyle(StyleManager.CodeCharStyleId));
-                inOutRun.WithProperties(x => x.Italic = new Italic());
+                var inOutParagraph = inOutCell.AppendChild(new Paragraph().ApplyStyle(StyleManager.CodeStyleId));
+                var inOutRun = inOutParagraph.AppendChild(new Run(new Text(inOut)));
+                inOutRun.WithProperties(x => x.Italic = new Italic()).NoProof();
                 inOutParagraph.FormatTableCellElement(after: true);
             }
 
             var nameCell = row.AppendChild(new TableCell());
-            var nameParagraph = nameCell.AppendChild(new Paragraph());
+            var nameParagraph = nameCell.AppendChild(new Paragraph().ApplyStyle(StyleManager.CodeStyleId));
             nameParagraph.FormatTableCellElement(after: true);
-            nameParagraph.Append(name.ApplyRunStyle(StyleManager.CodeCharStyleId));
+            nameParagraph.Append(name);
+            nameParagraph.NoProofChildren();
 
             var valueCell = row.AppendChild(new TableCell());
             var valueList = value.ToList();
             valueCell.Append(valueList);
+            valueCell.NoProofChildren();
 
             for (int i = 0; i < valueList.Count; i++)
             {

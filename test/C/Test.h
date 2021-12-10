@@ -6,13 +6,17 @@
  * 
  * Detailed description.
  * 
- * <strong>Bold <em>italic @c typewriter text</em></strong>
+ * <strong>Bold<sup>2<b>b</b></sup></strong> x <s>strike<sub>3</sub></s> x <em>italic @c typewriter text</em> x <u>underline</u> <center>Centered 1</center> <center>Centered 2</center>
+ * <small>Small</small> Normal
  * 
  * @warning Warning with <strong>bold text</strong>
+ * 
+ * @note
+ * This should be noted.
  *
  * A numbered list:
  *  1. Item 1
- *    1. Item 1.1
+ *    1. Item 1.1 @emoji :woman_firefighter:
  *  2. Item 2
  * 
  * A bulleted list:
@@ -20,10 +24,21 @@
  *   - Item 1.1
  * - Item2
  * 
+ * @htmlonly
+ * This is only for HTML
+ * @endhtmlonly
+ * 
+ * @xmlonly
+ * This is only for XML
+ * @endxmlonly
+ * 
  * @code{.c}
  * This is a code sample
  * With multiple lines
  * @endcode
+ * 
+ *     Verbatim text
+ *        With   preserved   spaces
  * 
  * @todo This is a TODO
  * 
@@ -35,8 +50,19 @@
  * | This is some long text | This is some long text   | This is some long text  |
  * | ^     | Merge  ||
  * 
+ * Another table:
+ * 
+ * <table>
+ * <caption>Table Caption</caption>
+ * <tr>
+ *  <td>Cell 1</td><td>Cell 2</td>
+ * </tr>
+ * </table>
+ * 
+ * <hr>
+ * 
  * Dot diagram:
- * @dot
+ * @dot "Embedded Dot"
  * digraph example {
  *     node [shape=record, fontname=Helvetica, fontsize=10];
  *     b [ label="class B" ];
@@ -48,8 +74,46 @@
  * Dot from external file:
  * @dotfile Test.dot "Dot from external file"
  * 
+ * @anchor anchor
+ * 
  * Some symbols: © -- ±<br>
  * A newline with a link: https://www.google.com
+ * 
+ * \f$\sqrt{(x_2-x_1)^2+(y_2-y_1)^2}\f$.
+ * 
+ * @par User defined paragraph:
+ * Contents of the paragraph.
+ * 
+ * @ref anchor "Reference to anchor"
+ *
+ * @par
+ * New paragraph under the same heading.
+ *
+ * @par
+ * And this is the second paragraph.
+ *
+ * More normal text.
+ * 
+ * > Block quote para 1
+ * >
+ * > Block quote para 2
+ * 
+ * <dl>
+ *   <dt>Term</dt>
+ *   <dd>
+ *     <p>Definition</p>
+ *     <dl>
+ *       <dt>Embedded DL term</dt>
+ *       <dd>Embedded DL Definition
+ *     </dl>
+ *   </dd>
+ * </dl>
+ * 
+ * @image html image.png "A test image" width=1.2cm
+ * 
+ * This image:
+ * @image{inline} html image.png
+ * is inline
  * 
  * @{
  * @file
@@ -115,10 +179,10 @@ typedef struct Struct_tag
  */
 typedef union Union_tag
 {
-    /// Union member 1
+    /// A union member
     uint8_t one;
 
-    /// Union member 2
+    /// @copydoc Union_t::one
     Enum_t two;
 } Union_t;
 
@@ -163,15 +227,25 @@ void VoidFunction(void);
 void VoidlessFunction();
 
 /**
- * A function with parameters.
+ * Brief description 
  * 
  * Detailed description.
  * 
- * @param[in] a Parameter a
+ * @param[in] a
+ * @parblock
+ * Parameter a
+ * 
+ * Second paragraph
+ * @endparblock
  * @param[out] b Parameter b
  * @param[in,out] c Parameter C
  * @param d Parameter d with @c typewriter text
- * @returns Return value
+ * @returns
+ * @parblock
+ * Returns para #1
+ * 
+ * Returns para #2
+ * @endparblock
  * @retval 1 Retval 1
  * @retval 2 Retval 2
  * 

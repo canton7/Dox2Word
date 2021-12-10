@@ -1,0 +1,82 @@
+﻿<w:multiLevelType w:val="multilevel"/>
+<w:lvl w:ilvl="0">
+  <w:start w:val="1"/>
+  <w:numFmt w:val="none"/>
+  <w:lvlText w:val="%1"/>
+  <w:lvlJc w:val="left"/>
+  <w:pPr>
+    <w:ind w:firstLine="0" w:left="0"/>
+  </w:pPr>
+</w:lvl>
+<w:lvl w:ilvl="1">
+  <w:start w:val="1"/>
+  <w:numFmt w:val="none"/>
+  <w:lvlText w:val=""/>
+  <w:lvlJc w:val="left"/>
+  <w:pPr>
+    <w:ind w:hanging="425" w:left="425"/>
+  </w:pPr>
+</w:lvl>
+<w:lvl w:ilvl="2">
+  <w:start w:val="1"/>
+  <w:numFmt w:val="none"/>
+  <w:lvlText w:val=""/>
+  <w:lvlJc w:val="left"/>
+  <w:pPr>
+    <w:ind w:hanging="851" w:left="851"/>
+  </w:pPr>
+</w:lvl>
+<w:lvl w:ilvl="3">
+  <w:start w:val="1"/>
+  <w:numFmt w:val="none"/>
+  <w:lvlText w:val=""/>
+  <w:lvlJc w:val="left"/>
+  <w:pPr>
+    <w:ind w:hanging="1276" w:left="1276"/>
+  </w:pPr>
+</w:lvl>
+<w:lvl w:ilvl="4">
+  <w:start w:val="1"/>
+  <w:numFmt w:val="none"/>
+  <w:lvlText w:val=""/>
+  <w:lvlJc w:val="left"/>
+  <w:pPr>
+    <w:ind w:hanging="1701" w:left="1701"/>
+  </w:pPr>
+</w:lvl>
+<w:lvl w:ilvl="5">
+  <w:start w:val="1"/>
+  <w:numFmt w:val="none"/>
+  <w:lvlText w:val=""/>
+  <w:lvlJc w:val="left"/>
+  <w:pPr>
+    <w:ind w:hanging="2126" w:left="2126"/>
+  </w:pPr>
+</w:lvl>
+<w:lvl w:ilvl="6">
+  <w:start w:val="1"/>
+  <w:numFmt w:val="none"/>
+  <w:lvlText w:val=""/>
+  <w:lvlJc w:val="left"/>
+  <w:pPr>
+    <w:ind w:hanging="2552" w:left="2552"/>
+  </w:pPr>
+</w:lvl>
+<w:lvl w:ilvl="7">
+  <w:start w:val="1"/>
+  <w:numFmt w:val="none"/>
+  <w:lvlText w:val=""/>
+  <w:lvlJc w:val="left"/>
+  <w:pPr>
+    <w:ind w:hanging="2977" w:left="2977"/>
+  </w:pPr>
+</w:lvl>
+<w:lvl w:ilvl="8">
+  <w:start w:val="1"/>
+  <w:numFmt w:val="none"/>
+  <w:lvlText w:val=""/>
+  <w:lvlJc w:val="left"/>
+  <w:pPr>
+    <w:ind w:hanging="3402" w:left="3402"/>
+  </w:pPr>
+</w:lvl>

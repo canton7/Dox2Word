@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Text;
-using System.Threading.Tasks;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Dox2Word.Logging;
@@ -21,7 +18,7 @@ namespace Dox2Word.Generator
             {
                 if (substitutions.TryGetValue(placeholder, out string? replacement))
                 {
-                    logger.Info($"Replacing placeholder '{placeholder}' with '{replacement}'");
+                    logger.Debug($"Replacing placeholder '{placeholder}' with '{replacement}'");
                 }
                 return (replacement, false);
             });

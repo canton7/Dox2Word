@@ -8,6 +8,9 @@ namespace Dox2Word.Model
     {
         Normal,
         Warning,
+        Preformatted,
+        Note,
+        BlockQuote,
     }
 
     public enum TextParagraphAlignment
@@ -28,12 +31,19 @@ namespace Dox2Word.Model
 
         public TextParagraphAlignment Alignment { get; }
 
-        public bool IsEmpty => this.Count == 0;
+        public bool IsEmpty => this.Count == 0 && !this.HasHorizontalRuler;
+
+        public bool HasHorizontalRuler { get; set; }
 
         public TextParagraph(TextParagraphType type = TextParagraphType.Normal, TextParagraphAlignment alignment = TextParagraphAlignment.Default)
         {
             this.Type = type;
             this.Alignment = alignment;
+        }
+
+        public TextParagraph(TextParagraphAlignment alignment)
+            : this(TextParagraphType.Normal, alignment)
+        {
         }
 
         public void AddRange(IEnumerable<TextRun> elements)
@@ -49,6 +59,10 @@ namespace Dox2Word.Model
             if (this.LastOrDefault() is TextRun run && run.Text.EndsWith(" "))
             {
                 run.Text = run.Text.TrimEnd(' ');
+                if (run.Text.Length == 0)
+                {
+                    this.Remove(run);
+                }
             }
         }
     }

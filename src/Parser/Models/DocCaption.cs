@@ -2,13 +2,13 @@
 
 namespace Dox2Word.Parser.Models
 {
-    public class DocUrlLink : DocTitleCmdGroup
+    public class DocCaption : DocTitleCmdGroup
     {
-        public string Url { get; set; } = null!;
+        public string? Id { get; set; }
 
         protected override void ReadAttributes(XmlReader reader)
         {
-            this.Url = reader.GetAttribute("url");
+            this.Id = reader.GetAttribute("Id");
         }
     }
 }
