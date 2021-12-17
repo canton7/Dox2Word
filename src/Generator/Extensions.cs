@@ -169,7 +169,7 @@ namespace Dox2Word.Generator
             nameParagraph.NoProofChildren();
 
             var valueCell = row.AppendChild(new TableCell());
-            var valueList = value.ToList();
+            var valueList = value.DefaultIfEmpty(new Paragraph()).ToList();
             valueCell.Append(valueList);
             valueCell.NoProofChildren();
 

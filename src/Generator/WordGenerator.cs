@@ -905,7 +905,8 @@ namespace Dox2Word.Generator
                             colIndexToRowSpan[i] = cellDoc.RowSpan - 1;
                         }
 
-                        var valueList = cellDoc.Paragraphs.SelectMany(x => this.CreateParagraph(x)).ToList();
+                        var valueList = cellDoc.Paragraphs.SelectMany(x => this.CreateParagraph(x))
+                            .DefaultIfEmpty(new Paragraph()).ToList();
                         cell.Append(valueList);
                         for (int j = 0; j < valueList.Count; j++)
                         {
