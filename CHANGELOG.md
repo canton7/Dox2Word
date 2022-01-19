@@ -1,6 +1,11 @@
 Changelog
 =========
 
+v4
+--
+
+ - Correctly process tables with empty cells
+
 v3
 --
 
