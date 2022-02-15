@@ -71,7 +71,7 @@ namespace Dox2Word.Generator
                 if (markerParagraph == null)
                     throw new GeneratorException($"Could not find placeholder text '{Placeholder}'");
 
-                var headingBefore = markerParagraph.ElementsBefore().OfType<Paragraph>().FirstOrDefault();
+                var headingBefore = markerParagraph.ElementsBefore().OfType<Paragraph>().LastOrDefault();
                 int headingLevel = 2;
                 if (headingBefore?.ParagraphProperties?.ParagraphStyleId?.Val?.Value is { } styleId && styleId.StartsWith("Heading"))
                 {
