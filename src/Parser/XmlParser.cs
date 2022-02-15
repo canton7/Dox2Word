@@ -84,17 +84,19 @@ namespace Dox2Word.Parser
                 {
                     foreach (var include in fileDef.Includes.Where(x => x.IsLocal == DoxBool.Yes && x.RefId != null))
                     {
-                        var includingGroup = fileIdToOwningGroup[fileDef.Id];
-                        var includedGroup = fileIdToOwningGroup[include.RefId!];
-                        if (includingGroup != includedGroup)
+                        if (fileIdToOwningGroup.TryGetValue(fileDef.Id, out var includingGroup) &&
+                            fileIdToOwningGroup.TryGetValue(include.RefId!, out var includedGroup))
                         {
-                            if (!includingGroup.IncludedGroups.Contains(includedGroup))
+                            if (includingGroup != includedGroup)
                             {
-                                includingGroup.IncludedGroups.Add(includedGroup);
-                            }
-                            if (!includedGroup.IncludingGroups.Contains(includingGroup))
-                            {
-                                includedGroup.IncludingGroups.Add(includingGroup);
+                                if (!includingGroup.IncludedGroups.Contains(includedGroup))
+                                {
+                                    includingGroup.IncludedGroups.Add(includedGroup);
+                                }
+                                if (!includedGroup.IncludingGroups.Contains(includingGroup))
+                                {
+                                    includedGroup.IncludingGroups.Add(includingGroup);
+                                }
                             }
                         }
                     }
