@@ -1,6 +1,12 @@
 Changelog
 =========
 
+v5
+--
+
+ - Use last instead of first paragraph before `<MODULES>`
+ - Don't throw exceptions if group -> referenced group relationships aren't as expected
+
 v4
 --
 
