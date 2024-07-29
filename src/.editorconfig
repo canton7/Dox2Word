@@ -66,7 +66,7 @@ csharp_style_expression_bodied_properties = true:suggestion
 csharp_style_expression_bodied_indexers = true:suggestion
 csharp_style_expression_bodied_accessors = true:suggestion
 csharp_style_expression_bodied_lambdas = true:suggestion
-csharp_style_expression_bodied_local_functions = true:suggestion
+csharp_style_expression_bodied_local_functions = true:silent
 
 # Pattern matching
 csharp_style_pattern_matching_over_is_with_cast_check = true:suggestion
@@ -84,6 +84,7 @@ csharp_style_conditional_delegate_call = true:suggestion
 
 # Code block preferences
 csharp_prefer_braces = true:silent
+csharp_style_prefer_primary_constructors = false:silent
 
 # Unused value preferences
 csharp_style_unused_value_expression_statement_preference = discard_variable:silent
@@ -91,7 +92,7 @@ csharp_style_unused_value_assignment_preference = discard_variable:silent
 
 # Index and range preferences
 csharp_style_prefer_index_operator = true:suggestion
-csharp_style_prefer_range_operator = true:suggestion
+csharp_style_prefer_range_operator = true:none
 
 # Miscellanious preferences
 csharp_style_deconstructed_variable_declaration = true:suggestion
@@ -240,3 +241,9 @@ dotnet_diagnostic.
 
 # CS8524: Add missing cases
 dotnet_diagnostic.CS8524.severity = none
+
+# CA1859: Use concrete types when possible for improved performance
+dotnet_diagnostic.CA1859.severity = none
+
+# SYSLIB1045: Convert to 'GeneratedRegexAttribute'.
+dotnet_diagnostic.SYSLIB1045.severity = none

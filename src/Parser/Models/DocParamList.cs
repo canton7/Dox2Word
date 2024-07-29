@@ -9,6 +9,6 @@ namespace Dox2Word.Parser.Models
         public DoxParamListKind Kind { get; set; }
 
         [XmlElement("parameteritem")]
-        public List<DocParamListItem> ParameterItems { get; } = new();
+        public List<DocParamListItem> ParameterItems { get; } = [];
     }
 }

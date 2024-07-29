@@ -8,7 +8,7 @@ namespace Dox2Word.Parser.Models
 
         protected override void ReadAttributes(XmlReader reader)
         {
-            this.Url = reader.GetAttribute("url");
+            this.Url = reader.GetAttribute("url")!;
         }
     }
 }

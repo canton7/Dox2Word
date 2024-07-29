@@ -32,7 +32,7 @@ namespace Dox2Word.Generator
             this.stylesPart = stylesPart;
 
             this.DefaultFontSize = this.stylesPart.Styles!.DocDefaults?.RunPropertiesDefault?.RunPropertiesBaseStyle?.FontSize is { } size
-                ? int.Parse(size.Val)
+                ? int.Parse(size.Val!)
                 : 22;
         }
 
@@ -289,7 +289,7 @@ namespace Dox2Word.Generator
                     Type = styleType,
                     CustomStyle = true,
                 });
-                using var sr = new StreamReader(typeof(StyleManager).Assembly.GetManifestResourceStream($"Dox2Word.Generator.{filename}"));
+                using var sr = new StreamReader(typeof(StyleManager).Assembly.GetManifestResourceStream($"Dox2Word.Generator.{filename}")!);
                 style.InnerXml = sr.ReadToEnd();
             }
         }

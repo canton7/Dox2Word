@@ -7,6 +7,6 @@ namespace Dox2Word.Model
         public int ColSpan { get; set; }
         public int RowSpan { get; set; }
 
-        public List<IParagraph> Paragraphs { get; } = new();
+        public List<IParagraph> Paragraphs { get; } = [];
     }
 }

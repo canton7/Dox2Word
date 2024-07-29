@@ -9,6 +9,6 @@ namespace Dox2Word.Parser.Models
         public string? Title { get; set; }
 
         [XmlElement("para")]
-        public List<DocPara> Para { get; } = new();
+        public List<DocPara> Para { get; } = [];
     }
 }

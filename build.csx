@@ -13,8 +13,12 @@ string cTestDir = "test/C";
 CreateTask("build").Run((string versionOpt, string configurationOpt) =>
 {
     var flags = $"--configuration={configurationOpt ?? "Release"} -p:VersionPrefix=\"{versionOpt ?? "0.0.0"}\"";
-    Command.Run("dotnet", $"build {flags} \"{dox2wordDir}\"");
-    Command.Run("dotnet", $"build -t:ILRepack {flags} \"{dox2wordDir}\"");
+	var rids = new[] { "win-x64", "linux-x64" };
+	Command.Run("dotnet", $"build {flags} \"{dox2wordDir}\"");
+	foreach (var rid in rids)
+	{
+    	Command.Run("dotnet", $"publish {flags} -p:PublishSingleFile=true --no-self-contained -r {rid} \"{dox2wordDir}\"");
+	}
 });
 
 CreateTask("test").Run((string configurationOpt) =>

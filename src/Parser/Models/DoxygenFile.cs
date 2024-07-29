@@ -7,6 +7,6 @@ namespace Dox2Word.Parser.Models
     public class DoxygenFile
     {
         [XmlElement("option")]
-        public List<Option> Options { get; } = new();
+        public List<Option> Options { get; } = [];
     }
 }

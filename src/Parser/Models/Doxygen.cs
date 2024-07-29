@@ -7,6 +7,6 @@ namespace Dox2Word.Parser.Models
     public class Doxygen
     {
         [XmlElement("compounddef")]
-        public List<CompoundDef> CompoundDefs { get; } = new();
+        public List<CompoundDef> CompoundDefs { get; } = [];
     }
 }

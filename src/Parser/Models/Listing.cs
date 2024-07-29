@@ -7,6 +7,6 @@ namespace Dox2Word.Parser.Models
     public class Listing
     {
         [XmlElement("codeline")]
-        public List<Codeline> Codelines { get; } = new();
+        public List<Codeline> Codelines { get; } = [];
     }
 }

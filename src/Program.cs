@@ -11,7 +11,7 @@ namespace Dox2Word
 {
     public class Options
     {
-        public Dictionary<string, string> Placeholders { get; } = new();
+        public Dictionary<string, string> Placeholders { get; } = [];
         public bool Verbose { get; set; }
     }
 
@@ -20,13 +20,15 @@ namespace Dox2Word
         public static int Main(string[] args)
         {
             bool showHelp = false;
-            string? xmlFolder = null;
-            string? templatePath = null;
-            string? outputPath = null;
+            string xmlFolder = null!;
+            string templatePath = null!;
+            string outputPath = null!;
             var options = new Options();
 
-            var optionSet = new OptionSet();
-            optionSet.Add("help|h", "Show this help", x => showHelp = x != null);
+            var optionSet = new OptionSet
+            {
+                { "help|h", "Show this help", x => showHelp = x != null }
+            };
             optionSet.AddRequired("input=|i=", "'xml' folder created by Doxygen to use as input", x => xmlFolder = x);
             optionSet.AddRequired("template=|t=", $"Template word document. Must contain a placeholder paragraph with the text '<{WordGenerator.Placeholder}>'",
                 x => templatePath = x);
@@ -90,12 +92,11 @@ namespace Dox2Word
 
         private static void ShowHelp(OptionSet optionSet)
         {
-            var version = typeof(Program).Assembly.GetName().Version;
+            var version = typeof(Program).Assembly.GetName().Version!;
             Console.WriteLine($"Dox2Word version v{version.ToString(1)} (https://github.com/canton7/Dox2Word)");
             Console.WriteLine();
 
-            string path = Path.GetFileNameWithoutExtension(Assembly.GetEntryAssembly().Location);
-            Console.WriteLine($"Usage: {path} -i path/to/xml -t Template.docx -o Output.docx [-p placeholder=value[, ...]]");
+            Console.WriteLine($"Usage: Dox2Word -i path/to/xml -t Template.docx -o Output.docx [-p placeholder=value[, ...]]");
             Console.WriteLine();
             Console.WriteLine("The available options are:");
             optionSet.WriteOptionDescriptions(Console.Out);

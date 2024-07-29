@@ -6,7 +6,7 @@ namespace Dox2Word.Model
     {
         public bool IsEmpty => this.Entries.Count == 0;
 
-        public List<DefinitionListEntry> Entries { get; } = new();
+        public List<DefinitionListEntry> Entries { get; } = [];
 
         public void TrimTrailingWhitespace() { }
     }
@@ -15,6 +15,6 @@ namespace Dox2Word.Model
     {
         public TextParagraph Term { get; set; } = null!;
 
-        public List<IParagraph> Description { get; } = new();
+        public List<IParagraph> Description { get; } = [];
     }
 }

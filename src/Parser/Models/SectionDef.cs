@@ -6,6 +6,6 @@ namespace Dox2Word.Parser.Models
     public class SectionDef
     {
         [XmlElement("memberdef")]
-        public List<MemberDef> Members { get; } = new();
+        public List<MemberDef> Members { get; } = [];
     }
 }

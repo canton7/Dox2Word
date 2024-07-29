@@ -72,7 +72,7 @@ namespace Dox2Word.Generator
         private AbstractNum CreateAbstractNumFromFile(string filename)
         {
             var abstractNum = this.CreateAbstractNum();
-            using var sr = new StreamReader(typeof(ListManager).Assembly.GetManifestResourceStream($"Dox2Word.Generator.{filename}"));
+            using var sr = new StreamReader(typeof(ListManager).Assembly.GetManifestResourceStream($"Dox2Word.Generator.{filename}")!);
             abstractNum.InnerXml = sr.ReadToEnd();
             
             return abstractNum;

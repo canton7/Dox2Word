@@ -15,7 +15,7 @@ namespace Dox2Word.Parser
     internal class MixedModeParser
     {
         private static readonly Logger logger = Logger.Instance;
-        private static readonly Regex DimensionRegex = new Regex(@"^(?<value>\d+(\.?\d+)?)(?<unit>cm|in|px|%)$");
+        private static readonly Regex DimensionRegex = new(@"^(?<value>\d+(\.?\d+)?)(?<unit>cm|in|px|%)$");
 
         private readonly string basePath;
         private readonly Index index;
@@ -122,7 +122,7 @@ namespace Dox2Word.Parser
                         break;
                     case Image i when i.Type == "html":
                     {
-                        var image = new ImageElement(Path.Combine(this.basePath, i.Name), i.Contents, ParseImageDimensions(i.Width, i.Height));
+                        var image = new ImageElement(Path.Combine(this.basePath, i.Name!), i.Contents, ParseImageDimensions(i.Width, i.Height));
                         if (i.Inline == DoxBool.Yes)
                         {
                             Add(paragraphs, alignment, image);
@@ -268,7 +268,7 @@ namespace Dox2Word.Parser
                                 sb.Append(s);
                                 break;
                             case Sp:
-                                sb.Append(" ");
+                                sb.Append(' ');
                                 break;
                             case XmlElement e:
                                 sb.Append(e.InnerText);
@@ -360,7 +360,7 @@ namespace Dox2Word.Parser
 
                 i++;
 
-                var termParagraph = this.ParseSingleParagraph(entry.Term, default, TextParagraphAlignment.Default) ?? new TextParagraph();
+                var termParagraph = this.ParseSingleParagraph(entry.Term, default, TextParagraphAlignment.Default) ?? [];
                 var definitionListEntry = new DefinitionListEntry()
                 {
                     Term = termParagraph,

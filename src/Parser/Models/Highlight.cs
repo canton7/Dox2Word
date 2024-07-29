@@ -9,6 +9,6 @@ namespace Dox2Word.Parser.Models
         [XmlText(typeof(string))]
         [XmlElement("sp", typeof(Sp))]
         [XmlAnyElement]
-        public List<object> Parts { get; } = new();
+        public List<object> Parts { get; } = [];
     }
 }

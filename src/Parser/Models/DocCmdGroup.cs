@@ -6,7 +6,7 @@ namespace Dox2Word.Parser.Models
 {
     public abstract class DocCmdGroup : DocTitleCmdGroup
     {
-        public List<DocParamList> ParameterLists { get; } = new();
+        public List<DocParamList> ParameterLists { get; } = [];
 
         protected override object? ParseElement(XmlReader reader)
         {

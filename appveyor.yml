@@ -1,0 +1,25 @@
+version: 0.0.0.{build}
+image: Visual Studio 2022
+install:
+- ps: |
+    $tagVersion = $($(git describe $(git rev-list --tags --max-count=1 origin/master)).TrimStart("v"))
+    if ($env:appveyor_repo_tag -eq "true")
+    {
+       echo "Build triggered by a tag"
+       $version = $tagVersion
+    }
+    else
+    {
+       $version = "$tagVersion.$env:appveyor_build_number"
+    }
+    echo $version
+    Update-AppveyorBuild -Version $version
+    & dotnet tool install -g dotnet-script
+build_script:
+- cmd: dotnet script build.csx build -- --version=%APPVEYOR_BUILD_VERSION%
+test_script:
+- cmd: dotnet script build.csx test
+artifacts:
+- path: bin/Release/win-x64/publish/Dox2Word.exe
+- path: bin/Release/linux-x64/publish/Dox2Word
+- path: test/C/Output.docx

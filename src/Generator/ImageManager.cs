@@ -8,6 +8,7 @@ using DocumentFormat.OpenXml.Drawing;
 using DW = DocumentFormat.OpenXml.Drawing.Wordprocessing;
 using PIC = DocumentFormat.OpenXml.Drawing.Pictures;
 using Dox2Word.Model;
+using SixLabors.ImageSharp;
 
 namespace Dox2Word.Generator
 {
@@ -30,7 +31,7 @@ namespace Dox2Word.Generator
             var imagePart = this.mainPart.AddImagePart(imageType);
             imagePart.FeedData(new MemoryStream(data));
 
-            var (widthEmus, heightEmus) = this.CalculateExtents(data, dimensions);
+            var (widthEmus, heightEmus) = CalculateExtents(data, dimensions);
 
             return this.CreateImageElement(this.mainPart.GetIdOfPart(imagePart), widthEmus, heightEmus);
         }
@@ -58,14 +59,14 @@ namespace Dox2Word.Generator
             return this.CreateImage(File.ReadAllBytes(path), type.Value, dimensions);
         }
 
-        private (long width, long height) CalculateExtents(byte[] data, ImageDimensions dimensions)
+        private static (long width, long height) CalculateExtents(byte[] data, ImageDimensions dimensions)
         {
             // https://stackoverflow.com/a/8083390/1086121
 
-            using var img = new Bitmap(new MemoryStream(data));
+            using var img = Image.Load(data);
 
-            long originalWidthEmus = PxToEmus(img.Width, img.HorizontalResolution);
-            long originalHeightEmus = PxToEmus(img.Height, img.VerticalResolution);
+            long originalWidthEmus = PxToEmus(img.Width, img.Metadata.HorizontalResolution);
+            long originalHeightEmus = PxToEmus(img.Height, img.Metadata.VerticalResolution);
 
             long widthEmus;
             long heightEmus;
@@ -75,18 +76,18 @@ namespace Dox2Word.Generator
             }
             else if (dimensions.Width != null && dimensions.Height == null)
             {
-                widthEmus = DimensionToEmus(img.Width, img.HorizontalResolution, dimensions.Width);
+                widthEmus = DimensionToEmus(img.Width, img.Metadata.HorizontalResolution, dimensions.Width);
                 heightEmus = (long)(originalHeightEmus * ((double)widthEmus / originalWidthEmus));
             }
             else if (dimensions.Width == null && dimensions.Height != null)
             {
-                heightEmus = DimensionToEmus(img.Height, img.VerticalResolution, dimensions.Height);
+                heightEmus = DimensionToEmus(img.Height, img.Metadata.VerticalResolution, dimensions.Height);
                 widthEmus = (long)(originalWidthEmus * ((double)heightEmus / originalHeightEmus));
             }
             else
             {
-                widthEmus = DimensionToEmus(img.Width, img.HorizontalResolution, dimensions.Width);
-                heightEmus = DimensionToEmus(img.Height, img.VerticalResolution, dimensions.Height);
+                widthEmus = DimensionToEmus(img.Width, img.Metadata.HorizontalResolution, dimensions.Width);
+                heightEmus = DimensionToEmus(img.Height, img.Metadata.VerticalResolution, dimensions.Height);
             }
 
             const int emusPerInch = 914400;
@@ -98,7 +99,7 @@ namespace Dox2Word.Generator
                 widthEmus = maxWidthEmus;
             }
 
-            long DimensionToEmus(int sizePx, float resolutionDpi, ImageDimension? dimension)
+            long DimensionToEmus(int sizePx, double resolutionDpi, ImageDimension? dimension)
             {
                 return dimension is { } d
                     ? d.Unit switch
@@ -111,7 +112,7 @@ namespace Dox2Word.Generator
                     : PxToEmus(sizePx, resolutionDpi);
             }
 
-            static long PxToEmus(int sizePx, float resolutionDpi) => (long)((double)sizePx / resolutionDpi * emusPerInch);
+            static long PxToEmus(int sizePx, double resolutionDpi) => (long)((double)sizePx / resolutionDpi * emusPerInch);
             static long CmToEmus(double sizeCm) => (long)(sizeCm * emusPerCm);
             static long InchToEmus(double sizeInch) => (long)(sizeInch * emusPerInch);
 

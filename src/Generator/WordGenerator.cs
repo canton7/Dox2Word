@@ -19,7 +19,7 @@ namespace Dox2Word.Generator
         private readonly WordprocessingDocument doc;
         private readonly Project project;
         private readonly Options options;
-        private readonly List<OpenXmlElement> bodyElements = new();
+        private readonly List<OpenXmlElement> bodyElements = [];
 
         private readonly ListManager listManager;
         private readonly ImageManager imageManager;

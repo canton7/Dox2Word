@@ -6,7 +6,7 @@ namespace Dox2Word.Parser.Models
     public class DocParamListItem
     {
         [XmlElement("parameternamelist")]
-        public List<DocParamNameList> ParameterNameList { get; } = new();
+        public List<DocParamNameList> ParameterNameList { get; } = [];
 
         [XmlElement("parameterdescription")]
         public Description ParameterDescription { get; set; } = null!;

@@ -45,10 +45,10 @@ namespace Dox2Word.Parser.Models
         public string? ArgsString { get; set; }
 
         [XmlElement("param")]
-        public List<Param> Params { get; } = new();
+        public List<Param> Params { get; } = [];
 
         [XmlElement("enumvalue")]
-        public List<EnumValue> EnumValues { get; } = new();
+        public List<EnumValue> EnumValues { get; } = [];
 
         [XmlElement("briefdescription")]
         public Description? BriefDescription { get; set; }
@@ -60,9 +60,9 @@ namespace Dox2Word.Parser.Models
         public LinkedText? Initializer { get; set; }
 
         [XmlElement("references")]
-        public List<Reference> References { get; } = new();
+        public List<Reference> References { get; } = [];
 
         [XmlElement("referencedby")]
-        public List<Reference> ReferencedBy { get; } = new();
+        public List<Reference> ReferencedBy { get; } = [];
     }
 }

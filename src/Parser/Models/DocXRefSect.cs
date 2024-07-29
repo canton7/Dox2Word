@@ -9,7 +9,7 @@ namespace Dox2Word.Parser.Models
         public string Id { get; set; } = null!;
 
         [XmlElement("xreftitle")]
-        public List<string> Title { get; } = new();
+        public List<string> Title { get; } = [];
 
         [XmlElement("xrefdescription")]
         public Description Description { get; set; } = null!;

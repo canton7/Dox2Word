@@ -18,7 +18,7 @@ namespace Dox2Word.Parser.Models
         public string Title { get; set; } = null!;
 
         [XmlElement("includes")]
-        public List<Inc> Includes { get; } = new();
+        public List<Inc> Includes { get; } = [];
 
         [XmlElement("briefdescription")]
         public Description BriefDescription { get; set; } = null!;
@@ -27,15 +27,15 @@ namespace Dox2Word.Parser.Models
         public Description DetailedDescription { get; set; } = null!;
 
         [XmlElement("innergroup")]
-        public List<Ref> InnerGroups { get; } = new();
+        public List<Ref> InnerGroups { get; } = [];
 
         [XmlElement("innerfile")]
-        public List<Ref> InnerFiles { get; } = new();
+        public List<Ref> InnerFiles { get; } = [];
 
         [XmlElement("innerclass")]
-        public List<Ref> InnerClasses { get; } = new();
+        public List<Ref> InnerClasses { get; } = [];
 
         [XmlElement("sectiondef")]
-        public List<SectionDef> Sections { get; } = new();
+        public List<SectionDef> Sections { get; } = [];
     }
 }

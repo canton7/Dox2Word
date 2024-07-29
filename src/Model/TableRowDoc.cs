@@ -4,6 +4,6 @@ namespace Dox2Word.Model
 {
     public class TableRowDoc
     {
-        public List<TableCellDoc> Cells { get; } = new();
+        public List<TableCellDoc> Cells { get; } = [];
     }
 }

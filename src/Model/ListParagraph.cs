@@ -12,7 +12,7 @@ namespace Dox2Word.Model
     {
         public ListParagraphType Type { get; }
 
-        public List<IParagraph> Items { get; } = new();
+        public List<IParagraph> Items { get; } = [];
 
         public bool IsEmpty => this.Items.Count == 0;
 

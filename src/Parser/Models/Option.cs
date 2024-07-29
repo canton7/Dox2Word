@@ -12,6 +12,6 @@ namespace Dox2Word.Parser.Models
         public OptionType Type { get; set; }
 
         [XmlElement("value")]
-        public List<string> Values { get; } = new();
+        public List<string> Values { get; } = [];
     }
 }

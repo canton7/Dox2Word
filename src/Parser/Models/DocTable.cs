@@ -15,6 +15,6 @@ namespace Dox2Word.Parser.Models
         public DocCaption? Caption { get; set; }
 
         [XmlElement("row")]
-        public List<DocRow> Rows { get; } = new();
+        public List<DocRow> Rows { get; } = [];
     }
 }

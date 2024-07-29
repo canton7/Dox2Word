@@ -7,6 +7,6 @@ namespace Dox2Word.Parser.Models
     {
         [XmlElement("varlistentry", typeof(DocVarListEntry))]
         [XmlElement("listitem", typeof(DocListItem))]
-        public List<object> Parts { get; } = new();
+        public List<object> Parts { get; } = [];
     }
 }

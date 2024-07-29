@@ -10,6 +10,6 @@ namespace Dox2Word.Parser.Models
 
         [XmlText(typeof(string))]
         [XmlElement("ref", typeof(RefText))]
-        public List<object> Name { get; } = new();
+        public List<object> Name { get; } = [];
     }
 }

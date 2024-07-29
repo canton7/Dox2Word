@@ -9,6 +9,6 @@ namespace Dox2Word.Parser.Models
         public ListParagraphType Type { get; set; }
 
         [XmlElement("listitem")]
-        public List<DocListItem> Items { get; } = new();   
+        public List<DocListItem> Items { get; } = [];   
     }
 }

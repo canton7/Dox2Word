@@ -2,9 +2,8 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFramework>net8</TargetFramework>
     <Nullable>enable</Nullable>
-    <LangVersion>9</LangVersion>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <BaseOutputPath>..\bin</BaseOutputPath>
     <VersionPrefix>0</VersionPrefix>
@@ -26,11 +25,7 @@
 
   <ItemGroup>
     <PackageReference Include="Mono.Options" Version="6.12.0.148" />
-    <PackageReference Include="ILRepack" Version="2.0.18" />
     <PackageReference Include="DocumentFormat.OpenXml" Version="2.13.1" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.5" />
   </ItemGroup>
-
-  <Target Name="ILRepack">
-    <Exec Command="&quot;$(ILRepack)&quot; &quot;/out:$(OutputPath)Dox2Word.exe&quot; &quot;$(OutputPath)Dox2Word.exe&quot; &quot;$(OutputPath)DocumentFormat.OpenXml.dll&quot; &quot;$(OutputPath)Mono.Options.dll&quot;" />
-  </Target>
 </Project>

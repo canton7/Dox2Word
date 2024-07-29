@@ -12,15 +12,15 @@ namespace Dox2Word.Generator
         private const int MaxLength = 35;
 
         // Original, requested name -> name we had to use
-        private readonly Dictionary<string, string> names = new();
-        private readonly HashSet<string> namesInUse = new();
-        private readonly HashSet<string> referencedButNotCreated = new();
+        private readonly Dictionary<string, string> names = [];
+        private readonly HashSet<string> namesInUse = [];
+        private readonly HashSet<string> referencedButNotCreated = [];
 
         private int id;
 
         public BookmarkManager(Body preExistingDocument)
         {
-            int maxId = preExistingDocument.Descendants<BookmarkStart>().MaxOrDefault(x => int.Parse(x.Id), -1);
+            int maxId = preExistingDocument.Descendants<BookmarkStart>().MaxOrDefault(x => int.Parse(x.Id!), -1);
             this.id = maxId + 1;
         }
 
@@ -57,9 +57,8 @@ namespace Dox2Word.Generator
 
         private string TransformName(string name)
         {
-            string transformedName;
             // Have we transformed this one before? Use the result of that?
-            if (!this.names.TryGetValue(name, out transformedName))
+            if (!this.names.TryGetValue(name, out string? transformedName))
             {
                 if (name.Length <= MaxLength)
                 {
@@ -72,7 +71,7 @@ namespace Dox2Word.Generator
                     for (int i = 1; ; i++)
                     {
                         string iString = i.ToString();
-                        string renamed = name.Substring(0, MaxLength - (1 + iString.Length)) + "+" + iString;
+                        string renamed = $"{name.Substring(0, MaxLength - (1 + iString.Length))}+{iString}";
                         if (!this.namesInUse.Contains(renamed))
                         {
                             this.names[name] = renamed;

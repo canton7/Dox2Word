@@ -12,7 +12,7 @@ namespace Dox2Word.Parser.Models
     {
         private static readonly Logger logger = Logger.Instance;
 
-        public List<object> Parts { get; } = new();
+        public List<object> Parts { get; } = [];
 
         protected virtual object? ParseElement(XmlReader reader)
         {
@@ -122,7 +122,7 @@ namespace Dox2Word.Parser.Models
 
         protected static T Load<T>(XmlReader reader, Action<T>? configurer = null)
         {
-            var instance = (T)SerializerCache.Get<T>(reader.Name).Deserialize(reader);
+            var instance = (T)SerializerCache.Get<T>(reader.Name).Deserialize(reader)!;
             configurer?.Invoke(instance);
             return instance;
         }
@@ -131,7 +131,7 @@ namespace Dox2Word.Parser.Models
         {
             var doc = new XmlDocument();
             doc.Load(reader);
-            return doc.DocumentElement;
+            return doc.DocumentElement!;
         }
 
         protected static object? Unsupported(string name)

@@ -11,8 +11,8 @@ namespace Dox2Word.Model
         public ReturnDescriptions ReturnDescriptions { get; set; } = null!;
         public string Definition { get; set; } = null!;
         public string ArgsString { get; set; } = null!;
-        public List<ParameterDoc> Parameters { get; } = new();
-        public List<FunctionDoc> References { get; } = new();
-        public List<FunctionDoc> ReferencedBy { get; } = new();
+        public List<ParameterDoc> Parameters { get; } = [];
+        public List<FunctionDoc> References { get; } = [];
+        public List<FunctionDoc> ReferencedBy { get; } = [];
     }
 }

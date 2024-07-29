@@ -12,7 +12,7 @@ namespace Dox2Word.Model
 
         public TextParagraph? Caption { get; set; }
 
-        public List<TableRowDoc> Rows { get; } = new();
+        public List<TableRowDoc> Rows { get; } = [];
 
         public bool IsEmpty => this.Rows.Count == 0;
 
